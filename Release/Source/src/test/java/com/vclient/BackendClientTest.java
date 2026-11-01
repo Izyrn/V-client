@@ -73,7 +73,7 @@ class BackendClientTest {
     @Test
     void updateInfoUsesAbsoluteInstallerUrl() throws Exception {
         BackendClient client = client();
-        BackendClient.UpdateInfo info = client.checkForUpdate("1.0.0");
+        BackendClient.UpdateInfo info = client.checkBackendForUpdate("1.0.0");
         assertTrue(info.updateAvailable());
         assertNotNull(info.latest());
         assertEquals("1.2.0", info.latest().version());

@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.7",
+    "version":  "1.6.8",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "0a3906ad0eae5361de9ac84a7f16ea02cbc0488c4e3bd4759d91f4129f960fe3",
-    "size":  94865920,
-    "notes":  "Browser now has tabs, new-tab links, a cleaner toolbar and a full-screen mode.",
+    "sha256":  "7e6b4af63988307dd223e811557ee572e6f3cfd971994f4731ed9ef59b5dec8e",
+    "size":  94867456,
+    "notes":  "Updates are now read straight from the GitHub website. Browser has tabs and full screen.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-01T12:11:47.8696707Z"
+    "publishedAt":  "2026-11-01T12:33:03.1926668Z"
 }

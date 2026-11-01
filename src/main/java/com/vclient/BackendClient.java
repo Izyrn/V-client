@@ -121,7 +121,42 @@ final class BackendClient {
                 java.path("version").asText(""), java.path("latencyMs").asLong());
     }
 
+    /** The website on GitHub Pages: its update.json and installer are published by every push to main. */
+    static final String SITE_URL = "https://eliteprofast.github.io/V-client";
+
+    /**
+     * Reads the release from the website's update.json (GitHub Pages) first, and only asks the backend when the site
+     * cannot be reached, so updates do not depend on a separately hosted server.
+     */
     UpdateInfo checkForUpdate(String currentVersion) throws IOException, InterruptedException {
+        try {
+            return checkSiteForUpdate(currentVersion);
+        } catch (IOException | RuntimeException e) {
+            requestLog.accept("Update check via website failed (" + e.getMessage() + "); asking the backend");
+        }
+        return checkBackendForUpdate(currentVersion);
+    }
+
+    private UpdateInfo checkSiteForUpdate(String currentVersion) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(SITE_URL + "/update.json?t=" + System.currentTimeMillis()))
+                .timeout(Duration.ofSeconds(TIMEOUT_SECONDS)).header("Accept", "application/json")
+                .header("User-Agent", "V-Client/" + AppInfo.VERSION + " (" + AppInfo.PLATFORM + ")").GET().build();
+        HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (response.statusCode() != 200) throw new IOException("HTTP " + response.statusCode());
+        JsonNode root = JSON.readTree(response.body());
+        String version = root.path("version").asText("");
+        if (version.isBlank()) throw new IOException("update.json has no version");
+        String url = root.path("url").asText("");
+        if (!url.isEmpty() && !url.startsWith("http")) url = SITE_URL + (url.startsWith("/") ? "" : "/") + url;
+        boolean mandatory = root.path("mandatory").asBoolean();
+        Release release = new Release(version, root.path("notes").asText(""), mandatory, root.path("size").asLong(),
+                root.path("sha256").asText(""), url);
+        boolean newer = UpdateService.isNewer(version, currentVersion);
+        boolean unsupported = UpdateService.isNewer(root.path("minSupported").asText("0.0.0"), currentVersion);
+        return new UpdateInfo(newer, mandatory || unsupported, release);
+    }
+
+    UpdateInfo checkBackendForUpdate(String currentVersion) throws IOException, InterruptedException {
         JsonNode root = get("/api/launcher/update?platform=" + AppInfo.PLATFORM + "&current=" + encode(currentVersion));
         JsonNode latest = root.path("latest");
         Release release = latest.isObject()
