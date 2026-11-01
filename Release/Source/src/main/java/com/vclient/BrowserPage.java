@@ -1,7 +1,6 @@
 package com.vclient;
 
 import javafx.application.Platform;
-import javafx.concurrent.Worker;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
@@ -17,8 +16,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.web.WebEngine;
-import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -29,20 +26,18 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
- * A tabbed web browser whose DNS lookups go over HTTPS (DNS-over-HTTPS) instead of the PC's own resolver. There is
- * one browser for the whole launcher, so its tabs survive moving between pages, and it can be popped out into a
- * full-screen window.
+ * A tabbed web browser whose DNS lookups go over HTTPS (DNS-over-HTTPS) instead of the PC's own resolver. Pages are
+ * drawn by the PC's Edge/Chrome engine (so Discord and other heavy sites work), with JavaFX's own engine as the
+ * fallback. There is one browser for the whole launcher, so its tabs survive moving between pages, and it can be
+ * popped out into a full-screen window.
  */
 final class BrowserPage {
     private static final String HOME = "https://duckduckgo.com/";
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/605.1.15 "
-            + "(KHTML, like Gecko) Version/17.0 Safari/605.1.15";
     private static final String BUTTON = "-fx-background-color: rgba(255,255,255,0.08); -fx-text-fill: #f5f7fd;"
             + " -fx-background-radius: 9; -fx-font-size: 14px; -fx-font-family: 'Segoe UI Symbol', 'Segoe UI';"
             + " -fx-min-width: 36; -fx-min-height: 34; -fx-padding: 0; -fx-cursor: hand;";
@@ -51,21 +46,14 @@ final class BrowserPage {
     private static BrowserPage shared;
 
     private final class BrowserTab {
-        final WebView view = new WebView();
-        final WebEngine engine = view.getEngine();
+        final StackPane holder = new StackPane();
         final Label title = new Label("New tab");
         final Button close = new Button("✕");
         final HBox header = new HBox(6, title, close);
+        TabContent content;
 
-        BrowserTab(String url) {
-            engine.setUserAgent(USER_AGENT);
-            engine.setCreatePopupHandler(features -> open(null).engine);
-            engine.titleProperty().addListener((o, old, text) -> title.setText(text == null || text.isBlank()
-                    ? hostOf(engine.getLocation()) : text));
-            engine.locationProperty().addListener((o, old, location) -> {
-                if (selected == this && location != null) address.setText(location);
-                if (engine.getTitle() == null) title.setText(hostOf(location));
-            });
+        BrowserTab(String url, String existingTarget) {
+            holder.setMinSize(0, 0);
             title.setMaxWidth(Double.MAX_VALUE);
             title.setTextOverrun(javafx.scene.control.OverrunStyle.ELLIPSIS);
             HBox.setHgrow(title, Priority.ALWAYS);
@@ -78,11 +66,32 @@ final class BrowserPage {
             header.setMaxWidth(220);
             header.setPadding(new Insets(7, 8, 7, 12));
             header.setOnMouseClicked(event -> select(this));
-            if (url != null) load(url);
+            setContent(makeContent(this, url, existingTarget));
         }
 
-        void load(String url) {
-            engine.load(url);
+        void setContent(TabContent next) {
+            if (content != null) content.close();
+            content = next;
+            holder.getChildren().setAll(next.node());
+            next.titleProperty().addListener((o, old, text) -> title.setText(text == null || text.isBlank()
+                    ? hostOf(next.locationProperty().get()) : text));
+            next.locationProperty().addListener((o, old, text) -> {
+                if (selected == this) address.setText(text);
+                if (next.titleProperty().get() == null || next.titleProperty().get().isBlank()) title.setText(hostOf(text));
+            });
+            next.loadingProperty().addListener((o, old, now) -> {
+                if (selected == this) showLoading(now);
+            });
+            next.setActive(selected == this);
+        }
+
+        /** The engine failed to start or stopped: carry on with the built-in one at the same address. */
+        void fallBack(Throwable error) {
+            engineBroken = true;
+            if (host != null) host.log("Browser engine unavailable, using the built-in one: " + error.getMessage());
+            String location = content.locationProperty().get();
+            setContent(new WebViewContent(location == null || location.isEmpty() ? HOME : location,
+                    () -> webViewPopup()));
         }
     }
 
@@ -91,35 +100,34 @@ final class BrowserPage {
     private final StackPane content = new StackPane();
     private final TextField address = new TextField();
     private final Label status = new Label();
-    private final ProgressBar progress = new ProgressBar(0);
+    private final ProgressBar progress = new ProgressBar(-1);
     private final Button fullscreen = new Button("⛶");
     private final Button vpn = new Button();
-    private final Button external = new Button("EDGE ↗");
     private boolean vpnBusy;
     private final VBox root = new VBox(8);
     private BrowserTab selected;
     private FeatureHost host;
     private Stage fullscreenStage;
+    private boolean engineBroken;
+    private CompletableFuture<ChromiumHost> engine;
 
     private BrowserPage() {
         Button newTab = button("+", "New tab (Ctrl+T)", () -> open(HOME));
         newTab.setStyle(BUTTON + " -fx-font-size: 17px;");
         tabStrip.setAlignment(Pos.CENTER_LEFT);
 
-        Button back = button("◀", "Back", () -> step(-1));
-        Button forward = button("▶", "Forward", () -> step(1));
+        Button back = button("◀", "Back", () -> {
+            if (selected != null) selected.content.back();
+        });
+        Button forward = button("▶", "Forward", () -> {
+            if (selected != null) selected.content.forward();
+        });
         Button reload = button("⟳", "Reload", () -> {
-            if (selected != null) selected.engine.reload();
+            if (selected != null) selected.content.reload();
         });
         fullscreen.setStyle(BUTTON);
         fullscreen.setTooltip(new javafx.scene.control.Tooltip("Full screen (F11)"));
         fullscreen.setOnAction(event -> toggleFullscreen());
-
-        external.setStyle(BUTTON + " -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 0 12 0 12;"
-                + " -fx-background-color: " + Theme.accentRgba(0.30) + ";");
-        external.setTooltip(new javafx.scene.control.Tooltip(
-                "Open this page in Edge/Chrome through the same secure DNS. Use it for Discord and other heavy sites."));
-        external.setOnAction(event -> openExternal());
 
         vpn.setTooltip(new javafx.scene.control.Tooltip(
                 "Send the browser through V-Client's free VPN (Cloudflare WARP), DNS included"));
@@ -136,7 +144,7 @@ final class BrowserPage {
         });
         HBox.setHgrow(address, Priority.ALWAYS);
 
-        HBox bar = new HBox(6, back, forward, reload, address, external, vpn, fullscreen);
+        HBox bar = new HBox(6, back, forward, reload, address, vpn, fullscreen);
         bar.setAlignment(Pos.CENTER);
 
         HBox tabRow = new HBox(6, tabStrip, newTab);
@@ -147,9 +155,11 @@ final class BrowserPage {
         progress.setMinHeight(3);
         progress.setStyle("-fx-accent: " + ModsUi.ACCENT + "; -fx-control-inner-background: transparent;"
                 + " -fx-box-border: transparent;");
+        progress.setVisible(false);
         status.setStyle("-fx-text-fill: " + ModsUi.MUTED + "; -fx-font-size: 11px;");
 
         content.setStyle("-fx-background-color: #ffffff; -fx-background-radius: 10;");
+        content.setMinSize(0, 0);
         VBox.setVgrow(content, Priority.ALWAYS);
         root.getChildren().addAll(tabRow, bar, progress, content, status);
 
@@ -168,7 +178,6 @@ final class BrowserPage {
                 event.consume();
             }
         });
-        open(HOME);
     }
 
     static VBox build(FeatureHost host) {
@@ -178,14 +187,20 @@ final class BrowserPage {
             return new VBox(ModsUi.warningBox("Secure DNS is unavailable",
                     "The browser could not start its DNS-over-HTTPS proxy: " + e.getMessage(), null));
         }
-        if (shared == null) shared = new BrowserPage();
+        boolean first = shared == null;
+        if (first) shared = new BrowserPage();
         BrowserPage page = shared;
         page.host = host;
         page.refreshVpn();
+        if (first) {
+            page.startEngine();
+            page.open(HOME);
+        }
         // Bring the browser back from its own window, then size it to the launcher page.
         if (page.fullscreenStage != null) page.fullscreenStage.close();
         page.root.setPrefHeight(Math.max(480, host.stage().getHeight() - 210));
         page.root.minHeightProperty().bind(host.stage().heightProperty().subtract(210));
+        if (page.selected != null) page.select(page.selected);
         return page.root;
     }
 
@@ -197,25 +212,57 @@ final class BrowserPage {
         return button;
     }
 
+    // ---- engine --------------------------------------------------------------------------------------
+
+    private void startEngine() {
+        if (ChromiumHost.findChromium() == null) {
+            engineBroken = true;
+            return;
+        }
+        try {
+            engine = ChromiumHost.shared(DohProxy.shared().port());
+            engine.thenAccept(started -> started.onPopup(targetId ->
+                    Platform.runLater(() -> openTab(null, targetId))));
+        } catch (IOException e) {
+            engineBroken = true;
+        }
+    }
+
+    private TabContent makeContent(BrowserTab tab, String url, String existingTarget) {
+        if (!engineBroken && engine != null) {
+            return new ChromiumContent(engine, url, existingTarget, tab::fallBack);
+        }
+        return new WebViewContent(url, this::webViewPopup);
+    }
+
+    private WebViewContent webViewPopup() {
+        return (WebViewContent) openTab(null, null).content;
+    }
+
     // ---- tabs ----------------------------------------------------------------------------------------
 
     private BrowserTab open(String url) {
-        BrowserTab tab = new BrowserTab(url);
+        BrowserTab tab = openTab(url, null);
+        if (url != null) address.requestFocus();
+        return tab;
+    }
+
+    private BrowserTab openTab(String url, String existingTarget) {
+        BrowserTab tab = new BrowserTab(url, existingTarget);
         tabs.add(tab);
         tabStrip.getChildren().add(tab.header);
-        content.getChildren().add(tab.view);
+        content.getChildren().add(tab.holder);
         select(tab);
-        if (url != null) address.requestFocus();
         return tab;
     }
 
     private void closeTab(BrowserTab tab) {
         int index = tabs.indexOf(tab);
         if (index < 0) return;
-        tab.engine.load(null);
+        tab.content.close();
         tabs.remove(tab);
         tabStrip.getChildren().remove(tab.header);
-        content.getChildren().remove(tab.view);
+        content.getChildren().remove(tab.holder);
         if (tabs.isEmpty()) {
             open(HOME);
         } else if (selected == tab) {
@@ -224,56 +271,41 @@ final class BrowserPage {
     }
 
     private void select(BrowserTab tab) {
-        if (selected != null) progress.progressProperty().unbind();
         selected = tab;
         for (BrowserTab each : tabs) {
             boolean active = each == tab;
-            each.view.setVisible(active);
-            each.view.setManaged(active);
+            each.holder.setVisible(active);
+            each.holder.setManaged(active);
+            each.content.setActive(active);
             each.header.setStyle("-fx-background-radius: 10; -fx-cursor: hand; -fx-background-color: "
                     + (active ? Theme.accentRgba(0.28) : "rgba(255,255,255,0.06)") + ";");
             each.title.setStyle("-fx-text-fill: " + (active ? "#f5f7fd" : "#a9a9cc")
                     + "; -fx-font-size: 12px; -fx-font-weight: " + (active ? "bold" : "normal") + ";");
         }
-        String location = tab.engine.getLocation();
+        String location = tab.content.locationProperty().get();
         address.setText(location == null ? "" : location);
-        progress.progressProperty().bind(tab.engine.getLoadWorker().progressProperty());
-        progress.visibleProperty().bind(tab.engine.getLoadWorker().stateProperty().isEqualTo(Worker.State.RUNNING));
-        status.textProperty().bind(javafx.beans.binding.Bindings.createStringBinding(() -> {
-            Worker.State state = tab.engine.getLoadWorker().getState();
-            if (state == Worker.State.RUNNING) return "Loading...";
-            if (state == Worker.State.FAILED) return "Could not load this page.";
-            return "";
-        }, tab.engine.getLoadWorker().stateProperty()));
+        showLoading(tab.content.loadingProperty().get());
     }
 
-    private void step(int offset) {
-        if (selected == null) return;
-        var history = selected.engine.getHistory();
-        int target = history.getCurrentIndex() + offset;
-        if (target >= 0 && target < history.getEntries().size()) history.go(offset);
+    private void showLoading(boolean loading) {
+        progress.setVisible(loading);
+        status.setText(loading ? "Loading..." : "");
     }
 
     /** Loads a typed address, or searches for it when it does not look like one. HTTP is upgraded to HTTPS. */
     private void go(String input) {
         String url = toUrl(input);
         if (url == null || selected == null) return;
-        selected.load(url);
-        selected.view.requestFocus();
+        selected.content.load(url);
+        selected.content.focus();
     }
 
     private static String toUrl(String input) {
         String text = input == null ? "" : input.trim();
         if (text.isEmpty()) return null;
-        String url;
-        if (text.matches("(?i)https?://.+")) {
-            url = text.replaceFirst("(?i)^http://", "https://");
-        } else if (!text.contains(" ") && text.contains(".")) {
-            url = "https://" + text;
-        } else {
-            url = "https://duckduckgo.com/?q=" + URLEncoder.encode(text, StandardCharsets.UTF_8);
-        }
-        return url;
+        if (text.matches("(?i)https?://.+")) return text.replaceFirst("(?i)^http://", "https://");
+        if (!text.contains(" ") && text.contains(".")) return "https://" + text;
+        return "https://duckduckgo.com/?q=" + URLEncoder.encode(text, StandardCharsets.UTF_8);
     }
 
     private static String hostOf(String location) {
@@ -283,49 +315,6 @@ final class BrowserPage {
         } catch (IllegalArgumentException e) {
             return "New tab";
         }
-    }
-
-    // ---- Edge / Chrome ---------------------------------------------------------------------------------
-
-    /**
-     * JavaFX's built-in engine is too old for apps like Discord, so this hands the page to the PC's Edge (or Chrome)
-     * in its own profile, routed through the same secure-DNS proxy. WebSockets work there too (they use CONNECT).
-     */
-    private void openExternal() {
-        String typed = address.getText();
-        String url = toUrl(typed == null || typed.isBlank() ? HOME : typed);
-        try {
-            Path exe = findChromium();
-            if (exe == null) throw new IOException("Microsoft Edge or Google Chrome was not found on this PC.");
-            Path profile = Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-                    "V-Client", "browser-profile");
-            Files.createDirectories(profile);
-            new ProcessBuilder(exe.toString(), "--user-data-dir=" + profile,
-                    "--proxy-server=http://127.0.0.1:" + DohProxy.shared().port(),
-                    "--no-first-run", "--no-default-browser-check", url).start();
-        } catch (IOException e) {
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                    javafx.scene.control.Alert.AlertType.ERROR, e.getMessage());
-            alert.setHeaderText("Could not open Edge");
-            if (host != null && host.stage() != null) alert.initOwner(host.stage());
-            alert.show();
-        }
-    }
-
-    private static Path findChromium() {
-        String[][] candidates = {
-                {"ProgramFiles(x86)", "Microsoft/Edge/Application/msedge.exe"},
-                {"ProgramFiles", "Microsoft/Edge/Application/msedge.exe"},
-                {"ProgramFiles", "Google/Chrome/Application/chrome.exe"},
-                {"ProgramFiles(x86)", "Google/Chrome/Application/chrome.exe"},
-                {"LOCALAPPDATA", "Google/Chrome/Application/chrome.exe"}};
-        for (String[] candidate : candidates) {
-            String base = System.getenv(candidate[0]);
-            if (base == null) continue;
-            Path exe = Path.of(base, candidate[1]);
-            if (Files.isRegularFile(exe)) return exe;
-        }
-        return null;
     }
 
     // ---- VPN -----------------------------------------------------------------------------------------
@@ -362,7 +351,7 @@ final class BrowserPage {
                     if (host.stage() != null) alert.initOwner(host.stage());
                     alert.show();
                 } else if (selected != null) {
-                    selected.engine.reload();
+                    selected.content.reload();
                 }
             });
         });

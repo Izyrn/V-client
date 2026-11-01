@@ -12,4 +12,6 @@ module com.vclient {
     requires com.fasterxml.jackson.databind;
 
     exports com.vclient;
+
+    provides java.net.spi.InetAddressResolverProvider with com.vclient.DohResolverProvider;
 }

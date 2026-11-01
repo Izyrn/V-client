@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.11",
+    "version":  "1.6.12",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "0e2e3ec14d5665a4fe84f0868fe7eb0b69c886ce80b60196bdbb5c69687ba862",
-    "size":  94874112,
-    "notes":  "Browser: new EDGE button opens any page (Discord works) in Edge or Chrome through the secure-DNS proxy.",
+    "sha256":  "b740cd19a1dc1acb739207e6abdef648367d8e7e4ed7b11d6dcd7bf682c513f1",
+    "size":  94909440,
+    "notes":  "Browser now runs on Edge\u0027s engine inside V-Client: Discord and other heavy sites work, with the same secure DNS.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-01T16:14:46.5938670Z"
+    "publishedAt":  "2026-11-01T16:41:21.7062141Z"
 }

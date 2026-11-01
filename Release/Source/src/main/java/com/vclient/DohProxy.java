@@ -41,7 +41,10 @@ final class DohProxy {
         thread.setDaemon(true);
         return thread;
     });
-    private final HttpClient client = PlatformTls.httpClientBuilder(Duration.ofSeconds(5)).build();
+    /** Created on first use: the JVM-wide resolver may call in while the JVM is still setting up networking. */
+    private static final class Doh {
+        static final HttpClient CLIENT = PlatformTls.httpClientBuilder(Duration.ofSeconds(5)).build();
+    }
 
     private DohProxy() throws IOException {
         server = new ServerSocket(0, 50, InetAddress.getLoopbackAddress());
@@ -193,14 +196,14 @@ final class DohProxy {
             "https://1.1.1.1/dns-query", "https://9.9.9.9:5053/dns-query"};
     private static volatile int preferredServer;
 
-    private InetAddress lookup(String host) {
+    static InetAddress lookup(String host) {
         String name = URLEncoder.encode(host, StandardCharsets.UTF_8);
         for (int i = 0; i < DOH_SERVERS.length; i++) {
             int index = (preferredServer + i) % DOH_SERVERS.length;
             try {
                 HttpRequest request = HttpRequest.newBuilder(URI.create(DOH_SERVERS[index] + "?type=A&name=" + name))
                         .timeout(Duration.ofSeconds(3)).header("Accept", "application/dns-json").GET().build();
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = Doh.CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() != 200) continue;
                 preferredServer = index;
                 for (JsonNode answer : JSON.readTree(response.body()).path("Answer")) {
