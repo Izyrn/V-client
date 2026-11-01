@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.17",
+    "version":  "1.6.18",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "7cab8629f2004eaa1aab0c49d570583e91c43a9beea3b8cec8f792297f5f8e18",
-    "size":  94925312,
-    "notes":  "Clips: fixed clips that showed one frozen picture in full screen (fresh screen handle every frame, flush, and an automatic fallback).",
+    "sha256":  "0ce00db2be51d5bee18cfdfa3504409df8144a1c9cc93644dfa82a1b6bf627b3",
+    "size":  94934016,
+    "notes":  "Clips: full-screen games now record properly (screen-recorder capture instead of the old method) at about 45 fps and with much less load on your game.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-01T18:21:13.1126957Z"
+    "publishedAt":  "2026-11-01T18:41:31.3964418Z"
 }

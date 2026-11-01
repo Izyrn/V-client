@@ -35,7 +35,7 @@ import java.util.function.Supplier;
 final class ReplayBuffer implements GameSession.Listener {
     static final int SECONDS = 30;
     /** Target rate; the display's refresh rate is the ceiling for screen capture. */
-    private static final int FRAMES_PER_SECOND = 60;
+    private static final int FRAMES_PER_SECOND = 45;
     /** Frames are grabbed by several threads in turn, since one thread can only copy the screen about 30 times a second. */
     private static final int CAPTURE_THREADS = 3;
     private static final int MAX_WIDTH = 960;
@@ -57,7 +57,7 @@ final class ReplayBuffer implements GameSession.Listener {
         thread.setDaemon(true);
         return thread;
     });
-    private final java.util.concurrent.ExecutorService workers = Executors.newFixedThreadPool(3, runnable -> {
+    private final java.util.concurrent.ExecutorService workers = Executors.newFixedThreadPool(2, runnable -> {
         Thread thread = new Thread(runnable, "vclient-replay-encoder");
         thread.setPriority(Thread.NORM_PRIORITY - 2);
         thread.setDaemon(true);
@@ -97,7 +97,11 @@ final class ReplayBuffer implements GameSession.Listener {
             bufferedBytes = 0;
         }
         long frameMillis = 1000 / FRAMES_PER_SECOND;
-        for (int slot = 0; slot < CAPTURE_THREADS; slot++) {
+        dxgi = createDxgi();
+        if (dxgi != null) {
+            // Desktop Duplication is fast enough for one thread, and (unlike GDI) it sees full-screen games.
+            tasks.add(scheduler.scheduleAtFixedRate(() -> captureFrame(0), 500, frameMillis, TimeUnit.MILLISECONDS));
+        } else for (int slot = 0; slot < CAPTURE_THREADS; slot++) {
             int mine = slot;
             tasks.add(scheduler.scheduleAtFixedRate(() -> captureFrame(mine), 500 + slot * frameMillis,
                     frameMillis * CAPTURE_THREADS, TimeUnit.MILLISECONDS));
@@ -111,6 +115,10 @@ final class ReplayBuffer implements GameSession.Listener {
         tasks.forEach(task -> task.cancel(false));
         tasks.clear();
         capturing = false;
+        synchronized (this) {
+            if (dxgi != null) dxgi.close();
+            dxgi = null;
+        }
         for (int slot = 0; slot < CAPTURE_THREADS; slot++) {
             synchronized (grabLocks[slot]) {
                 if (grabbers[slot] != null) grabbers[slot].close();
@@ -157,7 +165,7 @@ final class ReplayBuffer implements GameSession.Listener {
                 return;
             }
             BufferedImage fast = useRobotOnly ? null : grabFast(window, slot);
-            if (fast != null && frozen(fast, slot, window)) fast = null;
+            if (fast != null && dxgi == null && frozen(fast, slot, window)) fast = null;
             final BufferedImage shot;
             if (fast != null) {
                 shot = fast;
@@ -253,7 +261,41 @@ final class ReplayBuffer implements GameSession.Listener {
      * Copies the game window straight into a shrunken bitmap with GDI (about 3x faster than Robot, so the clip keeps
      * its frame rate). Returns null if that is not possible and the caller falls back to Robot.
      */
+    private DxgiGrabber dxgi;
+
+    private static DxgiGrabber createDxgi() {
+        try {
+            return new DxgiGrabber();
+        } catch (Throwable e) {
+            return null;
+        }
+    }
+
+    /** Desktop Duplication capture of the game window (primary monitor); null when it cannot be used this frame. */
+    private BufferedImage grabDxgi(WinDef.HWND window) {
+        Rectangle physical = WinInput.bounds(window, 1.0);
+        if (physical == null) return null;
+        synchronized (this) {
+            if (dxgi == null) return null;
+            if (dxgi.lost()) {
+                dxgi.close();
+                dxgi = createDxgi();
+                if (dxgi == null) return null;
+            }
+            if (physical.x < 0 || physical.y < 0 || physical.x >= dxgi.screenWidth() || physical.y >= dxgi.screenHeight()) {
+                return null; // on another monitor: use the other capture methods
+            }
+            int targetWidth = Math.max(2, Math.min(MAX_WIDTH, physical.width) & ~1);
+            int targetHeight = Math.max(2, (int) Math.round((double) physical.height * targetWidth / physical.width) & ~1);
+            return dxgi.grab(physical, targetWidth, targetHeight);
+        }
+    }
+
     private BufferedImage grabFast(WinDef.HWND window, int slot) {
+        if (dxgi != null) {
+            BufferedImage image = grabDxgi(window);
+            if (image != null) return image;
+        }
         try {
             Rectangle physical = WinInput.bounds(window, 1.0);
             if (physical == null) return null;
