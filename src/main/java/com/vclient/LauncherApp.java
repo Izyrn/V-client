@@ -3636,6 +3636,15 @@ public final class LauncherApp extends Application {
         executor.execute(() -> {
             try {
                 Consumer<String> output = line -> Platform.runLater(() -> appendLog(line));
+                if (settings.replayBufferEnabled()) {
+                    try {
+                        if (GameOptionsFix.keepRunningWhenUnfocused(settings.minecraftDirectory())) {
+                            output.accept("Turned off \"pause on lost focus\" so saving a clip cannot open the pause menu.");
+                        }
+                    } catch (IOException e) {
+                        output.accept("Could not update options.txt: " + e.getMessage());
+                    }
+                }
                 String joinHost = vpnHost;
                 int joinPort = vpnJoinPort;
                 boolean viaVpn = vpnPort != null;

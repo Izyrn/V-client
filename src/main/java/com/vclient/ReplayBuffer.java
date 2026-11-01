@@ -258,7 +258,7 @@ final class ReplayBuffer implements GameSession.Listener {
             return;
         }
         saving = true;
-        scheduler.execute(() -> {
+        workers.execute(() -> {
             try {
                 long span = snapshot.getLast().timeMillis() - snapshot.getFirst().timeMillis();
                 double fps = span <= 0 ? FRAMES_PER_SECOND : (snapshot.size() - 1) * 1000.0 / span;
