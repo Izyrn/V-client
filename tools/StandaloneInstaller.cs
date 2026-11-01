@@ -28,6 +28,17 @@ internal static class StandaloneInstaller
                 "VSMP Client");
             string executablePath = Path.Combine(installDirectory, ExecutableName);
 
+            // --silent is how the launcher updates itself: it exits right after starting this installer, so
+            // wait for it to finish closing instead of asking the user to, and show no setup window.
+            bool silent = args.Contains("--silent");
+            if (silent)
+            {
+                for (int waited = 0; waited < 60 && Process.GetProcessesByName("V-Client").Length != 0; waited++)
+                {
+                    System.Threading.Thread.Sleep(500);
+                }
+            }
+
             Process[] runningLaunchers = Process.GetProcessesByName("V-Client");
             if (runningLaunchers.Length != 0)
             {
@@ -35,7 +46,14 @@ internal static class StandaloneInstaller
                     "Close V-Client before installing or updating it, then run this setup file again.");
             }
 
-            RunWithProgress(installDirectory);
+            if (silent)
+            {
+                ExtractPayload(installDirectory, null);
+            }
+            else
+            {
+                RunWithProgress(installDirectory);
+            }
             CreateShortcuts(installDirectory, executablePath);
             RegisterUninstaller(installDirectory, executablePath);
             Process.Start(new ProcessStartInfo
@@ -48,6 +66,19 @@ internal static class StandaloneInstaller
         }
         catch (Exception exception)
         {
+            if (args.Contains("--silent"))
+            {
+                // A failed background update must not strand the user: start whatever version is installed.
+                string existing = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Programs", "VSMP Client", ExecutableName);
+                if (File.Exists(existing) && Process.GetProcessesByName("V-Client").Length == 0)
+                {
+                    Process.Start(new ProcessStartInfo { FileName = existing, UseShellExecute = true });
+                }
+                return 1;
+            }
+
             MessageBox.Show(
                 "V-Client could not be installed or started.\r\n\r\n" + exception.Message,
                 "VSMP Client Setup",

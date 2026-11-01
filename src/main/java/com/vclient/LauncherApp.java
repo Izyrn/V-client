@@ -66,7 +66,7 @@ import java.util.function.Consumer;
 
 public final class LauncherApp extends Application {
     private enum Page {
-        HOME, HUB, SERVERS, LIBRARY, MODS, PACKS, BOOST, PERFORMANCE, WARDROBE, COSMETICS, PROFILE, RECORDINGS,
+        HOME, BROWSER, SERVERS, LIBRARY, MODS, PACKS, BOOST, PERFORMANCE, WARDROBE, COSMETICS, PROFILE, RECORDINGS,
         SCREENSHOTS, FRIENDS, NEWS, ASSISTANT, LOGS, CONSOLE, SETTINGS, DISCORD
     }
 
@@ -2392,7 +2392,10 @@ public final class LauncherApp extends Application {
                 BackendClient.UpdateInfo info = client.checkForUpdate(AppInfo.VERSION);
                 Platform.runLater(() -> {
                     if (info.updateAvailable() && info.latest() != null && info.latest().url().endsWith(".exe")) {
-                        promptUpdate(info);
+                        // A startup check installs the update on its own and reopens V-Client; only the manual
+                        // button asks first.
+                        if (manual) promptUpdate(info);
+                        else downloadUpdate(info.latest());
                     } else if (manual) {
                         Alert alert = new Alert(Alert.AlertType.INFORMATION, "You are running the latest version (" + AppInfo.VERSION + ").");
                         alert.initOwner(stage);
@@ -3243,8 +3246,8 @@ public final class LauncherApp extends Application {
             case LIBRARY -> showLibrary();
             case MODS -> showMods();
             case BOOST -> showBoost();
-            case HUB -> showFeaturePage(Page.HUB, "Community", "VSMP Hub",
-                    "Announcements, friends, patch notes and your activity in one place.", HubPage::build);
+            case BROWSER -> showFeaturePage(Page.BROWSER, "Web", "Browser",
+                    "Browse the web with DNS lookups sent over HTTPS (Cloudflare DoH).", BrowserPage::build);
             case PACKS -> showFeaturePage(Page.PACKS, "One click", "Mod Packs",
                     "PvP, FPS, SMP and Builder packs, installed in one click.", PacksPage::build);
             case PERFORMANCE -> showFeaturePage(Page.PERFORMANCE, "Performance", "FPS & PC analysis",
@@ -3292,7 +3295,7 @@ public final class LauncherApp extends Application {
             case LIBRARY -> "▤\nLibrary";
             case MODS -> "✚\nMods";
             case BOOST -> "ϟ\nBoost";
-            case HUB -> "❖\nHub";
+            case BROWSER -> "◎\nBrowser";
             case PACKS -> "▦\nPacks";
             case PERFORMANCE -> "◔\nFPS";
             case PROFILE -> "☺\nProfile";

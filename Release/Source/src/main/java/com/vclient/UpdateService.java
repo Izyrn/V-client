@@ -99,7 +99,7 @@ final class UpdateService {
      */
     static void launchInstallerAfterExit(Path installer) throws IOException {
         String quoted = installer.toAbsolutePath().toString().replace("\"", "");
-        new ProcessBuilder("cmd.exe", "/c", "ping -n 4 127.0.0.1 >nul & start \"\" \"" + quoted + "\"")
+        new ProcessBuilder("cmd.exe", "/c", "ping -n 3 127.0.0.1 >nul & start \"\" \"" + quoted + "\" --silent")
                 .redirectErrorStream(true).start();
     }
 

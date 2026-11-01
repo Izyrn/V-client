@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.5",
+    "version":  "1.6.6",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "f4bcbd11f3d3b9f0e3742f96212201daca4fc28849b5fa11f0444435f16a3648",
-    "size":  72913920,
-    "notes":  "Ultra Smooth PvP resource pack is now bundled and shows up in Options \u003e Resource Packs.",
+    "sha256":  "c00237c85012417fb7d2154e38071279b7ff9b07b33608f56803c91a4fe07f23",
+    "size":  94857216,
+    "notes":  "New Browser tab (DNS over HTTPS), Hub removed, and V-Client now updates itself silently when you open it.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-10-30T17:22:15.2924856Z"
+    "publishedAt":  "2026-11-01T10:43:47.2255065Z"
 }

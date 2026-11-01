@@ -14,11 +14,9 @@ $javaHome = $env:JAVA_HOME
 # One runtime serves both the launcher and Minecraft 1.21.11, so it carries the full
 # Java SE platform plus the jdk.* modules Minecraft, Fabric, and Netty use.
 $runtimeModules = @(
-    "javafx.controls", "javafx.media", "java.se", "jdk.accessibility", "jdk.charsets", "jdk.crypto.ec", "jdk.crypto.cryptoki",
-    "jdk.crypto.mscapi", "jdk.dynalink", "jdk.httpserver", "jdk.incubator.vector", "jdk.jdwp.agent", "jdk.jfr",
-    "jdk.jsobject", "jdk.localedata", "jdk.management", "jdk.management.agent", "jdk.management.jfr",
-    "jdk.naming.dns", "jdk.naming.rmi", "jdk.net", "jdk.nio.mapmode", "jdk.random", "jdk.sctp",
-    "jdk.security.auth", "jdk.security.jgss", "jdk.unsupported", "jdk.xml.dom", "jdk.zipfs"
+    "javafx.controls", "javafx.media", "javafx.web", "java.se", "jdk.accessibility", "jdk.charsets", "jdk.crypto.ec", "jdk.crypto.cryptoki",
+    "jdk.crypto.mscapi", "jdk.dynalink", "jdk.httpserver", "jdk.jsobject", "jdk.management",
+    "jdk.naming.dns", "jdk.net", "jdk.nio.mapmode", "jdk.random", "jdk.security.auth", "jdk.unsupported", "jdk.zipfs"
 ) -join ","
 
 if (-not $javaHome -or -not (Test-Path (Join-Path $javaHome "bin\jpackage.exe"))) {
@@ -80,7 +78,7 @@ try {
         --module-path $modulePath `
         --add-modules $runtimeModules `
         --jlink-options "--strip-debug --no-man-pages --no-header-files" `
-        --java-options "--add-modules=javafx.controls,javafx.media,java.desktop,java.logging,java.net.http,jdk.crypto.mscapi,jdk.crypto.ec" `
+        --java-options "--add-modules=javafx.controls,javafx.media,javafx.web,java.desktop,java.logging,java.net.http,jdk.crypto.mscapi,jdk.crypto.ec" `
         --dest $appImageParent
     if ($LASTEXITCODE -ne 0) {
         throw "jpackage failed with exit code $LASTEXITCODE."
