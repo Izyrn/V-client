@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.10",
+    "version":  "1.6.11",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "9c9c8073507efe8c6d3ddf8545222861132508c641980662158a3961c4298572",
-    "size":  94872064,
-    "notes":  "Browser fix: secure DNS now works on networks that block 1.1.1.1 (discord.com and others load). The VPN button reports clearly when a network blocks WARP.",
+    "sha256":  "0e2e3ec14d5665a4fe84f0868fe7eb0b69c886ce80b60196bdbb5c69687ba862",
+    "size":  94874112,
+    "notes":  "Browser: new EDGE button opens any page (Discord works) in Edge or Chrome through the secure-DNS proxy.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-01T14:55:58.2538241Z"
+    "publishedAt":  "2026-11-01T16:14:46.5938670Z"
 }

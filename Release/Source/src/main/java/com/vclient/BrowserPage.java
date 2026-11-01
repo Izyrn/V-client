@@ -29,6 +29,8 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -92,6 +94,7 @@ final class BrowserPage {
     private final ProgressBar progress = new ProgressBar(0);
     private final Button fullscreen = new Button("⛶");
     private final Button vpn = new Button();
+    private final Button external = new Button("EDGE ↗");
     private boolean vpnBusy;
     private final VBox root = new VBox(8);
     private BrowserTab selected;
@@ -112,6 +115,12 @@ final class BrowserPage {
         fullscreen.setTooltip(new javafx.scene.control.Tooltip("Full screen (F11)"));
         fullscreen.setOnAction(event -> toggleFullscreen());
 
+        external.setStyle(BUTTON + " -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 0 12 0 12;"
+                + " -fx-background-color: " + Theme.accentRgba(0.30) + ";");
+        external.setTooltip(new javafx.scene.control.Tooltip(
+                "Open this page in Edge/Chrome through the same secure DNS. Use it for Discord and other heavy sites."));
+        external.setOnAction(event -> openExternal());
+
         vpn.setTooltip(new javafx.scene.control.Tooltip(
                 "Send the browser through V-Client's free VPN (Cloudflare WARP), DNS included"));
         vpn.setOnAction(event -> toggleVpn());
@@ -127,7 +136,7 @@ final class BrowserPage {
         });
         HBox.setHgrow(address, Priority.ALWAYS);
 
-        HBox bar = new HBox(6, back, forward, reload, address, vpn, fullscreen);
+        HBox bar = new HBox(6, back, forward, reload, address, external, vpn, fullscreen);
         bar.setAlignment(Pos.CENTER);
 
         HBox tabRow = new HBox(6, tabStrip, newTab);
@@ -247,8 +256,15 @@ final class BrowserPage {
 
     /** Loads a typed address, or searches for it when it does not look like one. HTTP is upgraded to HTTPS. */
     private void go(String input) {
+        String url = toUrl(input);
+        if (url == null || selected == null) return;
+        selected.load(url);
+        selected.view.requestFocus();
+    }
+
+    private static String toUrl(String input) {
         String text = input == null ? "" : input.trim();
-        if (text.isEmpty() || selected == null) return;
+        if (text.isEmpty()) return null;
         String url;
         if (text.matches("(?i)https?://.+")) {
             url = text.replaceFirst("(?i)^http://", "https://");
@@ -257,8 +273,7 @@ final class BrowserPage {
         } else {
             url = "https://duckduckgo.com/?q=" + URLEncoder.encode(text, StandardCharsets.UTF_8);
         }
-        selected.load(url);
-        selected.view.requestFocus();
+        return url;
     }
 
     private static String hostOf(String location) {
@@ -268,6 +283,49 @@ final class BrowserPage {
         } catch (IllegalArgumentException e) {
             return "New tab";
         }
+    }
+
+    // ---- Edge / Chrome ---------------------------------------------------------------------------------
+
+    /**
+     * JavaFX's built-in engine is too old for apps like Discord, so this hands the page to the PC's Edge (or Chrome)
+     * in its own profile, routed through the same secure-DNS proxy. WebSockets work there too (they use CONNECT).
+     */
+    private void openExternal() {
+        String typed = address.getText();
+        String url = toUrl(typed == null || typed.isBlank() ? HOME : typed);
+        try {
+            Path exe = findChromium();
+            if (exe == null) throw new IOException("Microsoft Edge or Google Chrome was not found on this PC.");
+            Path profile = Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
+                    "V-Client", "browser-profile");
+            Files.createDirectories(profile);
+            new ProcessBuilder(exe.toString(), "--user-data-dir=" + profile,
+                    "--proxy-server=http://127.0.0.1:" + DohProxy.shared().port(),
+                    "--no-first-run", "--no-default-browser-check", url).start();
+        } catch (IOException e) {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                    javafx.scene.control.Alert.AlertType.ERROR, e.getMessage());
+            alert.setHeaderText("Could not open Edge");
+            if (host != null && host.stage() != null) alert.initOwner(host.stage());
+            alert.show();
+        }
+    }
+
+    private static Path findChromium() {
+        String[][] candidates = {
+                {"ProgramFiles(x86)", "Microsoft/Edge/Application/msedge.exe"},
+                {"ProgramFiles", "Microsoft/Edge/Application/msedge.exe"},
+                {"ProgramFiles", "Google/Chrome/Application/chrome.exe"},
+                {"ProgramFiles(x86)", "Google/Chrome/Application/chrome.exe"},
+                {"LOCALAPPDATA", "Google/Chrome/Application/chrome.exe"}};
+        for (String[] candidate : candidates) {
+            String base = System.getenv(candidate[0]);
+            if (base == null) continue;
+            Path exe = Path.of(base, candidate[1]);
+            if (Files.isRegularFile(exe)) return exe;
+        }
+        return null;
     }
 
     // ---- VPN -----------------------------------------------------------------------------------------
