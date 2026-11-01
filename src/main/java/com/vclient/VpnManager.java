@@ -132,7 +132,10 @@ final class VpnManager {
                     routeKey(servers.get(0).getHostString(), servers.get(0).getPort())))) {
                 String detail = engineLogTail();
                 stopEngine();
-                throw new IOException("The VPN tunnel did not come up." + (detail.isEmpty() ? "" : " " + detail));
+                throw new IOException("The VPN tunnel did not come up." + (servers.isEmpty()
+                        ? " This network probably blocks WireGuard/WARP traffic (UDP), so the VPN cannot work here. "
+                        + "The browser's secure DNS works without it."
+                        : detail.isEmpty() ? "" : " " + detail));
             }
         } catch (InterruptedException e) {
             stopEngine();
@@ -160,7 +163,7 @@ final class VpnManager {
      * stays open (the server waits for the game to talk first) means the tunnel carries traffic.
      */
     private static boolean waitUntilTunnelWorks(int localPort) throws InterruptedException {
-        if (localPort < 0) return engine.isAlive();
+        if (localPort < 0) return probeBrowserTunnel();
         for (int attempt = 0; attempt < 8; attempt++) {
             Thread.sleep(1500);
             if (!engine.isAlive()) return false;
@@ -175,6 +178,18 @@ final class VpnManager {
                 return true; // the server sent data, so the tunnel works
             } catch (IOException notReady) {
                 // The local port may not be listening yet; try again.
+            }
+        }
+        return false;
+    }
+
+    /** The browser has no game server to probe, so ask the tunnel for a connection to a public DNS server. */
+    private static boolean probeBrowserTunnel() {
+        for (int attempt = 0; attempt < 2 && engine.isAlive(); attempt++) {
+            try (Socket probe = DohProxy.connectThroughVpn(socksPort, "1.0.0.1", 443)) {
+                return true;
+            } catch (IOException notReady) {
+                // the WireGuard handshake may still be in progress; try once more
             }
         }
         return false;

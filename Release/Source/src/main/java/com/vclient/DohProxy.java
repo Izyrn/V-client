@@ -132,7 +132,7 @@ final class DohProxy {
      * With the VPN on, the site is reached through the tunnel's SOCKS5 port by name, so neither the connection nor
      * the DNS lookup leaves this PC outside the tunnel. A failure is reported, never retried outside the VPN.
      */
-    private static Socket connectThroughVpn(int socksPort, String host, int port) throws IOException {
+    static Socket connectThroughVpn(int socksPort, String host, int port) throws IOException {
         Socket socket = new Socket();
         try {
             socket.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), socksPort), 5_000);
@@ -175,27 +175,48 @@ final class DohProxy {
         Answer cached = CACHE.get(host);
         if (cached != null && cached.expiresAt() > System.currentTimeMillis()) return cached.address();
         InetAddress address = lookup(host);
-        if (address == null) return InetAddress.getByName(host);
+        if (address != null) return address;
+        // Secure DNS did not answer: use the system resolver, but never connect to a DNS filter's block page.
+        address = InetAddress.getByName(host);
+        if (DnsBlock.isSinkhole(address)) {
+            throw new IOException(host + " is blocked by this network's DNS filter, and no secure DNS server could be reached.");
+        }
         return address;
     }
 
+    /**
+     * DoH servers, reached by IP so they need no DNS. Many networks block 1.1.1.1 or the DoH host names but let one of
+     * these through, so each is tried in turn and the one that last worked goes first.
+     */
+    private static final String[] DOH_SERVERS = {
+            "https://1.0.0.1/dns-query", "https://8.8.8.8/resolve", "https://8.8.4.4/resolve",
+            "https://1.1.1.1/dns-query", "https://9.9.9.9:5053/dns-query"};
+    private static volatile int preferredServer;
+
     private InetAddress lookup(String host) {
-        try {
-            HttpRequest request = HttpRequest.newBuilder(URI.create("https://1.1.1.1/dns-query?type=A&name="
-                            + URLEncoder.encode(host, StandardCharsets.UTF_8)))
-                    .timeout(Duration.ofSeconds(5)).header("Accept", "application/dns-json").GET().build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            for (JsonNode answer : JSON.readTree(response.body()).path("Answer")) {
-                if (answer.path("type").asInt() != 1) continue;
-                InetAddress address = InetAddress.getByName(answer.path("data").asText());
-                long ttl = Math.max(30, Math.min(answer.path("TTL").asLong(60), 600));
-                CACHE.put(host, new Answer(address, System.currentTimeMillis() + ttl * 1000));
-                return address;
+        String name = URLEncoder.encode(host, StandardCharsets.UTF_8);
+        for (int i = 0; i < DOH_SERVERS.length; i++) {
+            int index = (preferredServer + i) % DOH_SERVERS.length;
+            try {
+                HttpRequest request = HttpRequest.newBuilder(URI.create(DOH_SERVERS[index] + "?type=A&name=" + name))
+                        .timeout(Duration.ofSeconds(3)).header("Accept", "application/dns-json").GET().build();
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() != 200) continue;
+                preferredServer = index;
+                for (JsonNode answer : JSON.readTree(response.body()).path("Answer")) {
+                    if (answer.path("type").asInt() != 1) continue;
+                    InetAddress address = InetAddress.getByName(answer.path("data").asText());
+                    long ttl = Math.max(30, Math.min(answer.path("TTL").asLong(60), 600));
+                    CACHE.put(host, new Answer(address, System.currentTimeMillis() + ttl * 1000));
+                    return address;
+                }
+                return null; // the server answered: this name has no IPv4 address
+            } catch (IOException | RuntimeException e) {
+                // try the next server
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null;
             }
-        } catch (IOException | RuntimeException e) {
-            // fall through to the system resolver
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
         return null;
     }

@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.9",
+    "version":  "1.6.10",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "ecc4cd755541fa52ccf05dd993a8f9e8c7d43a1f7918265aa9ca8e83334c386f",
-    "size":  94870528,
-    "notes":  "Browser: new VPN switch (free Cloudflare WARP) that also tunnels DNS.",
+    "sha256":  "9c9c8073507efe8c6d3ddf8545222861132508c641980662158a3961c4298572",
+    "size":  94872064,
+    "notes":  "Browser fix: secure DNS now works on networks that block 1.1.1.1 (discord.com and others load). The VPN button reports clearly when a network blocks WARP.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-01T14:40:25.9376960Z"
+    "publishedAt":  "2026-11-01T14:55:58.2538241Z"
 }
