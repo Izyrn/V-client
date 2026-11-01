@@ -215,7 +215,49 @@ final class ChromiumContent implements TabContent {
             send("Input.dispatchMouseEvent", ChromiumHost.params().put("type", "mouseMoved").put("x", at[0]).put("y", at[1])
                     .put("button", (held & 1) != 0 ? "left" : (held & 2) != 0 ? "right" : (held & 4) != 0 ? "middle" : "none")
                     .put("buttons", held).put("modifiers", (int) at[2]));
+            long now = System.currentTimeMillis();
+            if (now - lastCursorQuery >= 70) {
+                lastCursorQuery = now;
+                queryCursor(at[0], at[1]);
+            }
         }, 16, java.util.concurrent.TimeUnit.MILLISECONDS);
+    }
+
+    private volatile long lastCursorQuery;
+
+    /** The engine does not report the mouse pointer, so ask the page what its style says under the pointer. */
+    private void queryCursor(double x, double y) {
+        String script = "(function(x,y){var e=document.elementFromPoint(x,y);if(!e)return 'default';"
+                + "var c=getComputedStyle(e).cursor;if(c&&c!=='auto')return c;var t=e.tagName;"
+                + "if(t==='INPUT'||t==='TEXTAREA'||e.isContentEditable)return 'text';"
+                + "if(t==='A'||t==='BUTTON')return 'pointer';"
+                + "if(getComputedStyle(e).userSelect!=='none'){for(var n=e.firstChild;n;n=n.nextSibling){"
+                + "if(n.nodeType===3&&n.textContent.trim())return 'text';}}return 'default';})(" + (int) x + "," + (int) y + ")";
+        send("Runtime.evaluate", ChromiumHost.params().put("expression", script).put("returnByValue", true))
+                .thenAccept(result -> {
+                    if (result == null) return;
+                    String css = result.path("result").path("value").asText("default");
+                    css = css.substring(css.lastIndexOf(',') + 1).trim();
+                    javafx.scene.Cursor cursor = cursorFor(css);
+                    Platform.runLater(() -> node.setCursor(cursor));
+                });
+    }
+
+    private static javafx.scene.Cursor cursorFor(String css) {
+        return switch (css) {
+            case "pointer" -> javafx.scene.Cursor.HAND;
+            case "text", "vertical-text" -> javafx.scene.Cursor.TEXT;
+            case "crosshair" -> javafx.scene.Cursor.CROSSHAIR;
+            case "move", "all-scroll" -> javafx.scene.Cursor.MOVE;
+            case "wait", "progress" -> javafx.scene.Cursor.WAIT;
+            case "grab" -> javafx.scene.Cursor.OPEN_HAND;
+            case "grabbing" -> javafx.scene.Cursor.CLOSED_HAND;
+            case "ew-resize", "col-resize", "e-resize", "w-resize" -> javafx.scene.Cursor.H_RESIZE;
+            case "ns-resize", "row-resize", "n-resize", "s-resize" -> javafx.scene.Cursor.V_RESIZE;
+            case "nesw-resize" -> javafx.scene.Cursor.NE_RESIZE;
+            case "nwse-resize" -> javafx.scene.Cursor.NW_RESIZE;
+            default -> javafx.scene.Cursor.DEFAULT;
+        };
     }
 
     private static int mask(MouseButton button) {

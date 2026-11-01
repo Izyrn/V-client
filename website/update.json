@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.13",
+    "version":  "1.6.14",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "c7d861b5b86f708dc53a0cd10214ebad746a6b4626f23a2d1183588a63f166e1",
-    "size":  94911488,
-    "notes":  "Browser: fixed typing and text selection (mouse movement no longer blocks keys and clicks).",
+    "sha256":  "84c579f0364dfdd4e0da495de3ab9318919ada104024930891fda3c6a15b8aed",
+    "size":  94914048,
+    "notes":  "Browser: the mouse pointer now changes (text cursor, hand on links, grab) like a normal browser.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-01T16:54:39.8974622Z"
+    "publishedAt":  "2026-11-01T17:42:26.7082474Z"
 }
