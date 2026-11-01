@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.15",
+    "version":  "1.6.16",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "b4dca6b3116802aa2de358902cf2e90a9e592ba2564b1d778e9e0a37f465acd4",
-    "size":  94917632,
-    "notes":  "Clips: saving a clip no longer opens Minecraft\u0027s menu in full screen (pause-on-lost-focus is turned off while the replay buffer is on); saving is lighter on the game.",
+    "sha256":  "ca1b1ec5c87671a5052d597732e34183f3d1c541a91468e424806d271cac89f7",
+    "size":  94923776,
+    "notes":  "Clips: smooth 40-60 fps recordings (parallel GDI capture and faster encoding), lighter on the game; clips are 960 px wide.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-01T17:51:00.6243484Z"
+    "publishedAt":  "2026-11-01T18:04:25.8552676Z"
 }

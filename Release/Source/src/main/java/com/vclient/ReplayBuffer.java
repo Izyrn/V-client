@@ -34,10 +34,13 @@ import java.util.function.Supplier;
  */
 final class ReplayBuffer implements GameSession.Listener {
     static final int SECONDS = 30;
-    private static final int FRAMES_PER_SECOND = 24;
-    private static final int MAX_WIDTH = 1920;
+    /** Target rate; the display's refresh rate is the ceiling for screen capture. */
+    private static final int FRAMES_PER_SECOND = 60;
+    /** Frames are grabbed by several threads in turn, since one thread can only copy the screen about 30 times a second. */
+    private static final int CAPTURE_THREADS = 3;
+    private static final int MAX_WIDTH = 960;
     private static final long MAX_BYTES = 160L * 1024 * 1024;
-    private static final float JPEG_QUALITY = 0.82f;
+    private static final float JPEG_QUALITY = 0.7f;
 
     private record Frame(long timeMillis, byte[] jpeg) {}
 
@@ -49,14 +52,14 @@ final class ReplayBuffer implements GameSession.Listener {
     private final Supplier<Path> stateFile;
     private volatile long savedAtMillis;
     private final ArrayDeque<Frame> frames = new ArrayDeque<>();
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2, runnable -> {
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(CAPTURE_THREADS + 2, runnable -> {
         Thread thread = new Thread(runnable, "vclient-replay-buffer");
         thread.setDaemon(true);
         return thread;
     });
     private final java.util.concurrent.ExecutorService workers = Executors.newFixedThreadPool(3, runnable -> {
         Thread thread = new Thread(runnable, "vclient-replay-encoder");
-        thread.setPriority(Thread.MIN_PRIORITY);
+        thread.setPriority(Thread.NORM_PRIORITY - 2);
         thread.setDaemon(true);
         return thread;
     });
@@ -93,8 +96,12 @@ final class ReplayBuffer implements GameSession.Listener {
             frames.clear();
             bufferedBytes = 0;
         }
-        tasks.add(scheduler.scheduleAtFixedRate(this::captureFrame, 500, 1000 / FRAMES_PER_SECOND,
-                TimeUnit.MILLISECONDS));
+        long frameMillis = 1000 / FRAMES_PER_SECOND;
+        for (int slot = 0; slot < CAPTURE_THREADS; slot++) {
+            int mine = slot;
+            tasks.add(scheduler.scheduleAtFixedRate(() -> captureFrame(mine), 500 + slot * frameMillis,
+                    frameMillis * CAPTURE_THREADS, TimeUnit.MILLISECONDS));
+        }
         tasks.add(scheduler.scheduleWithFixedDelay(this::pollHotkey, 500, 40, TimeUnit.MILLISECONDS));
         tasks.add(scheduler.scheduleWithFixedDelay(this::writeState, 500, 500, TimeUnit.MILLISECONDS));
     }
@@ -104,6 +111,12 @@ final class ReplayBuffer implements GameSession.Listener {
         tasks.forEach(task -> task.cancel(false));
         tasks.clear();
         capturing = false;
+        for (int slot = 0; slot < CAPTURE_THREADS; slot++) {
+            synchronized (grabLocks[slot]) {
+                if (grabbers[slot] != null) grabbers[slot].close();
+                grabbers[slot] = null;
+            }
+        }
         writeState();
         synchronized (frames) {
             frames.clear();
@@ -132,26 +145,34 @@ final class ReplayBuffer implements GameSession.Listener {
 
     // ---- capture ---------------------------------------------------------------------------------
 
-    private void captureFrame() {
+    private void captureFrame(int slot) {
         try {
             if (!enabled.getAsBoolean() || saving) {
                 capturing = false;
                 return;
             }
-            WinDef.HWND window = WinInput.findWindowStartingWith("Minecraft");
+            WinDef.HWND window = gameWindow();
             if (window == null || !WinInput.isForeground(window)) {
                 capturing = false;
                 return;
             }
-            Rectangle bounds = WinInput.bounds(window, displayScale());
-            if (bounds == null) {
-                capturing = false;
-                return;
+            BufferedImage fast = grabFast(window, slot);
+            final BufferedImage shot;
+            if (fast != null) {
+                shot = fast;
+            } else {
+                Rectangle bounds = WinInput.bounds(window, displayScale());
+                if (bounds == null) {
+                    capturing = false;
+                    return;
+                }
+                synchronized (robot) {
+                    shot = robot.createScreenCapture(bounds);
+                }
             }
-            BufferedImage shot = robot.createScreenCapture(bounds);
             long taken = System.currentTimeMillis();
             capturing = true;
-            if (inFlight.get() >= 6) return;
+            if (inFlight.get() >= 12) return;
             inFlight.incrementAndGet();
             workers.execute(() -> {
                 try {
@@ -164,6 +185,47 @@ final class ReplayBuffer implements GameSession.Listener {
             });
         } catch (Throwable e) {
             capturing = false;
+        }
+    }
+
+    private final ScreenGrabber[] grabbers = new ScreenGrabber[CAPTURE_THREADS];
+    private final Object[] grabLocks = {new Object(), new Object(), new Object()};
+    private volatile WinDef.HWND cachedWindow;
+    private volatile long cachedWindowAt;
+
+    /** Looking the game window up walks every window, so with several capture threads it is looked up twice a second. */
+    private WinDef.HWND gameWindow() {
+        long now = System.currentTimeMillis();
+        WinDef.HWND window = cachedWindow;
+        if (window == null || now - cachedWindowAt > 500) {
+            window = WinInput.findWindowStartingWith("Minecraft");
+            cachedWindow = window;
+            cachedWindowAt = now;
+        }
+        return window;
+    }
+
+    /**
+     * Copies the game window straight into a shrunken bitmap with GDI (about 3x faster than Robot, so the clip keeps
+     * its frame rate). Returns null if that is not possible and the caller falls back to Robot.
+     */
+    private BufferedImage grabFast(WinDef.HWND window, int slot) {
+        try {
+            Rectangle physical = WinInput.bounds(window, 1.0);
+            if (physical == null) return null;
+            int targetWidth = Math.max(2, Math.min(MAX_WIDTH, physical.width) & ~1);
+            int targetHeight = Math.max(2, (int) Math.round((double) physical.height * targetWidth / physical.width) & ~1);
+            synchronized (grabLocks[slot]) {
+                ScreenGrabber grabber = grabbers[slot];
+                if (grabber == null || grabber.width() != targetWidth || grabber.height() != targetHeight) {
+                    if (grabber != null) grabber.close();
+                    grabber = new ScreenGrabber(targetWidth, targetHeight);
+                    grabbers[slot] = grabber;
+                }
+                return grabber.grab(physical);
+            }
+        } catch (Throwable e) {
+            return null;
         }
     }
 
@@ -180,7 +242,12 @@ final class ReplayBuffer implements GameSession.Listener {
             graphics.drawImage(shot, 0, 0, targetWidth, targetHeight, null);
             graphics.dispose();
         }
-        byte[] jpeg = encode(scaled);
+        // JPEG encoding is much faster from a 3-byte BGR image than from the packed-int one the capture produces.
+        BufferedImage bgr = new BufferedImage(scaled.getWidth(), scaled.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+        Graphics2D convert = bgr.createGraphics();
+        convert.drawImage(scaled, 0, 0, null);
+        convert.dispose();
+        byte[] jpeg = encode(bgr);
         synchronized (frames) {
             if (tasks.isEmpty()) return;
             if (targetWidth != width || targetHeight != height) {
