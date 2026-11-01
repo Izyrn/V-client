@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.16",
+    "version":  "1.6.17",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "ca1b1ec5c87671a5052d597732e34183f3d1c541a91468e424806d271cac89f7",
-    "size":  94923776,
-    "notes":  "Clips: smooth 40-60 fps recordings (parallel GDI capture and faster encoding), lighter on the game; clips are 960 px wide.",
+    "sha256":  "7cab8629f2004eaa1aab0c49d570583e91c43a9beea3b8cec8f792297f5f8e18",
+    "size":  94925312,
+    "notes":  "Clips: fixed clips that showed one frozen picture in full screen (fresh screen handle every frame, flush, and an automatic fallback).",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-01T18:04:25.8552676Z"
+    "publishedAt":  "2026-11-01T18:21:13.1126957Z"
 }

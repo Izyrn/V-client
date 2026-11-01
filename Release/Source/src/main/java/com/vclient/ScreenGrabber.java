@@ -28,13 +28,14 @@ final class ScreenGrabber implements AutoCloseable {
                            int sourceX, int sourceY, int sourceWidth, int sourceHeight, int operation);
 
         int SetStretchBltMode(WinDef.HDC context, int mode);
+
+        boolean GdiFlush();
     }
 
     private static final int SRCCOPY = 0x00CC0020;
     private static final int CAPTUREBLT = 0x40000000;
     private static final int COLORONCOLOR = 3;
 
-    private final WinDef.HDC screen;
     private final WinDef.HDC memory;
     private final WinDef.HBITMAP bitmap;
     private final WinNT.HANDLE previous;
@@ -46,21 +47,25 @@ final class ScreenGrabber implements AutoCloseable {
     ScreenGrabber(int width, int height) {
         this.width = width;
         this.height = height;
-        screen = User32.INSTANCE.GetDC(null);
-        memory = GDI32.INSTANCE.CreateCompatibleDC(screen);
-        WinGDI.BITMAPINFO info = new WinGDI.BITMAPINFO();
-        info.bmiHeader.biWidth = width;
-        info.bmiHeader.biHeight = -height; // top-down rows
-        info.bmiHeader.biPlanes = 1;
-        info.bmiHeader.biBitCount = 32;
-        info.bmiHeader.biCompression = WinGDI.BI_RGB;
-        PointerByReference pixels = new PointerByReference();
-        bitmap = GDI32.INSTANCE.CreateDIBSection(screen, info, WinGDI.DIB_RGB_COLORS, pixels, null, 0);
-        if (bitmap == null || pixels.getValue() == null) {
-            close();
-            throw new IllegalStateException("Could not create a capture bitmap.");
+        WinDef.HDC screen = User32.INSTANCE.GetDC(null);
+        try {
+            memory = GDI32.INSTANCE.CreateCompatibleDC(screen);
+            WinGDI.BITMAPINFO info = new WinGDI.BITMAPINFO();
+            info.bmiHeader.biWidth = width;
+            info.bmiHeader.biHeight = -height; // top-down rows
+            info.bmiHeader.biPlanes = 1;
+            info.bmiHeader.biBitCount = 32;
+            info.bmiHeader.biCompression = WinGDI.BI_RGB;
+            PointerByReference pixels = new PointerByReference();
+            bitmap = GDI32.INSTANCE.CreateDIBSection(screen, info, WinGDI.DIB_RGB_COLORS, pixels, null, 0);
+            if (bitmap == null || pixels.getValue() == null) {
+                GDI32.INSTANCE.DeleteDC(memory);
+                throw new IllegalStateException("Could not create a capture bitmap.");
+            }
+            bits = pixels.getValue();
+        } finally {
+            User32.INSTANCE.ReleaseDC(null, screen);
         }
-        bits = pixels.getValue();
         previous = GDI32.INSTANCE.SelectObject(memory, bitmap);
         Gdi.INSTANCE.SetStretchBltMode(memory, COLORONCOLOR);
     }
@@ -73,12 +78,23 @@ final class ScreenGrabber implements AutoCloseable {
         return height;
     }
 
-    /** The region in physical screen pixels, scaled to this grabber's size. Null if Windows refused the copy. */
+    /**
+     * The region in physical screen pixels, scaled to this grabber's size. Null if Windows refused the copy. The
+     * screen handle is fetched for every frame: a handle kept from before the game switched to full screen keeps
+     * showing the old picture, which made whole clips come out as one frozen image.
+     */
     BufferedImage grab(Rectangle region) {
-        if (!Gdi.INSTANCE.StretchBlt(memory, 0, 0, width, height, screen, region.x, region.y, region.width,
-                region.height, SRCCOPY | CAPTUREBLT)) {
-            return null;
+        WinDef.HDC screen = User32.INSTANCE.GetDC(null);
+        if (screen == null) return null;
+        try {
+            if (!Gdi.INSTANCE.StretchBlt(memory, 0, 0, width, height, screen, region.x, region.y, region.width,
+                    region.height, SRCCOPY | CAPTUREBLT)) {
+                return null;
+            }
+        } finally {
+            User32.INSTANCE.ReleaseDC(null, screen);
         }
+        Gdi.INSTANCE.GdiFlush(); // the bitmap's memory is only up to date once GDI's batched calls have finished
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         int[] target = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
         bits.read(0, target, 0, target.length);
@@ -90,6 +106,5 @@ final class ScreenGrabber implements AutoCloseable {
         if (previous != null) GDI32.INSTANCE.SelectObject(memory, previous);
         if (bitmap != null) GDI32.INSTANCE.DeleteObject(bitmap);
         if (memory != null) GDI32.INSTANCE.DeleteDC(memory);
-        if (screen != null) User32.INSTANCE.ReleaseDC(null, screen);
     }
 }

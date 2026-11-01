@@ -156,7 +156,8 @@ final class ReplayBuffer implements GameSession.Listener {
                 capturing = false;
                 return;
             }
-            BufferedImage fast = grabFast(window, slot);
+            BufferedImage fast = useRobotOnly ? null : grabFast(window, slot);
+            if (fast != null && frozen(fast, slot, window)) fast = null;
             final BufferedImage shot;
             if (fast != null) {
                 shot = fast;
@@ -186,6 +187,49 @@ final class ReplayBuffer implements GameSession.Listener {
         } catch (Throwable e) {
             capturing = false;
         }
+    }
+
+    /** Set when the fast capture kept returning one unchanging picture while the real screen was moving. */
+    private volatile boolean useRobotOnly;
+    private final long[] lastSignature = new long[CAPTURE_THREADS];
+    private final int[] sameCount = new int[CAPTURE_THREADS];
+
+    /**
+     * Safety net: if one capture slot returns identical pictures for a long stretch, compare with a Robot capture of
+     * the same moment. When the real screen differs, the fast capture is frozen and Robot is used from then on.
+     */
+    private boolean frozen(BufferedImage fast, int slot, WinDef.HWND window) {
+        long signature = 17;
+        int w = fast.getWidth();
+        int h = fast.getHeight();
+        for (int k = 0; k < 400; k++) {
+            signature = signature * 31 + fast.getRGB((k * 37) % w, (k * 53) % h);
+        }
+        sameCount[slot] = signature == lastSignature[slot] ? sameCount[slot] + 1 : 0;
+        lastSignature[slot] = signature;
+        if (sameCount[slot] < 40) return false;
+        sameCount[slot] = 0;
+        Rectangle bounds = WinInput.bounds(window, displayScale());
+        if (bounds == null) return false;
+        BufferedImage real;
+        synchronized (robot) {
+            real = robot.createScreenCapture(bounds);
+        }
+        long difference = 0;
+        for (int k = 0; k < 200; k++) {
+            int x = (k * 37) % w;
+            int y = (k * 53) % h;
+            int a = fast.getRGB(x, y);
+            int b = real.getRGB(x * real.getWidth() / w, y * real.getHeight() / h);
+            difference += Math.abs(((a >> 16) & 255) - ((b >> 16) & 255)) + Math.abs(((a >> 8) & 255) - ((b >> 8) & 255))
+                    + Math.abs((a & 255) - (b & 255));
+        }
+        if (difference / 200 > 40) {
+            useRobotOnly = true;
+            status.accept("The fast screen capture looked frozen on this PC; using the compatible method instead.");
+            return true;
+        }
+        return false;
     }
 
     private final ScreenGrabber[] grabbers = new ScreenGrabber[CAPTURE_THREADS];
