@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.8",
+    "version":  "1.6.9",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "7e6b4af63988307dd223e811557ee572e6f3cfd971994f4731ed9ef59b5dec8e",
-    "size":  94867456,
-    "notes":  "Updates are now read straight from the GitHub website. Browser has tabs and full screen.",
+    "sha256":  "ecc4cd755541fa52ccf05dd993a8f9e8c7d43a1f7918265aa9ca8e83334c386f",
+    "size":  94870528,
+    "notes":  "Browser: new VPN switch (free Cloudflare WARP) that also tunnels DNS.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-01T12:33:03.1926668Z"
+    "publishedAt":  "2026-11-01T14:40:25.9376960Z"
 }

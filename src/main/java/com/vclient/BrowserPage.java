@@ -91,6 +91,8 @@ final class BrowserPage {
     private final Label status = new Label();
     private final ProgressBar progress = new ProgressBar(0);
     private final Button fullscreen = new Button("⛶");
+    private final Button vpn = new Button();
+    private boolean vpnBusy;
     private final VBox root = new VBox(8);
     private BrowserTab selected;
     private FeatureHost host;
@@ -110,6 +112,11 @@ final class BrowserPage {
         fullscreen.setTooltip(new javafx.scene.control.Tooltip("Full screen (F11)"));
         fullscreen.setOnAction(event -> toggleFullscreen());
 
+        vpn.setTooltip(new javafx.scene.control.Tooltip(
+                "Send the browser through V-Client's free VPN (Cloudflare WARP), DNS included"));
+        vpn.setOnAction(event -> toggleVpn());
+        refreshVpn();
+
         address.setPromptText("Search or type an address");
         address.setStyle("-fx-background-color: rgba(255,255,255,0.09); -fx-text-fill: #f5f7fd;"
                 + " -fx-prompt-text-fill: #8f90b3; -fx-background-radius: 17; -fx-padding: 8 16 8 16;"
@@ -120,7 +127,7 @@ final class BrowserPage {
         });
         HBox.setHgrow(address, Priority.ALWAYS);
 
-        HBox bar = new HBox(6, back, forward, reload, address, fullscreen);
+        HBox bar = new HBox(6, back, forward, reload, address, vpn, fullscreen);
         bar.setAlignment(Pos.CENTER);
 
         HBox tabRow = new HBox(6, tabStrip, newTab);
@@ -165,6 +172,7 @@ final class BrowserPage {
         if (shared == null) shared = new BrowserPage();
         BrowserPage page = shared;
         page.host = host;
+        page.refreshVpn();
         // Bring the browser back from its own window, then size it to the launcher page.
         if (page.fullscreenStage != null) page.fullscreenStage.close();
         page.root.setPrefHeight(Math.max(480, host.stage().getHeight() - 210));
@@ -260,6 +268,46 @@ final class BrowserPage {
         } catch (IllegalArgumentException e) {
             return "New tab";
         }
+    }
+
+    // ---- VPN -----------------------------------------------------------------------------------------
+
+    private void refreshVpn() {
+        boolean on = VpnManager.isConnected();
+        vpn.setText(vpnBusy ? "VPN..." : on ? "VPN ON" : "VPN OFF");
+        vpn.setDisable(vpnBusy);
+        vpn.setStyle(BUTTON + " -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 0 12 0 12;"
+                + (on ? " -fx-background-color: rgba(124,242,154,0.25); -fx-text-fill: #7cf29a;" : ""));
+    }
+
+    private void toggleVpn() {
+        if (vpnBusy) return;
+        vpnBusy = true;
+        refreshVpn();
+        boolean wasOn = VpnManager.isConnected();
+        host.executor().execute(() -> {
+            String failure = null;
+            try {
+                if (wasOn) VpnManager.disconnect();
+                else VpnManager.connect(List.of(), line -> Platform.runLater(() -> host.log(line)));
+            } catch (IOException e) {
+                failure = e.getMessage();
+            }
+            String message = failure;
+            Platform.runLater(() -> {
+                vpnBusy = false;
+                refreshVpn();
+                if (message != null) {
+                    javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                            javafx.scene.control.Alert.AlertType.ERROR, message);
+                    alert.setHeaderText("The VPN could not start");
+                    if (host.stage() != null) alert.initOwner(host.stage());
+                    alert.show();
+                } else if (selected != null) {
+                    selected.engine.reload();
+                }
+            });
+        });
     }
 
     // ---- full screen ---------------------------------------------------------------------------------

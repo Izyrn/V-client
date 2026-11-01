@@ -115,6 +115,8 @@ final class DohProxy {
     }
 
     private Socket connect(String host, int port) throws IOException {
+        Integer vpn = VpnManager.socksPort();
+        if (vpn != null) return connectThroughVpn(vpn, host, port);
         Socket remote = new Socket();
         try {
             remote.connect(new InetSocketAddress(resolve(host), port), 10_000);
@@ -124,6 +126,47 @@ final class DohProxy {
         }
         remote.setSoTimeout(60_000);
         return remote;
+    }
+
+    /**
+     * With the VPN on, the site is reached through the tunnel's SOCKS5 port by name, so neither the connection nor
+     * the DNS lookup leaves this PC outside the tunnel. A failure is reported, never retried outside the VPN.
+     */
+    private static Socket connectThroughVpn(int socksPort, String host, int port) throws IOException {
+        Socket socket = new Socket();
+        try {
+            socket.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), socksPort), 5_000);
+            socket.setSoTimeout(20_000);
+            OutputStream out = socket.getOutputStream();
+            InputStream in = socket.getInputStream();
+            out.write(new byte[]{5, 1, 0});
+            out.flush();
+            if (in.readNBytes(2).length != 2) throw new IOException("The VPN did not answer.");
+            byte[] name = host.getBytes(StandardCharsets.US_ASCII);
+            byte[] request = new byte[7 + name.length];
+            request[0] = 5;
+            request[1] = 1;
+            request[3] = 3;
+            request[4] = (byte) name.length;
+            System.arraycopy(name, 0, request, 5, name.length);
+            request[5 + name.length] = (byte) (port >> 8);
+            request[6 + name.length] = (byte) port;
+            out.write(request);
+            out.flush();
+            byte[] head = in.readNBytes(4);
+            if (head.length != 4 || head[1] != 0) throw new IOException("The VPN could not reach " + host + ".");
+            int skip = switch (head[3]) {
+                case 1 -> 6;
+                case 4 -> 18;
+                default -> 1 + in.read() + 2;
+            };
+            in.readNBytes(head[3] == 3 ? skip - 1 : skip);
+            socket.setSoTimeout(60_000);
+            return socket;
+        } catch (IOException e) {
+            socket.close();
+            throw e;
+        }
     }
 
     /** Looks {@code host} up over DNS-over-HTTPS; falls back to the system resolver when that fails. */

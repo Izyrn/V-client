@@ -58,8 +58,14 @@ final class VpnManager {
     /** "host:port" of a game server -> the local port that reaches it through the tunnel. */
     private static final Map<String, Integer> ROUTES = new ConcurrentHashMap<>();
     private static Process engine;
+    private static volatile int socksPort = -1;
 
     private VpnManager() {}
+
+    /** The local SOCKS5 port that sends traffic (and DNS lookups) through the tunnel, or null while the VPN is off. */
+    static Integer socksPort() {
+        return isConnected() && socksPort > 0 ? socksPort : null;
+    }
 
     static boolean hasConfig() {
         return Files.isRegularFile(CONFIG);
@@ -111,6 +117,10 @@ final class VpnManager {
                     .append("\nTarget = ").append(server.getHostString()).append(':').append(server.getPort())
                     .append('\n');
         }
+        // A SOCKS5 port on the same tunnel for the built-in browser; the tunnel resolves host names itself.
+        int socks = freeLocalPort();
+        config.append("\n[Socks5]\nBindAddress = 127.0.0.1:").append(socks).append('\n');
+        socksPort = socks;
         Files.writeString(RUN_CONFIG, config.toString(), StandardCharsets.UTF_8);
 
         log.accept("Starting the V-Client VPN tunnel...");
@@ -140,6 +150,7 @@ final class VpnManager {
             engine.destroyForcibly();
             engine = null;
         }
+        socksPort = -1;
         ROUTES.clear();
     }
 
