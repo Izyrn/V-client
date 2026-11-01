@@ -44,7 +44,7 @@ final class ChromiumContent implements TabContent {
     private volatile boolean active;
     private volatile boolean closed;
     private String pendingUrl;
-    private int buttons;
+    private volatile int buttons;
 
     /** Opens a new page; {@code existingTarget} is set for a window the page itself opened. */
     ChromiumContent(CompletableFuture<ChromiumHost> engine, String url, String existingTarget,
@@ -100,8 +100,15 @@ final class ChromiumContent implements TabContent {
         ChromiumHost engine = host;
         String session = sessionId;
         if (engine == null || session == null || closed) return CompletableFuture.completedFuture(null);
-        return engine.send(method, params, session);
+        CompletableFuture<JsonNode> result = engine.send(method, params, session);
+        if (DEBUG && method.startsWith("Input.")) {
+            System.err.println("CDP " + method + " " + params);
+            result.whenComplete((r, e) -> { if (e != null) System.err.println("CDP error " + method + ": " + e); });
+        }
+        return result;
     }
+
+    private static final boolean DEBUG = Boolean.getBoolean("vclient.cdpdebug");
 
     // ---- events from the engine ----------------------------------------------------------------------
 
@@ -160,27 +167,55 @@ final class ChromiumContent implements TabContent {
     // ---- input ---------------------------------------------------------------------------------------
 
     private void installInput() {
-        node.addEventHandler(MouseEvent.MOUSE_MOVED, e -> mouse("mouseMoved", e, 0));
-        node.addEventHandler(MouseEvent.MOUSE_DRAGGED, e -> mouse("mouseMoved", e, 0));
+        node.addEventHandler(MouseEvent.MOUSE_MOVED, e -> move(e));
+        node.addEventHandler(MouseEvent.MOUSE_DRAGGED, e -> move(e));
         node.addEventHandler(MouseEvent.MOUSE_PRESSED, e -> {
             node.requestFocus();
+            pendingMove.set(null);
             buttons |= mask(e.getButton());
             mouse("mousePressed", e, Math.max(1, e.getClickCount()));
+            e.consume();
         });
         node.addEventHandler(MouseEvent.MOUSE_RELEASED, e -> {
-            mouse("mouseReleased", e, Math.max(1, e.getClickCount()));
+            pendingMove.set(null);
             buttons &= ~mask(e.getButton());
+            mouse("mouseReleased", e, Math.max(1, e.getClickCount()));
+            e.consume();
         });
-        node.addEventHandler(ScrollEvent.SCROLL, e -> send("Input.dispatchMouseEvent", ChromiumHost.params()
+        node.addEventHandler(ScrollEvent.SCROLL, e -> { e.consume(); send("Input.dispatchMouseEvent", ChromiumHost.params()
                 .put("type", "mouseWheel").put("x", e.getX()).put("y", e.getY())
                 .put("deltaX", -e.getDeltaX()).put("deltaY", -e.getDeltaY()).put("modifiers", modifiers(e.isAltDown(),
-                        e.isControlDown(), e.isMetaDown(), e.isShiftDown()))));
+                        e.isControlDown(), e.isMetaDown(), e.isShiftDown()))); });
         node.addEventFilter(KeyEvent.KEY_PRESSED, this::keyPressed);
         node.addEventFilter(KeyEvent.KEY_TYPED, this::keyTyped);
         node.addEventFilter(KeyEvent.KEY_RELEASED, e -> {
             if (e.getCode() != KeyCode.UNDEFINED) key("keyUp", e, null);
             e.consume();
         });
+    }
+
+    /** Mouse movement is sent at most every 16 ms with the latest position, so it can never queue up behind clicks and keys. */
+    private static final java.util.concurrent.ScheduledExecutorService MOVES =
+            java.util.concurrent.Executors.newSingleThreadScheduledExecutor(runnable -> {
+                Thread thread = new Thread(runnable, "chromium-mouse");
+                thread.setDaemon(true);
+                return thread;
+            });
+    private final AtomicReference<double[]> pendingMove = new AtomicReference<>();
+    private final java.util.concurrent.atomic.AtomicBoolean moveScheduled = new java.util.concurrent.atomic.AtomicBoolean();
+
+    private void move(MouseEvent e) {
+        pendingMove.set(new double[]{e.getX(), e.getY(), modifiers(e.isAltDown(), e.isControlDown(), e.isMetaDown(), e.isShiftDown())});
+        if (!moveScheduled.compareAndSet(false, true)) return;
+        MOVES.schedule(() -> {
+            moveScheduled.set(false);
+            double[] at = pendingMove.getAndSet(null);
+            if (at == null) return;
+            int held = buttons;
+            send("Input.dispatchMouseEvent", ChromiumHost.params().put("type", "mouseMoved").put("x", at[0]).put("y", at[1])
+                    .put("button", (held & 1) != 0 ? "left" : (held & 2) != 0 ? "right" : (held & 4) != 0 ? "middle" : "none")
+                    .put("buttons", held).put("modifiers", (int) at[2]));
+        }, 16, java.util.concurrent.TimeUnit.MILLISECONDS);
     }
 
     private static int mask(MouseButton button) {

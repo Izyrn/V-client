@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.12",
+    "version":  "1.6.13",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "b740cd19a1dc1acb739207e6abdef648367d8e7e4ed7b11d6dcd7bf682c513f1",
-    "size":  94909440,
-    "notes":  "Browser now runs on Edge\u0027s engine inside V-Client: Discord and other heavy sites work, with the same secure DNS.",
+    "sha256":  "c7d861b5b86f708dc53a0cd10214ebad746a6b4626f23a2d1183588a63f166e1",
+    "size":  94911488,
+    "notes":  "Browser: fixed typing and text selection (mouse movement no longer blocks keys and clicks).",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-01T16:41:21.7062141Z"
+    "publishedAt":  "2026-11-01T16:54:39.8974622Z"
 }
