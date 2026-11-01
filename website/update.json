@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.6",
+    "version":  "1.6.7",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "c00237c85012417fb7d2154e38071279b7ff9b07b33608f56803c91a4fe07f23",
-    "size":  94857216,
-    "notes":  "New Browser tab (DNS over HTTPS), Hub removed, and V-Client now updates itself silently when you open it.",
+    "sha256":  "0a3906ad0eae5361de9ac84a7f16ea02cbc0488c4e3bd4759d91f4129f960fe3",
+    "size":  94865920,
+    "notes":  "Browser now has tabs, new-tab links, a cleaner toolbar and a full-screen mode.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-01T10:43:47.2255065Z"
+    "publishedAt":  "2026-11-01T12:11:47.8696707Z"
 }
