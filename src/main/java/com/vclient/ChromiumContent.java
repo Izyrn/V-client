@@ -84,6 +84,9 @@ final class ChromiumContent implements TabContent {
             sessionId = result.path("sessionId").asText();
             host.onSession(sessionId, this::event);
             send("Page.enable", null);
+            send("Runtime.enable", null);
+            send("Network.enable", null);
+            send("Log.enable", null);
             send("Emulation.setFocusEmulationEnabled", ChromiumHost.params().put("enabled", true));
             send("Emulation.setUserAgentOverride", ChromiumHost.params().put("userAgent", host.userAgent()));
             Platform.runLater(this::applyViewport);
@@ -125,6 +128,31 @@ final class ChromiumContent implements TabContent {
                     });
                 }
             }
+            case "Runtime.exceptionThrown" -> BrowserLog.write("script error: " + params.path("exceptionDetails").path("text").asText()
+                    + " " + params.path("exceptionDetails").path("exception").path("description").asText("").lines().findFirst().orElse("")
+                    + " @ " + params.path("exceptionDetails").path("url").asText(""));
+            case "Runtime.consoleAPICalled" -> {
+                if (params.path("type").asText().equals("error")) {
+                    BrowserLog.write("console.error: " + params.path("args").path(0).path("value").asText(
+                            params.path("args").path(0).path("description").asText("")));
+                }
+            }
+            case "Log.entryAdded" -> {
+                JsonNode entry = params.path("entry");
+                if (entry.path("level").asText().equals("error")) {
+                    BrowserLog.write("log: " + entry.path("text").asText() + " " + entry.path("url").asText(""));
+                }
+            }
+            case "Network.requestWillBeSent" -> BrowserLog.remember(params.path("requestId").asText(), params.path("request").path("url").asText());
+            case "Network.loadingFailed" -> {
+                if (!params.path("canceled").asBoolean()) {
+                    BrowserLog.write("network failed: " + params.path("errorText").asText() + " "
+                            + BrowserLog.url(params.path("requestId").asText()));
+                }
+            }
+            case "Network.webSocketCreated" -> BrowserLog.write("websocket opened: " + params.path("url").asText());
+            case "Network.webSocketClosed" -> BrowserLog.write("websocket closed (request " + params.path("requestId").asText() + ")");
+            case "Network.webSocketFrameError" -> BrowserLog.write("websocket error: " + params.path("errorMessage").asText());
             case "Page.frameStartedLoading" -> Platform.runLater(() -> loading.set(true));
             case "Page.frameStoppedLoading" -> Platform.runLater(() -> loading.set(false));
             case "Page.navigatedWithinDocument" -> Platform.runLater(() -> location.set(params.path("url").asText()));

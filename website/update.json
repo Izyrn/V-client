@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.20",
+    "version":  "1.6.21",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "b3abffe6f66163c4bcd5f82b6909803f68c82bc9120766eb7c6d1fa2008f60eb",
-    "size":  94932480,
-    "notes":  "Browser: fixed Discord (and other live sites) getting stuck on loading - connections were being cut every 30 seconds. Includes the VSMP join DNS-filter bypass.",
+    "sha256":  "4d4783bc7e445f38a988bf24fde003437c2a58c2084227f6d538150e63d4cb72",
+    "size":  94937600,
+    "notes":  "Browser: records page errors to a log file so stuck sites (like Discord) can be diagnosed.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-02T14:06:10.7570905Z"
+    "publishedAt":  "2026-11-02T14:19:44.9870099Z"
 }
