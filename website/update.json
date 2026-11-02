@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.18",
+    "version":  "1.6.19",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "0ce00db2be51d5bee18cfdfa3504409df8144a1c9cc93644dfa82a1b6bf627b3",
-    "size":  94934016,
-    "notes":  "Clips: full-screen games now record properly (screen-recorder capture instead of the old method) at about 45 fps and with much less load on your game.",
+    "sha256":  "c38296089a8e55f6b501f76df95b7e56c99d687b9cef418478e782806c054ec4",
+    "size":  94932480,
+    "notes":  "Joining VSMP now works on networks whose DNS filter blocks the server name (the real address is looked up through Google, Cloudflare or Quad9 secure DNS).",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-01T18:41:31.3964418Z"
+    "publishedAt":  "2026-11-02T11:48:03.3396975Z"
 }

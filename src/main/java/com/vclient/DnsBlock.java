@@ -1,14 +1,6 @@
 package com.vclient;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.net.InetAddress;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,8 +14,6 @@ import java.util.List;
 final class DnsBlock {
     /** A host whose DNS answer looks like a filter's block page. */
     record Finding(String host, List<String> addresses, String realAddresses) {}
-
-    private static final ObjectMapper JSON = new ObjectMapper();
 
     private DnsBlock() {}
 
@@ -46,6 +36,10 @@ final class DnsBlock {
                 if (isSinkhole(address)) blocked = true;
             }
             return blocked ? new Finding(host, List.copyOf(addresses), realAddresses(host)) : null;
+        } catch (java.net.UnknownHostException e) {
+            // A filter that answers NXDOMAIN instead of a block page: still try the real address.
+            String real = realAddresses(host);
+            return real.isEmpty() ? null : new Finding(host, List.of(), real);
         } catch (java.io.IOException e) {
             return null;
         }
@@ -74,22 +68,9 @@ final class DnsBlock {
 
     /** What an independent resolver (Cloudflare over HTTPS) says, as proof the name is not really there. */
     private static String realAddresses(String host) {
-        try {
-            HttpClient client = PlatformTls.httpClientBuilder(Duration.ofSeconds(4)).build();
-            HttpRequest request = HttpRequest.newBuilder(URI.create("https://1.1.1.1/dns-query?name=" + host + "&type=A"))
-                    .timeout(Duration.ofSeconds(5)).header("Accept", "application/dns-json").GET().build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            List<String> real = new ArrayList<>();
-            for (JsonNode answer : JSON.readTree(response.body()).path("Answer")) {
-                if (answer.path("type").asInt() == 1) real.add(answer.path("data").asText());
-            }
-            return String.join(", ", real);
-        } catch (java.io.IOException | RuntimeException e) {
-            return "";
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return "";
-        }
+        // Tries several DoH servers (many networks block 1.1.1.1 but allow 8.8.8.8) and skips sinkhole answers.
+        InetAddress real = DohProxy.lookup(host);
+        return real == null || isSinkhole(real) ? "" : real.getHostAddress();
     }
 
     static String explain(Finding finding) {
