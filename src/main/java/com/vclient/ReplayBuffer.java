@@ -98,6 +98,9 @@ final class ReplayBuffer implements GameSession.Listener {
         }
         long frameMillis = 1000 / FRAMES_PER_SECOND;
         dxgi = createDxgi();
+        ClipLog.write("game started (" + versionId + "); capture method: " + (dxgi != null ? "DXGI " + dxgi.screenWidth() + "x" + dxgi.screenHeight() : "GDI/Robot"));
+        statusTicks = 0;
+        capturedFrames = 0;
         if (dxgi != null) {
             // Desktop Duplication is fast enough for one thread, and (unlike GDI) it sees full-screen games.
             tasks.add(scheduler.scheduleAtFixedRate(() -> captureFrame(0), 500, frameMillis, TimeUnit.MILLISECONDS));
@@ -108,6 +111,28 @@ final class ReplayBuffer implements GameSession.Listener {
         }
         tasks.add(scheduler.scheduleWithFixedDelay(this::pollHotkey, 500, 40, TimeUnit.MILLISECONDS));
         tasks.add(scheduler.scheduleWithFixedDelay(this::writeState, 500, 500, TimeUnit.MILLISECONDS));
+        tasks.add(scheduler.scheduleWithFixedDelay(this::logSummary, 5000, 5000, TimeUnit.MILLISECONDS));
+    }
+
+    private volatile int statusTicks;
+    private volatile long capturedFrames;
+    private volatile long captureErrors;
+
+    /** Every 5 seconds while a game runs: is the window found and in front, and are frames arriving? */
+    private void logSummary() {
+        try {
+            WinDef.HWND window = WinInput.findWindowStartingWith("Minecraft");
+            int stored;
+            synchronized (frames) {
+                stored = frames.size();
+            }
+            ClipLog.write("status: window=" + (window != null) + " foreground=" + (window != null && WinInput.isForeground(window))
+                    + " capturing=" + capturing + " buffered=" + stored + " captured=" + capturedFrames
+                    + " errors=" + captureErrors + " enabled=" + enabled.getAsBoolean() + " saving=" + saving
+                    + " robotOnly=" + useRobotOnly);
+        } catch (Throwable e) {
+            ClipLog.write("status failed: " + e);
+        }
     }
 
     @Override
@@ -186,14 +211,20 @@ final class ReplayBuffer implements GameSession.Listener {
             workers.execute(() -> {
                 try {
                     store(shot, taken);
+                    capturedFrames++;
                 } catch (Throwable e) {
-                    // Drop this frame.
+                    if (captureErrors++ % 200 == 0) ClipLog.write("encode error: " + e);
                 } finally {
                     inFlight.decrementAndGet();
                 }
             });
         } catch (Throwable e) {
             capturing = false;
+            if (captureErrors++ % 200 == 0) {
+                java.io.StringWriter text = new java.io.StringWriter();
+                e.printStackTrace(new java.io.PrintWriter(text));
+                ClipLog.write("capture error #" + captureErrors + ": " + text.toString().lines().limit(6).collect(java.util.stream.Collectors.joining(" | ")));
+            }
         }
     }
 
@@ -267,6 +298,7 @@ final class ReplayBuffer implements GameSession.Listener {
         try {
             return new DxgiGrabber();
         } catch (Throwable e) {
+            ClipLog.write("DXGI unavailable: " + e);
             return null;
         }
     }
@@ -387,16 +419,21 @@ final class ReplayBuffer implements GameSession.Listener {
             hotkeyWasDown = down;
             if (!pressed) return;
             WinDef.HWND window = WinInput.findWindowStartingWith("Minecraft");
-            if (window == null || !WinInput.isForeground(window)) return;
+            boolean front = window != null && WinInput.isForeground(window);
+            ClipLog.write("hotkey " + hotkeyName.get() + " pressed: window=" + (window != null) + " foreground=" + front);
+            if (!front) return;
             saveClip();
         } catch (Throwable e) {
-            // Keep polling.
+            ClipLog.write("hotkey error: " + e);
         }
     }
 
     /** Writes whatever the buffer holds right now to a new clip. */
     void saveClip() {
-        if (saving) return;
+        if (saving) {
+            ClipLog.write("save ignored: a clip is already being written");
+            return;
+        }
         List<Frame> snapshot;
         int clipWidth;
         int clipHeight;
@@ -406,6 +443,7 @@ final class ReplayBuffer implements GameSession.Listener {
             clipWidth = width;
             clipHeight = height;
         }
+        ClipLog.write("save requested: " + snapshot.size() + " frames buffered");
         if (snapshot.size() < 2) {
             status.accept("Nothing to save yet: the replay buffer is still filling.");
             return;
@@ -419,12 +457,17 @@ final class ReplayBuffer implements GameSession.Listener {
                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH-mm-ss")) + ".avi");
                 java.nio.file.Files.createDirectories(recordingsFolder);
                 MjpegAvi.write(file, snapshot.stream().map(Frame::jpeg).toList(), clipWidth, clipHeight, fps);
+                ClipLog.write("saved " + file.getFileName() + " (" + snapshot.size() + " frames, " + Math.round(span / 1000.0) + " s)");
                 status.accept("Saved the last " + Math.round(span / 1000.0) + " seconds as " + file.getFileName());
                 savedAtMillis = System.currentTimeMillis();
                 writeState();
                 onSaved.accept(file);
             } catch (IOException e) {
+                ClipLog.write("save failed: " + e);
                 status.accept("Could not save the clip: " + e.getMessage());
+            } catch (Throwable e) {
+                ClipLog.write("save crashed: " + e);
+                status.accept("Could not save the clip: " + e);
             } finally {
                 saving = false;
             }

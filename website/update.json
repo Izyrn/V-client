@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.21",
+    "version":  "1.6.22",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "4d4783bc7e445f38a988bf24fde003437c2a58c2084227f6d538150e63d4cb72",
-    "size":  94937600,
-    "notes":  "Browser: records page errors to a log file so stuck sites (like Discord) can be diagnosed.",
+    "sha256":  "03d31493a0f6911fe9efc9d183889bec9a682eede0fef32f625e23c94bbdd18f",
+    "size":  94942208,
+    "notes":  "Clips: the recorder now logs what it does (clip-debug.log) so a clip that does not save can be diagnosed.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-02T14:19:44.9870099Z"
+    "publishedAt":  "2026-11-02T15:13:12.2073278Z"
 }

@@ -76,6 +76,7 @@ final class WinInput {
 
     static boolean isForeground(WinDef.HWND hwnd) {
         try {
+            if (Boolean.getBoolean("vclient.assumeForeground")) return hwnd != null; // test hook
             return hwnd != null && hwnd.equals(User32.INSTANCE.GetForegroundWindow());
         } catch (Throwable e) {
             return false;

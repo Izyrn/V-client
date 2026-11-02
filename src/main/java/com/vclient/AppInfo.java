@@ -3,7 +3,7 @@ package com.vclient;
 /** Build-time constants shared by the launcher's backend features. */
 final class AppInfo {
     /** Launcher version reported to the update service. Bump together with the pom version and the published release. */
-    static final String VERSION = "1.6.21";
+    static final String VERSION = "1.6.22";
 
     /**
      * Base URL of the V-Client backend (the {@code backend/} project), for example {@code https://vclient.example.com}.
