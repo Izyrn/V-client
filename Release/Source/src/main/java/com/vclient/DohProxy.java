@@ -93,6 +93,12 @@ final class DohProxy {
                 String host = colon < 0 ? target : target.substring(0, colon);
                 int port = colon < 0 ? 443 : Integer.parseInt(target.substring(colon + 1));
                 try (Socket remote = connect(host, port)) {
+                    // A tunnel can sit idle for minutes (Discord's live connection, kept-alive HTTP/2): an idle
+                    // timeout here cut those connections every 30 seconds and left the app stuck on its loading screen.
+                    socket.setSoTimeout(0);
+                    remote.setSoTimeout(0);
+                    socket.setKeepAlive(true);
+                    remote.setKeepAlive(true);
                     out.write("HTTP/1.1 200 Connection Established\r\n\r\n".getBytes(StandardCharsets.US_ASCII));
                     out.flush();
                     pipe(socket, remote);

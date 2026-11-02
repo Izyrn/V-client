@@ -1,10 +1,10 @@
 {
     "version":  "1.6.19",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "c38296089a8e55f6b501f76df95b7e56c99d687b9cef418478e782806c054ec4",
+    "sha256":  "6e096f168d94d2648adbc424a1667360a60f03fd48f19caf068fb086b888a264",
     "size":  94932480,
-    "notes":  "Joining VSMP now works on networks whose DNS filter blocks the server name (the real address is looked up through Google, Cloudflare or Quad9 secure DNS).",
+    "notes":  "Browser: fixed Discord (and other live sites) getting stuck on loading - connections were being cut every 30 seconds.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-02T11:48:03.3396975Z"
+    "publishedAt":  "2026-11-02T14:02:19.3349354Z"
 }
