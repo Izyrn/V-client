@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.22",
+    "version":  "1.6.23",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "03d31493a0f6911fe9efc9d183889bec9a682eede0fef32f625e23c94bbdd18f",
-    "size":  94942208,
-    "notes":  "Clips: the recorder now logs what it does (clip-debug.log) so a clip that does not save can be diagnosed.",
+    "sha256":  "488b3f2ce72dafb7c9c8e153f6f57e6878bc32982a2655d579c6d4c25c09ad3d",
+    "size":  94955520,
+    "notes":  "New VSMP address (vsmp.meowlix.sh:19754). The game now gets past DNS filters by itself, so joining works even when your network blocks the server name.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-02T15:13:12.2073278Z"
+    "publishedAt":  "2026-11-03T11:10:51.4732699Z"
 }

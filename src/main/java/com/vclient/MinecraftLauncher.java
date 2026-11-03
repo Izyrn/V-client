@@ -563,6 +563,16 @@ final class MinecraftLauncher {
         List<String> command = new ArrayList<>();
         onOutput.accept("Java runtime requested: " + javaMajor + "; executable: " + javaExecutable);
         command.add(javaExecutable.toString());
+        boolean secureDns = false;
+        if (GameDnsAgent.supports(javaMajor)) {
+            try {
+                command.add("-javaagent:" + GameDnsAgent.ensure());
+                secureDns = true;
+                onOutput.accept("The game can look up server names over secure DNS when this network's DNS blocks them.");
+            } catch (IOException e) {
+                onOutput.accept("Could not prepare the game's secure-DNS helper: " + e.getMessage());
+            }
+        }
         BoostProfile.Tuning tuning = boostTuning.get();
         if (tuning != null) {
             onOutput.accept("VSMP Boost Mode: " + tuning.profile().label() + " - " + tuning.memoryGb()
@@ -635,6 +645,14 @@ final class MinecraftLauncher {
         } else {
             command.addAll(legacyArguments(version.path("minecraftArguments").asText(""), substitutions));
         }
+        String joinHost = serverHost;
+        if (!serverHost.isBlank() && !secureDns && !serverHost.matches("[0-9.:]+")) {
+            // Without the helper the game cannot get past a DNS filter, so join on the real address instead.
+            joinHost = DnsBlock.bypass(serverHost);
+            if (!joinHost.equals(serverHost)) {
+                onOutput.accept("This network's DNS blocks " + serverHost + "; joining " + joinHost + " instead.");
+            }
+        }
         if (!serverHost.isBlank()) {
             if (version.toString().contains("quickPlayMultiplayer")) {
                 // Minecraft 1.20+ ignores --server/--port ("Completely ignored arguments"); quick play is how it joins.
@@ -643,10 +661,10 @@ final class MinecraftLauncher {
                 command.add("--quickPlayPath");
                 command.add(quickPlayLog.toString());
                 command.add("--quickPlayMultiplayer");
-                command.add(serverHost + ":" + serverPort);
+                command.add(joinHost + ":" + serverPort);
             } else {
                 command.add("--server");
-                command.add(serverHost);
+                command.add(joinHost);
                 command.add("--port");
                 command.add(Integer.toString(serverPort));
             }

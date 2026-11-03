@@ -1,5 +1,6 @@
 module com.vclient {
     requires java.desktop;
+    requires java.instrument;
     requires java.logging;
     requires java.naming;
     requires java.net.http;

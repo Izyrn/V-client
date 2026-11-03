@@ -5,7 +5,7 @@
 // works and falls back to the bundled Windows setup file.
 const FALLBACK_WINDOWS_URL = "./VSMPClientSetup.exe?v=settings-1";
 const FALLBACK_ANDROID_URL = "./V-Client.apk";
-const DEFAULT_JAVA_ADDRESS = "neuron.zeroxhost.space:19145";
+const DEFAULT_JAVA_ADDRESS = "vsmp.meowlix.sh:19754";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];

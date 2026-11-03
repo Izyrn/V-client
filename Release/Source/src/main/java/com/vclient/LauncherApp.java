@@ -73,7 +73,7 @@ public final class LauncherApp extends Application {
     private record ServerEntry(String name, String host, int port) {}
 
     // VSMP's address: change it here when it moves (JOIN OUR SMP and the Servers page both use it).
-    private static final String VSMP_HOST = "vsmp.halix.cloud";
+    private static final String VSMP_HOST = "vsmp.meowlix.sh";
     private static final int VSMP_PORT = 19754;
     private static final List<ServerEntry> SERVER_LIST = List.of(
             new ServerEntry("VSMP", VSMP_HOST, VSMP_PORT),
@@ -3657,13 +3657,8 @@ public final class LauncherApp extends Application {
                     joinHost = server.host();
                     joinPort = server.port();
                 }
-                if (joinSmp && !viaVpn) {
-                    // A DNS filter that wrongly blocks the server's name gets bypassed by joining on its real address.
-                    joinHost = DnsBlock.bypass(server.host());
-                    if (!joinHost.equals(server.host())) {
-                        output.accept("This network's DNS blocks " + server.host() + "; joining " + joinHost + " instead.");
-                    }
-                }
+                // A DNS filter that blocks the server's name is handled when the game starts: its secure-DNS helper looks
+                // the name up itself (keeping the hostname, which some hosts need), or the launcher joins on the real address.
                 MinecraftLauncher.InstalledVersion launchVersion = selected;
                 if (offline) {
                     if (!joinSmp) {
