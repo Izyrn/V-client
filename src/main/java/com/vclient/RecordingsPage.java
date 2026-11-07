@@ -109,6 +109,13 @@ final class RecordingsPage {
             host.saveSettings();
             updateBufferState();
         });
+        CheckBox microphone = new CheckBox("Record my microphone too");
+        microphone.setSelected(settings.clipMicrophone());
+        microphone.setStyle("-fx-text-fill: " + ModsUi.TEXT + ";");
+        microphone.setOnAction(event -> {
+            settings.setClipMicrophone(microphone.isSelected());
+            host.saveSettings();
+        });
         Button saveNow = UiKit.button("SAVE LAST 30 SECONDS NOW", true, () -> {
             host.replayBuffer().saveClip();
             notice.setText("Saving...");
@@ -117,9 +124,11 @@ final class RecordingsPage {
         Button scan = UiKit.button("IMPORT RECORDINGS NOW", false, this::scanNow);
         HBox controls = UiKit.row(10, ModsUi.text("Hotkey", 12, ModsUi.MUTED, false), hotkey, enabled);
         HBox actions = UiKit.row(10, saveNow, scan, open);
-        card.getChildren().addAll(controls, actions, bufferState, notice,
+        card.getChildren().addAll(controls, microphone, actions, bufferState, notice,
                 UiKit.muted("Clips are Motion-JPEG .avi files at up to 1280 px wide. Captured pixels are whatever is on "
-                        + "screen in the Minecraft window; the capture pauses whenever another window is in front."));
+                        + "screen in the Minecraft window; the capture pauses whenever another window is in front. "
+                        + "Game and system sound is recorded with the clip; your microphone only if the box above is ticked "
+                        + "(it stays in memory until you save)."));
         updateBufferState();
         return card;
     }
@@ -472,6 +481,19 @@ final class RecordingsPage {
         int[] shownFrame = {-1};
         boolean[] seeking = {false};
         double total = info.frameCount() / info.framesPerSecond();
+        javax.sound.sampled.Clip[] sound = {null};
+        if (info.hasAudio()) {
+            try {
+                byte[] pcm = MjpegAvi.audio(recording.file(), info);
+                javax.sound.sampled.AudioFormat format = new javax.sound.sampled.AudioFormat(info.audioRate(), 16,
+                        info.audioChannels(), true, false);
+                javax.sound.sampled.Clip clip = javax.sound.sampled.AudioSystem.getClip();
+                clip.open(format, pcm, 0, pcm.length);
+                sound[0] = clip;
+            } catch (Exception | Error e) {
+                sound[0] = null; // no sound device: the picture still plays
+            }
+        }
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
@@ -481,6 +503,20 @@ final class RecordingsPage {
                     clock[0] = total;
                     playing[0] = false;
                     toggle.setText("REPLAY");
+                }
+                javax.sound.sampled.Clip clip = sound[0];
+                if (clip != null) {
+                    long want = (long) (clock[0] * 1_000_000);
+                    if (playing[0] && want < clip.getMicrosecondLength() - 20_000) {
+                        // start, resume after a seek, or correct drift
+                        if (!clip.isRunning() || Math.abs(clip.getMicrosecondPosition() - want) > 150_000) {
+                            clip.stop();
+                            clip.setMicrosecondPosition(want);
+                            clip.start();
+                        }
+                    } else if (clip.isRunning()) {
+                        clip.stop();
+                    }
                 }
                 int index = Math.min(info.frameCount() - 1, (int) (clock[0] * info.framesPerSecond()));
                 if (index != shownFrame[0]) {
@@ -502,7 +538,13 @@ final class RecordingsPage {
             if (!seeking[0]) clock[0] = after.doubleValue() * total;
         });
         timer.start();
-        return timer::stop;
+        return () -> {
+            timer.stop();
+            if (sound[0] != null) {
+                sound[0].stop();
+                sound[0].close();
+            }
+        };
     }
 
     private Runnable playMedia(RecordingLibrary.Recording recording, StackPane screen, Button toggle, Slider position,
