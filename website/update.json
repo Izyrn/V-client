@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.23",
+    "version":  "1.6.24",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "488b3f2ce72dafb7c9c8e153f6f57e6878bc32982a2655d579c6d4c25c09ad3d",
-    "size":  94955520,
-    "notes":  "New VSMP address (vsmp.meowlix.sh:19754). The game now gets past DNS filters by itself, so joining works even when your network blocks the server name.",
+    "sha256":  "6c6b68b401c7f485e0a52d28ed27472d073a19221b5e31a82cb3a166a84b3efd",
+    "size":  94977024,
+    "notes":  "Clips now record sound: game/system audio, plus your microphone if you turn it on in Recordings. Browser fixes for sites that showed a human-verification loop.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-03T11:10:51.4732699Z"
+    "publishedAt":  "2026-11-07T11:46:47.6469760Z"
 }
