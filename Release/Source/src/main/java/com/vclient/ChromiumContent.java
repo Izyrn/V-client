@@ -84,11 +84,12 @@ final class ChromiumContent implements TabContent {
             sessionId = result.path("sessionId").asText();
             host.onSession(sessionId, this::event);
             send("Page.enable", null);
-            send("Runtime.enable", null);
+            // Runtime.enable is left off: pages can detect it, and bot checks (Cloudflare) treat that as automation.
             send("Network.enable", null);
             send("Log.enable", null);
             send("Emulation.setFocusEmulationEnabled", ChromiumHost.params().put("enabled", true));
-            send("Emulation.setUserAgentOverride", ChromiumHost.params().put("userAgent", host.userAgent()));
+            send("Emulation.setUserAgentOverride", ChromiumHost.params().put("userAgent", host.userAgent())
+                    .set("userAgentMetadata", host.userAgentMetadata()));
             Platform.runLater(this::applyViewport);
             String url = pendingUrl;
             pendingUrl = null;
@@ -112,6 +113,9 @@ final class ChromiumContent implements TabContent {
     }
 
     private static final boolean DEBUG = Boolean.getBoolean("vclient.cdpdebug");
+
+    /** Discord API requests that came back with an error status; their response body is logged once it has loaded. */
+    private final java.util.Set<String> failedApiRequests = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     // ---- events from the engine ----------------------------------------------------------------------
 
@@ -144,6 +148,20 @@ final class ChromiumContent implements TabContent {
                 }
             }
             case "Network.requestWillBeSent" -> BrowserLog.remember(params.path("requestId").asText(), params.path("request").path("url").asText());
+            case "Network.responseReceived" -> {
+                JsonNode response = params.path("response");
+                if (response.path("status").asInt() >= 400 && response.path("url").asText().contains("discord.com/api/")) {
+                    failedApiRequests.add(params.path("requestId").asText());
+                }
+            }
+            case "Network.loadingFinished" -> {
+                String requestId = params.path("requestId").asText();
+                if (failedApiRequests.remove(requestId)) {
+                    send("Network.getResponseBody", ChromiumHost.params().put("requestId", requestId)).thenAccept(body -> {
+                        if (body != null) BrowserLog.write("api error body: " + BrowserLog.url(requestId) + " " + body.path("body").asText(""));
+                    });
+                }
+            }
             case "Network.loadingFailed" -> {
                 if (!params.path("canceled").asBoolean()) {
                     BrowserLog.write("network failed: " + params.path("errorText").asText() + " "

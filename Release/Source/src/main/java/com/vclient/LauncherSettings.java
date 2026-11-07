@@ -33,6 +33,8 @@ final class LauncherSettings {
     private BoostProfile boostProfile = BoostProfile.BALANCED;
     /** Keeps the last 30 seconds of the game window in memory so the clip hotkey can save them. */
     private boolean replayBufferEnabled = true;
+    /** Also record the microphone into clips (game/system sound is always recorded). Off by default for privacy. */
+    private boolean clipMicrophone;
     /** A {@link Theme} preset id, or "custom" to use {@link #customAccent}. */
     private String themeId = "night";
     private String customAccent = "#e6bd59";
@@ -99,6 +101,7 @@ final class LauncherSettings {
         settings.boostEnabled = saved.path("boostEnabled").asBoolean(false);
         settings.boostProfile = BoostProfile.parse(saved.path("boostProfile").asText(""), BoostProfile.BALANCED);
         settings.replayBufferEnabled = saved.path("replayBufferEnabled").asBoolean(true);
+        settings.clipMicrophone = saved.path("clipMicrophone").asBoolean(false);
         settings.themeId = saved.path("themeId").asText("night");
         String accent = saved.path("customAccent").asText("#e6bd59");
         settings.customAccent = Theme.validHex(accent) ? accent : "#e6bd59";
@@ -156,6 +159,7 @@ final class LauncherSettings {
         saved.put("boostEnabled", boostEnabled);
         saved.put("boostProfile", boostProfile.name());
         saved.put("replayBufferEnabled", replayBufferEnabled);
+        saved.put("clipMicrophone", clipMicrophone);
         saved.put("themeId", themeId);
         saved.put("customAccent", customAccent);
         saved.put("clipHotkey", clipHotkey);
@@ -251,6 +255,14 @@ final class LauncherSettings {
 
     void setReplayBufferEnabled(boolean replayBufferEnabled) {
         this.replayBufferEnabled = replayBufferEnabled;
+    }
+
+    boolean clipMicrophone() {
+        return clipMicrophone;
+    }
+
+    void setClipMicrophone(boolean clipMicrophone) {
+        this.clipMicrophone = clipMicrophone;
     }
 
     String clipHotkey() {

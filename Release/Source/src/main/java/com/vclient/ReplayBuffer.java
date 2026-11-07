@@ -73,8 +73,12 @@ final class ReplayBuffer implements GameSession.Listener {
     private volatile boolean capturing;
     private volatile boolean saving;
 
+    private final ClipAudio audio;
+
     ReplayBuffer(Path recordingsFolder, Supplier<String> hotkeyName, BooleanSupplier enabled,
-                 Consumer<String> status, Consumer<Path> onSaved, Supplier<Path> stateFile) {
+                 BooleanSupplier microphone, Consumer<String> status, Consumer<Path> onSaved,
+                 Supplier<Path> stateFile) {
+        this.audio = new ClipAudio(microphone);
         this.recordingsFolder = recordingsFolder;
         this.hotkeyName = hotkeyName;
         this.enabled = enabled;
@@ -97,6 +101,7 @@ final class ReplayBuffer implements GameSession.Listener {
             bufferedBytes = 0;
         }
         long frameMillis = 1000 / FRAMES_PER_SECOND;
+        audio.start();
         dxgi = createDxgi();
         ClipLog.write("game started (" + versionId + "); capture method: " + (dxgi != null ? "DXGI " + dxgi.screenWidth() + "x" + dxgi.screenHeight() : "GDI/Robot"));
         statusTicks = 0;
@@ -140,6 +145,7 @@ final class ReplayBuffer implements GameSession.Listener {
         tasks.forEach(task -> task.cancel(false));
         tasks.clear();
         capturing = false;
+        audio.stop();
         synchronized (this) {
             if (dxgi != null) dxgi.close();
             dxgi = null;
@@ -182,13 +188,16 @@ final class ReplayBuffer implements GameSession.Listener {
         try {
             if (!enabled.getAsBoolean() || saving) {
                 capturing = false;
+                audio.keeping(false);
                 return;
             }
             WinDef.HWND window = gameWindow();
             if (window == null || !WinInput.isForeground(window)) {
                 capturing = false;
+                audio.keeping(false);
                 return;
             }
+            audio.keeping(true);
             BufferedImage fast = useRobotOnly ? null : grabFast(window, slot);
             if (fast != null && dxgi == null && frozen(fast, slot, window)) fast = null;
             final BufferedImage shot;
@@ -456,8 +465,17 @@ final class ReplayBuffer implements GameSession.Listener {
                 Path file = recordingsFolder.resolve("Clip " + LocalDateTime.now()
                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH-mm-ss")) + ".avi");
                 java.nio.file.Files.createDirectories(recordingsFolder);
-                MjpegAvi.write(file, snapshot.stream().map(Frame::jpeg).toList(), clipWidth, clipHeight, fps);
-                ClipLog.write("saved " + file.getFileName() + " (" + snapshot.size() + " frames, " + Math.round(span / 1000.0) + " s)");
+                int sampleFrames = (int) Math.round(snapshot.size() / fps * ClipAudio.RATE);
+                short[] sound = null;
+                try {
+                    sound = audio.mix(snapshot.getFirst().timeMillis(), sampleFrames);
+                } catch (Throwable e) {
+                    ClipLog.write("audio mix failed: " + e);
+                }
+                MjpegAvi.write(file, snapshot.stream().map(Frame::jpeg).toList(), clipWidth, clipHeight, fps,
+                        sound, ClipAudio.RATE);
+                ClipLog.write("saved " + file.getFileName() + " (" + snapshot.size() + " frames, " + Math.round(span / 1000.0)
+                        + " s, " + (sound == null ? "no audio heard" : "with audio") + ")");
                 status.accept("Saved the last " + Math.round(span / 1000.0) + " seconds as " + file.getFileName());
                 savedAtMillis = System.currentTimeMillis();
                 writeState();

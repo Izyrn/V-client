@@ -45,6 +45,7 @@ final class ChromiumHost {
     private volatile Consumer<String> popupHandler = targetId -> {};
     private volatile boolean closed;
     private volatile String userAgent = "";
+    private volatile ObjectNode userAgentMetadata;
 
     private ChromiumHost(int proxyPort) throws IOException, InterruptedException {
         Path exe = findChromium();
@@ -56,7 +57,8 @@ final class ChromiumHost {
         process = new ProcessBuilder(exe.toString(), "--headless=new", "--remote-debugging-port=0",
                 "--remote-allow-origins=*", "--user-data-dir=" + profile,
                 "--proxy-server=http://127.0.0.1:" + proxyPort, "--no-first-run", "--no-default-browser-check",
-                "--disable-features=Translate", "--window-size=1280,800", "about:blank")
+                "--disable-features=Translate", "--disable-blink-features=AutomationControlled",
+                "--window-size=1280,800", "about:blank")
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD).start();
         Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown));
         try {
@@ -66,8 +68,32 @@ final class ChromiumHost {
             throw e;
         }
         send("Target.setDiscoverTargets", JSON.createObjectNode().put("discover", true), null).join();
-        String agent = send("Browser.getVersion", null, null).join().path("userAgent").asText("");
+        JsonNode version = send("Browser.getVersion", null, null).join();
+        String agent = version.path("userAgent").asText("");
         userAgent = agent.replace("HeadlessChrome", "Chrome");
+        userAgentMetadata = clientHints(userAgent, version.path("product").asText(""));
+    }
+
+    /**
+     * The Sec-CH-UA headers and navigator.userAgentData that go with {@link #userAgent}: without them a headless engine
+     * still reports "HeadlessChrome" there, which bot checks (Cloudflare's "verifying you are human" loop) read as automation.
+     */
+    private static ObjectNode clientHints(String agent, String product) {
+        String full = product.substring(product.indexOf('/') + 1);
+        String major = full.contains(".") ? full.substring(0, full.indexOf('.')) : full;
+        String brand = agent.contains("Edg/") ? "Microsoft Edge" : "Google Chrome";
+        ObjectNode metadata = JSON.createObjectNode();
+        var brands = metadata.putArray("brands");
+        brands.addObject().put("brand", "Not.A/Brand").put("version", "99");
+        brands.addObject().put("brand", "Chromium").put("version", major);
+        brands.addObject().put("brand", brand).put("version", major);
+        var fullList = metadata.putArray("fullVersionList");
+        fullList.addObject().put("brand", "Not.A/Brand").put("version", "99.0.0.0");
+        fullList.addObject().put("brand", "Chromium").put("version", full);
+        fullList.addObject().put("brand", brand).put("version", full);
+        metadata.put("fullVersion", full).put("platform", "Windows").put("platformVersion", "10.0.0")
+                .put("architecture", "x86").put("model", "").put("mobile", false).put("bitness", "64").put("wow64", false);
+        return metadata;
     }
 
     /** Starts the engine on first use (in the background) and reuses it after that. */
@@ -114,6 +140,10 @@ final class ChromiumHost {
 
     String userAgent() {
         return userAgent;
+    }
+
+    ObjectNode userAgentMetadata() {
+        return userAgentMetadata;
     }
 
     /** Called with the id of a page the engine opened by itself (a link that opens a new window). */

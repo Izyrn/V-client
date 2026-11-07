@@ -204,7 +204,7 @@ public final class LauncherApp extends Application {
         Theme.apply(settings.themeId(), settings.customAccent());
         recordingLibrary = new RecordingLibrary(RecordingLibrary.defaultFolder());
         replayBuffer = new ReplayBuffer(recordingLibrary.folder(), settings::clipHotkey,
-                settings::replayBufferEnabled, message -> replayStatus = message,
+                settings::replayBufferEnabled, settings::clipMicrophone, message -> replayStatus = message,
                 file -> activityLog.add("Saved clip " + file.getFileName()),
                 () -> settings.minecraftDirectory().resolve("vclient").resolve("recording.state"));
         GameSession.addListener(replayBuffer);
