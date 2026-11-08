@@ -10,7 +10,7 @@ final class AppInfo {
      * on the News page and the {@code VCLIENT_BACKEND_URL} environment variable wins over both. Change it here after
      * deploying the Worker to your own workers.dev address or custom domain.
      */
-    static final String DEFAULT_BACKEND_URL = "https://vclient-api.eliteprofast.workers.dev";
+    static final String DEFAULT_BACKEND_URL = "https://vclient-api.vclient-api.workers.dev";
 
     /** Old backends that no longer exist; a saved copy of one of these is replaced by the default. */
     static final java.util.List<String> RETIRED_BACKEND_URLS = java.util.List.of(

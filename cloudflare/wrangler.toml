@@ -15,6 +15,6 @@ DISCORD_URL = "https://discord.gg/UnjU4PPMa"
 [[d1_databases]]
 binding = "DB"
 database_name = "vclient"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "90c7ecf6-1782-4ea3-ad45-034aab3e7026"
 
 # Secret (never stored in this file):  npx wrangler secret put STATS_API_KEY
