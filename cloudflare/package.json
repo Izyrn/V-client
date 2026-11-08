@@ -7,6 +7,6 @@
     "db:init": "wrangler d1 execute vclient --remote --file=schema.sql"
   },
   "devDependencies": {
-    "wrangler": "^3.90.0"
+    "wrangler": "^4.0.0"
   }
 }
