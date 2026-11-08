@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.27",
+    "version":  "1.6.28",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "77a41faac1707d2eb1944a483bae4e9a869f554781206a2d66cd9772bce8265f",
+    "sha256":  "cfde7cec2e626faf4ec0294a6f9fdb7f3b27eae879e45b5d932000fb1a3f561d",
     "size":  95053824,
-    "notes":  "Fixes Discord pages showing \u0027didn\u0027t send any data\u0027 on networks whose DNS filter blocks Discord: secure DNS works again. Discord pages open in a real Edge/Chrome window. Includes the TLS fix, new home screen and new always-on server.",
+    "notes":  "Fixes the setup saying V-Client is already open when it is not: setup now only checks the installed copy. Also includes the Discord/secure-DNS fix, TLS fix and new home screen.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-08T08:58:55.5454339Z"
+    "publishedAt":  "2026-11-08T10:01:34.3599342Z"
 }

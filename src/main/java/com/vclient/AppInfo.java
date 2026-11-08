@@ -3,7 +3,7 @@ package com.vclient;
 /** Build-time constants shared by the launcher's backend features. */
 final class AppInfo {
     /** Launcher version reported to the update service. Bump together with the pom version and the published release. */
-    static final String VERSION = "1.6.27";
+    static final String VERSION = "1.6.28";
 
     /**
      * The one place the V-Client API address lives (a Cloudflare Worker, see {@code cloudflare/}). Players can override it

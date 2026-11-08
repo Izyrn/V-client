@@ -33,14 +33,14 @@ internal static class StandaloneInstaller
             bool silent = args.Contains("--silent");
             if (silent)
             {
-                for (int waited = 0; waited < 60 && Process.GetProcessesByName("V-Client").Length != 0; waited++)
+                for (int waited = 0; waited < 60 && IsInstalledLauncherRunning(executablePath); waited++)
                 {
                     System.Threading.Thread.Sleep(500);
                 }
             }
 
-            Process[] runningLaunchers = Process.GetProcessesByName("V-Client");
-            if (runningLaunchers.Length != 0)
+            bool launcherRunning = IsInstalledLauncherRunning(executablePath);
+            if (launcherRunning)
             {
                 throw new InvalidOperationException(
                     "Close V-Client before installing or updating it, then run this setup file again.");
@@ -72,7 +72,7 @@ internal static class StandaloneInstaller
                 string existing = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "Programs", "VSMP Client", ExecutableName);
-                if (File.Exists(existing) && Process.GetProcessesByName("V-Client").Length == 0)
+                if (File.Exists(existing) && !IsInstalledLauncherRunning(existing))
                 {
                     Process.Start(new ProcessStartInfo { FileName = existing, UseShellExecute = true });
                 }
@@ -86,6 +86,31 @@ internal static class StandaloneInstaller
                 MessageBoxIcon.Error);
             return 1;
         }
+    }
+
+    /// <summary>
+    /// True only when the launcher installed at <paramref name="executablePath"/> is running. Any other process that
+    /// happens to be called "V-Client" (a copy run from another folder, this setup file renamed, an unrelated program)
+    /// does not hold the install folder's files, so it must not block the install.
+    /// </summary>
+    private static bool IsInstalledLauncherRunning(string executablePath)
+    {
+        string installed = Path.GetFullPath(executablePath);
+        int ownId = Process.GetCurrentProcess().Id;
+        foreach (Process candidate in Process.GetProcessesByName("V-Client"))
+        {
+            try
+            {
+                if (candidate.Id == ownId) continue;
+                string path = candidate.MainModule.FileName;
+                if (string.Equals(Path.GetFullPath(path), installed, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            catch (Exception)
+            {
+                // Access denied or exited meanwhile: cannot be shown to be the installed copy, so it is not counted.
+            }
+        }
+        return false;
     }
 
     private static int VerifyPayload()
