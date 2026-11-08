@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.25",
+    "version":  "1.6.26",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "cd83591b0c39817aa11aa4ce065e950694099c8e81ef2d79cebe941b5e053f4e",
-    "size":  95049728,
-    "notes":  "Fixes the secure-connection (TLS) error and moves to a new always-on server. New home screen: connection checklist, real ready light, Install/Repair, friendly errors with Copy logs, crash report viewer, install progress with speed and ETA. Settings: Java picker, JVM arguments, profile import/export, first-run setup. Grouped sidebar and darker dropdowns.",
+    "sha256":  "11a33967e1fe19e79eed7ea743cf69f81a6e119a7ac5eb6b99efcc4c0a57f613",
+    "size":  95051776,
+    "notes":  "Discord and verification pages now open in a real Edge/Chrome window from the built-in browser (new button in the toolbar), so Discord support works. Includes the 1.6.25 fixes: TLS error, new home screen, new always-on server.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-08T08:39:58.6403304Z"
+    "publishedAt":  "2026-11-08T08:50:02.2879732Z"
 }
