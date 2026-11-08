@@ -205,6 +205,29 @@ final class DohProxy {
             "cloudflare-dns.com", "dns.google", "dns.quad9.net");
     private static volatile int preferredServer;
 
+    /**
+     * Bootstrap addresses for the DoH servers only. A DNS filter often blocks these names too (it answers with its own
+     * block page), and without an address no secure lookup could ever start. The addresses keep the host name, so the
+     * TLS connection still sends the name as SNI and verifies the certificate against it; nothing else is overridden.
+     */
+    static java.util.List<InetAddress> bootstrap(String host) {
+        int[][] ips = switch (host.toLowerCase(java.util.Locale.ROOT)) {
+            case "cloudflare-dns.com" -> new int[][]{{1, 1, 1, 1}, {1, 0, 0, 1}};
+            case "dns.google" -> new int[][]{{8, 8, 8, 8}, {8, 8, 4, 4}};
+            case "dns.quad9.net" -> new int[][]{{9, 9, 9, 9}, {149, 112, 112, 112}};
+            default -> new int[0][];
+        };
+        java.util.List<InetAddress> result = new java.util.ArrayList<>();
+        for (int[] ip : ips) {
+            try {
+                result.add(InetAddress.getByAddress(host, new byte[]{(byte) ip[0], (byte) ip[1], (byte) ip[2], (byte) ip[3]}));
+            } catch (java.net.UnknownHostException ignored) {
+                // a 4-byte address is always valid
+            }
+        }
+        return result;
+    }
+
     static boolean isDohHost(String host) {
         return host != null && DOH_HOSTS.contains(host.toLowerCase(java.util.Locale.ROOT));
     }

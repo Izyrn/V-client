@@ -25,6 +25,7 @@ public final class DohResolverProvider extends InetAddressResolverProvider {
         return new InetAddressResolver() {
             @Override
             public Stream<InetAddress> lookupByName(String host, LookupPolicy policy) throws UnknownHostException {
+                if (DohProxy.isDohHost(host)) return DohProxy.bootstrap(host).stream();
                 UnknownHostException failure;
                 try {
                     List<InetAddress> found = builtin.lookupByName(host, policy).toList();

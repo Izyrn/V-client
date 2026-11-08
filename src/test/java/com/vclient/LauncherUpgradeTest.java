@@ -30,6 +30,14 @@ class LauncherUpgradeTest {
     }
 
     @Test
+    void dohServerBootstrapAddressesKeepTheirHostName() {
+        var addresses = DohProxy.bootstrap("cloudflare-dns.com");
+        assertFalse(addresses.isEmpty());
+        assertEquals("cloudflare-dns.com", addresses.getFirst().getHostName());
+        assertTrue(DohProxy.bootstrap("discord.com").isEmpty());
+    }
+
+    @Test
     void ipSanErrorIsRecognisedAsHostNameMismatch() {
         var error = new javax.net.ssl.SSLHandshakeException("No subject alternative names matching IP address 150.171.109.163 found");
         assertTrue(PlatformTls.hasHostnameMismatch(error));

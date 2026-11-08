@@ -46,6 +46,7 @@ public final class GameResolver implements InetAddressResolver {
 
     @Override
     public Stream<InetAddress> lookupByName(String host, LookupPolicy policy) throws UnknownHostException {
+        if (DOH_HOSTS.contains(host.toLowerCase(java.util.Locale.ROOT))) return bootstrap(host).stream();
         UnknownHostException failure;
         try {
             List<InetAddress> found = builtin.lookupByName(host, policy).toList();
@@ -62,6 +63,25 @@ public final class GameResolver implements InetAddressResolver {
     @Override
     public String lookupByAddress(byte[] address) throws UnknownHostException {
         return builtin.lookupByAddress(address);
+    }
+
+    /** Fixed addresses for the DoH servers' own names (a DNS filter often blocks those too). The name stays attached for TLS. */
+    static List<InetAddress> bootstrap(String host) {
+        int[][] ips = switch (host.toLowerCase(java.util.Locale.ROOT)) {
+            case "cloudflare-dns.com" -> new int[][]{{1, 1, 1, 1}, {1, 0, 0, 1}};
+            case "dns.google" -> new int[][]{{8, 8, 8, 8}, {8, 8, 4, 4}};
+            case "dns.quad9.net" -> new int[][]{{9, 9, 9, 9}, {149, 112, 112, 112}};
+            default -> new int[0][];
+        };
+        List<InetAddress> result = new java.util.ArrayList<>();
+        for (int[] ip : ips) {
+            try {
+                result.add(InetAddress.getByAddress(host, new byte[]{(byte) ip[0], (byte) ip[1], (byte) ip[2], (byte) ip[3]}));
+            } catch (UnknownHostException ignored) {
+                // a 4-byte address is always valid
+            }
+        }
+        return result;
     }
 
     /** Cisco Umbrella / OpenDNS block pages live in 146.112.0.0/16. */
