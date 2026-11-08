@@ -58,6 +58,7 @@ public final class DohResolverProvider extends InetAddressResolverProvider {
 
     private static InetAddress secureLookup(String host) {
         if (host == null || host.isEmpty() || host.equals("localhost") || host.endsWith(".local")
+                || DohProxy.isDohHost(host) || host.matches("[0-9.]+")
                 || System.currentTimeMillis() < dohDownUntil.get()) {
             return null;
         }

@@ -1,0 +1,20 @@
+# V-Client API on Cloudflare Workers + D1. Never sleeps; the free tier is plenty.
+# Deploy steps are in README.md (create the D1 database, paste its id below, set the secret, run `npx wrangler deploy`).
+name = "vclient-api"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# Browsers on this origin may call the API (CORS). The launcher is not a browser and sends no Origin header.
+ALLOWED_ORIGIN = "https://eliteprofast.github.io"
+SERVER_NAME = "VSMP"
+JAVA_HOST = "vsmp.meowlix.sh"
+JAVA_PORT = "19754"
+DISCORD_URL = "https://discord.gg/UnjU4PPMa"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vclient"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# Secret (never stored in this file):  npx wrangler secret put STATS_API_KEY

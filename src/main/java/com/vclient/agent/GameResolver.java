@@ -18,12 +18,14 @@ import java.util.stream.Stream;
 /**
  * Name lookups for the game: the system resolver answers first, and when it fails or returns a DNS filter's block page
  * (Cisco Umbrella / OpenDNS, 146.112.0.0/16) the name is looked up over DNS-over-HTTPS instead. The DoH servers are
- * reached by IP, so they need no DNS themselves. JDK classes only.
+ * reached by host name (normal SNI and certificate checks) and answers keep the looked-up name. JDK classes only.
  */
 public final class GameResolver implements InetAddressResolver {
     private static final String[] DOH_SERVERS = {
-            "https://1.0.0.1/dns-query", "https://8.8.8.8/resolve", "https://8.8.4.4/resolve",
-            "https://1.1.1.1/dns-query", "https://9.9.9.9:5053/dns-query"};
+            "https://cloudflare-dns.com/dns-query", "https://dns.google/resolve",
+            "https://dns.quad9.net:5053/dns-query"};
+    private static final java.util.Set<String> DOH_HOSTS = java.util.Set.of(
+            "cloudflare-dns.com", "dns.google", "dns.quad9.net");
     /** The first A record in a DNS-JSON answer (CNAMEs, type 5, come first and are skipped). */
     private static final Pattern A_RECORD = Pattern.compile(
             "\"type\"\\s*:\\s*1\\s*,[^}]*?\"data\"\\s*:\\s*\"(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})\"");
@@ -76,6 +78,7 @@ public final class GameResolver implements InetAddressResolver {
 
     private static InetAddress secureLookup(String host) {
         if (host == null || host.isEmpty() || host.indexOf('.') < 0 || host.equals("localhost")
+                || DOH_HOSTS.contains(host.toLowerCase(java.util.Locale.ROOT)) || host.matches("[0-9.]+")
                 || host.endsWith(".local") || host.endsWith(".localhost")
                 || System.currentTimeMillis() < dohDownUntil.get()) {
             return null;
@@ -90,7 +93,10 @@ public final class GameResolver implements InetAddressResolver {
                 if (response.statusCode() != 200) continue;
                 preferredServer = index;
                 String address = firstARecord(response.body());
-                return address == null ? null : InetAddress.getByName(address);
+                // Keep the host name on the answer: a nameless address makes TLS verify the certificate against
+                // the bare IP ("No subject alternative names matching IP address").
+                return address == null ? null
+                        : InetAddress.getByAddress(host, InetAddress.getByName(address).getAddress());
             } catch (IOException | RuntimeException e) {
                 // try the next server
             } catch (InterruptedException e) {

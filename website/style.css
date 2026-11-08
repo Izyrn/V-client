@@ -338,3 +338,8 @@ h1 span, .section-heading h2 span, .download-cta h2 span { color: var(--gold); }
 .shot-grid.wide { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); margin-bottom: 20px; }
 .hint-line { margin-top: 14px; color: var(--muted); font-size: 12px; }
 .app-gallery .section-heading p b { color: var(--gold-pale); }
+
+.download-count { margin: 10px 0 0; color: #c9d3e6; font-size: 13px; font-weight: 600; }
+.privacy-page { max-width: 760px; }
+.privacy-page h2 { margin-top: 28px; }
+.privacy-page li { margin: 6px 0; line-height: 1.55; color: #c9d3e6; }

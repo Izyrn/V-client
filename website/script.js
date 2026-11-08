@@ -1,17 +1,18 @@
 "use strict";
 
-// Shared by every public page. Talks to the V-Client backend that serves this site; if the
-// backend is unreachable (for example the site is opened from static hosting) the page still
-// works and falls back to the bundled Windows setup file.
-const FALLBACK_WINDOWS_URL = "./VSMPClientSetup.exe?v=settings-1";
-const FALLBACK_ANDROID_URL = "./V-Client.apk";
+// Shared by every public page. The API (news, announcements, server status) is optional: if it cannot be reached the page still works.
+const GITHUB_REPO = "eliteprofast/V-client";
+const WINDOWS_RELEASE_URL = `https://github.com/${GITHUB_REPO}/releases/latest/download/VSMPClientSetup.exe`;
+// The V-Client API (Cloudflare Worker). Change this one line if the address changes.
+const API_BASE = "https://vclient-api.eliteprofast.workers.dev";
+const ANDROID_URL = "./V-Client.apk";
 const DEFAULT_JAVA_ADDRESS = "vsmp.meowlix.sh:19754";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
 async function api(path) {
-  const response = await fetch(`/api${path}`, { headers: { Accept: "application/json" } });
+  const response = await fetch(`${API_BASE}/api${path}`, { headers: { Accept: "application/json" } });
   if (!response.ok) throw new Error(`${path} returned ${response.status}`);
   return response.json();
 }
@@ -58,31 +59,68 @@ api("/config").then(({ server }) => {
     else link.hidden = true;
   });
   $$("[data-java-address]").forEach((node) => { node.textContent = `${server.java.host}:${server.java.port}`; });
-  $$("[data-bedrock-address]").forEach((node) => { node.textContent = `${server.bedrock.host}:${server.bedrock.port}`; });
+  $$("[data-bedrock-address]").forEach((node) => { node.textContent = server.bedrock.port ? `${server.bedrock.host}:${server.bedrock.port}` : "Not available"; });
 }).catch(() => {
   $$(".discord-link").forEach((link) => { link.hidden = true; });
   $$("[data-java-address]").forEach((node) => { node.textContent = DEFAULT_JAVA_ADDRESS; });
 });
 
 // ---- Download buttons -------------------------------------------------------
-api("/launcher/releases").then((releases) => {
-  const windows = releases.windows;
-  $$("[data-download='windows']").forEach((link) => {
-    link.href = windows ? "/download/windows" : FALLBACK_WINDOWS_URL;
-    const version = $("[data-version]", link);
-    if (version && windows) version.textContent = `v${windows.version}`;
+// The installer is a GitHub Release asset, so downloads are counted by GitHub and need no backend.
+// Version details come from update.json, which is published together with the site.
+$$("[data-download='windows']").forEach((link) => { link.href = WINDOWS_RELEASE_URL; });
+$$("[data-download='android']").forEach((link) => { link.href = ANDROID_URL; });
+
+fetch("./update.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : Promise.reject(new Error("update.json")))).then((info) => {
+  $$("[data-download='windows'] [data-version]").forEach((node) => { node.textContent = `v${info.version}`; });
+  fillReleaseCards({
+    windows: { version: info.version, size: info.size, sha256: info.sha256, notes: info.notes, publishedAt: info.publishedAt },
+    android: null,
   });
-  $$("[data-download='android']").forEach((link) => {
-    const android = releases.android;
-    link.href = android ? "/download/android" : FALLBACK_ANDROID_URL;
-    const version = $("[data-version]", link);
-    if (version && android) version.textContent = `v${android.version}`;
+}).catch(() => fillReleaseCards({ windows: null, android: null }));
+
+// Track every click on a download button (GoatCounter event "download-click"; harmless if the script is blocked).
+$$("[data-download]").forEach((link) => {
+  link.addEventListener("click", () => {
+    try {
+      if (window.goatcounter && window.goatcounter.count) {
+        window.goatcounter.count({ path: `download-click-${link.dataset.download}`, title: "download-click", event: true });
+      }
+    } catch { /* tracking must never block a download */ }
   });
-  fillReleaseCards(releases);
-}).catch(() => {
-  $$("[data-download='windows']").forEach((link) => { link.href = FALLBACK_WINDOWS_URL; });
-  $$("[data-download='android']").forEach((link) => { link.href = FALLBACK_ANDROID_URL; });
 });
+
+// ---- Download counter (sum of every release asset on GitHub, cached for 10 minutes) ----
+const COUNT_CACHE_KEY = "vclient-download-count";
+const COUNT_CACHE_MS = 10 * 60 * 1000;
+
+function showDownloadCount(total) {
+  $$("[data-download-count]").forEach((node) => {
+    node.textContent = `${total.toLocaleString()} downloads`;
+    node.hidden = false;
+  });
+}
+
+async function loadDownloadCount() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(COUNT_CACHE_KEY) || "null");
+    if (cached && Date.now() - cached.at < COUNT_CACHE_MS) {
+      showDownloadCount(cached.total);
+      return;
+    }
+  } catch { /* storage unavailable: just fetch */ }
+  try {
+    const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=100`, {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (!response.ok) return; // rate limited or offline: stay silent, the counter stays hidden
+    const releases = await response.json();
+    const total = releases.reduce((sum, release) => sum + (release.assets || []).reduce((n, asset) => n + (asset.download_count || 0), 0), 0);
+    showDownloadCount(total);
+    try { localStorage.setItem(COUNT_CACHE_KEY, JSON.stringify({ at: Date.now(), total })); } catch { /* ignore */ }
+  } catch { /* hide silently */ }
+}
+if ($("[data-download-count]")) loadDownloadCount();
 
 function fillReleaseCards(releases) {
   for (const platform of ["windows", "android"]) {
@@ -91,7 +129,7 @@ function fillReleaseCards(releases) {
     if (!meta) continue;
     meta.textContent = release
       ? `Version ${release.version} · ${formatBytes(release.size)} · released ${formatDate(release.publishedAt)}`
-      : "Bundled build (version details appear once a release is published)";
+      : platform === "android" ? "Bundled build" : "Latest release on GitHub";
     const hash = $(`[data-release-hash='${platform}']`);
     if (hash && release && release.sha256) hash.textContent = `SHA-256 ${release.sha256}`;
     const notes = $(`[data-release-notes='${platform}']`);

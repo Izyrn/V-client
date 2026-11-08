@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080b16">
+  <meta name="description" content="What V-Client and this website collect, in plain words.">
+  <title>Privacy — V-Client</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./script.js" defer></script>
+  <script data-goatcounter="https://eliteprofast.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="V-Client home">
+      <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M9 9h30v30H9z" fill="#e7bf68"/><path d="M15 16h6l3 10 3-10h6l-6.2 17h-5.6z" fill="#101321"/><path d="M34 8h6v6h-6z" fill="#fff0bd"/></svg>
+      <span>V<span class="brand-light">-CLIENT</span></span>
+    </a>
+    <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+      <a href="index.html">Home</a>
+      <a href="downloads.html">Downloads</a>
+      <a href="features.html">Features</a>
+      <a href="news.html">News</a>
+    </nav>
+  </header>
+
+  <main class="section-wrap page-main privacy-page">
+    <div class="section-heading">
+      <p class="eyebrow">PRIVACY</p>
+      <h1 class="page-title">What we collect<span>.</span></h1>
+      <p>Short version: just enough to count how many people use V-Client. No accounts, no names, no IP addresses.</p>
+    </div>
+
+    <h2>In the launcher</h2>
+    <ul>
+      <li>Once per day, one anonymous <b>launch</b> event: a random ID generated on your PC when you first run the launcher, the launcher version, and the platform (Windows).</li>
+      <li>The random ID is not linked to your Minecraft name, Microsoft or Ely.by account, or your PC. Deleting <code>%APPDATA%\V-Client\settings.json</code> creates a new one.</li>
+      <li>The launcher also counts how many different Minecraft accounts have played, using a one-way hash of the account ID. Your player name is never sent.</li>
+      <li>We do not store IP addresses or browser/PC details. The hosting provider (Cloudflare) may keep short-lived technical logs for security, as any host does.</li>
+      <li>Your game settings, sign-ins and files stay on your PC.</li>
+    </ul>
+
+    <h2>On this website</h2>
+    <ul>
+      <li>Page views and download-button clicks are counted with <a href="https://www.goatcounter.com/" rel="noopener noreferrer" target="_blank">GoatCounter</a>, a privacy-friendly analytics service that sets no cookies and does not track you across sites.</li>
+      <li>The download counter reads public download numbers from GitHub. Your browser remembers the number for 10 minutes so it is not requested again.</li>
+      <li>The installer is downloaded from GitHub Releases, so GitHub sees that download under its own privacy policy.</li>
+    </ul>
+
+    <h2>Questions</h2>
+    <p>Ask in the Discord server and we will explain or remove anything you want.</p>
+  </main>
+
+  <footer class="site-footer section-wrap">
+    <a class="brand footer-brand" href="index.html"><span>V<span class="brand-light">-CLIENT</span></span></a>
+    <small>© <span id="current-year"></span> V-Client · VSMP. Minecraft is a trademark of Mojang Studios. · <a href="privacy.html">Privacy</a></small>
+  </footer>
+</body>
+</html>

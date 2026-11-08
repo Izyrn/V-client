@@ -18,6 +18,7 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -91,7 +92,7 @@ public final class LauncherApp extends Application {
     }
 
     private static String BACKGROUND = "#08091a";
-    private static final String MUTED = "#9999bd";
+    private static final String MUTED = "#b9b9dc";
     private static String ACCENT = "#e6bd59";
     private static final HttpClient IMAGE_HTTP = PlatformTls.httpClientBuilder(Duration.ofSeconds(12))
             .followRedirects(HttpClient.Redirect.NORMAL).build();
@@ -142,6 +143,21 @@ public final class LauncherApp extends Application {
     private Label versionStatusLabel;
     private Button connectionTestButton;
     private Label connectionResultLabel;
+    private VBox checklistBox;
+    private Region readyDot;
+    private Label readyLabel;
+    private VBox problemBox;
+    private javafx.scene.control.ProgressBar installProgress;
+    private Label installProgressLabel;
+    private Label gameFolderLabel;
+    private Label smpPlayersLabel;
+    private boolean startupChecklistRan;
+    /** Result of the last connection checklist; drives the "Launcher ready" light. */
+    private enum Connection { UNKNOWN, CHECKING, OK, WAKING, DEGRADED, FAILED, OFFLINE }
+    private volatile Connection connection = Connection.UNKNOWN;
+    private volatile String lastProblem = "";
+    private volatile String smpButtonText = "JOIN OUR SMP";
+    private boolean moreNavigationExpanded;
     private ImageView avatar;
     private Label headerAccountLabel;
     private TextArea log;
@@ -159,10 +175,16 @@ public final class LauncherApp extends Application {
         this.stage = stage;
         settings = LauncherSettings.load();
         gameLauncher = new MinecraftLauncher((requiredMajor, onOutput, allowDownloads) -> {
-            int selectedMajor = settings.javaMajorOverride() == 25
-                    ? 25 : requiredMajor;
+            int selectedMajor = settings.javaMajorOverride() != 0
+                    ? settings.javaMajorOverride() : requiredMajor;
             return javaRuntimeManager.resolve(selectedMajor, onOutput, allowDownloads);
         });
+        gameLauncher.setExtraJvmArguments(() -> JvmArgs.parse(settings.jvmArguments()));
+        BackendClient.setWakingListener(message -> Platform.runLater(() -> {
+            if (!message.isEmpty()) connection = Connection.WAKING;
+            else if (connection == Connection.WAKING) connection = Connection.UNKNOWN;
+            updateReadiness();
+        }));
         startFeatureServices();
         gameLauncher.setCheatPermission(settings::cheatsEnabled);
         gameLauncher.setAdminPermission(settings::isAdmin);
@@ -193,7 +215,44 @@ public final class LauncherApp extends Application {
             }
         }
         startBackendTasks();
+        // Dark combo-box popups, titled panes and progress bars for every scene.
+        stage.sceneProperty().addListener((observable, was, scene) -> attachStylesheet(scene));
+        attachStylesheet(stage.getScene());
+        if (!settings.onboardingDone()) Platform.runLater(this::maybeShowOnboarding);
     }
+
+    /** Writes the shared stylesheet next to the settings and adds it to {@code scene}. */
+    private void attachStylesheet(Scene scene) {
+        if (scene == null) return;
+        try {
+            Path sheet = Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
+                    "V-Client", "cache", "launcher-dark.css");
+            Files.createDirectories(sheet.getParent());
+            Files.writeString(sheet, LAUNCHER_CSS, java.nio.charset.StandardCharsets.UTF_8);
+            String uri = sheet.toUri().toString();
+            if (!scene.getStylesheets().contains(uri)) scene.getStylesheets().add(uri);
+        } catch (IOException e) {
+            appendLog("Could not apply the dark control theme: " + e.getMessage());
+        }
+    }
+
+    private static final String LAUNCHER_CSS = """
+            .combo-box-popup > .list-view { -fx-background-color: #14142d; -fx-border-color: #48415f; -fx-border-radius: 8; -fx-background-radius: 8; }
+            .combo-box-popup > .list-view .list-cell { -fx-background-color: #14142d; -fx-text-fill: #f3f0ff; -fx-padding: 8 10 8 10; -fx-font-size: 14px; }
+            .combo-box-popup > .list-view .list-cell:filled:hover { -fx-background-color: #292642; }
+            .combo-box-popup > .list-view .list-cell:filled:selected { -fx-background-color: #34305a; -fx-text-fill: #ffffff; }
+            .combo-box .list-cell { -fx-text-fill: #f3f0ff; -fx-background-color: transparent; }
+            .combo-box .arrow-button { -fx-background-color: transparent; }
+            .combo-box .arrow-button .arrow { -fx-background-color: #c9c6e6; }
+            .combo-box:focused { -fx-background-color: #14142d; -fx-border-color: #8f86c8; }
+            .titled-pane > .title { -fx-background-color: rgba(255, 255, 255, 0.07); -fx-background-radius: 8; }
+            .titled-pane > .title > .text { -fx-fill: #e4e1f5; }
+            .titled-pane > .title > .arrow-button .arrow { -fx-background-color: #c9c6e6; }
+            .titled-pane > .content { -fx-background-color: transparent; -fx-border-color: transparent; }
+            .progress-bar > .track { -fx-background-color: #262448; -fx-background-radius: 6; }
+            .progress-bar > .bar { -fx-background-radius: 6; }
+            .scroll-bar { -fx-background-color: transparent; }
+            """;
 
     /** Playtime, the recordings importer and the replay buffer all follow the game process. */
     private void startFeatureServices() {
@@ -219,6 +278,7 @@ public final class LauncherApp extends Application {
                 stats.recordLaunch(versionId);
                 activityLog.add("Launched Minecraft " + versionId);
                 stats.save();
+                Platform.runLater(() -> LauncherApp.this.updateReadiness());
             }
 
             @Override
@@ -226,6 +286,7 @@ public final class LauncherApp extends Application {
                 stats.addPlaytime((endedAtMillis - startedAtMillis) / 1000);
                 activityLog.add("Played " + UiKit.playtime((endedAtMillis - startedAtMillis) / 1000) + " of " + versionId);
                 stats.save();
+                Platform.runLater(() -> LauncherApp.this.updateReadiness());
             }
         });
     }
@@ -243,18 +304,22 @@ public final class LauncherApp extends Application {
         Label subtitle = label("Choose a profile and jump back into your world.", 14, MUTED);
         VBox heading = new VBox(8, eyebrow, title, subtitle);
         Region homeStatusDot = dot("#64728a");
-        Label homeStatus = label("", 12, "#b3c0d3");
+        Label homeStatus = label("", 12, "#c9d3e6");
         HBox homeStatusRow = new HBox(8, homeStatusDot, homeStatus);
         homeStatusRow.setAlignment(Pos.CENTER_LEFT);
         loadServerStatus(homeStatus, homeStatusDot);
         VBox homeAnnouncements = announcementBox();
+
+        // A short, friendly problem message (details and "Copy logs" are folded away) instead of raw stack traces.
+        problemBox = new VBox(8);
+        renderProblem();
 
         VBox versionCard = card();
         Label versionTitle = label("GAME VERSION", 11, MUTED);
         versionPicker = new ComboBox<>();
         versionPicker.setMaxWidth(Double.MAX_VALUE);
         versionPicker.setPrefHeight(48);
-        versionPicker.setStyle("-fx-background-color: rgba(20, 20, 45, 0.92); -fx-text-fill: #f3f0ff; -fx-font-size: 14px; -fx-border-color: #48415f; -fx-border-radius: 8; -fx-background-radius: 8;");
+        versionPicker.setStyle("-fx-background-color: #14142d; -fx-text-fill: #f3f0ff; -fx-font-size: 15px; -fx-border-color: #48415f; -fx-border-radius: 8; -fx-background-radius: 8;");
         versionPicker.setPromptText("Scanning installed versions...");
         versionPicker.setCellFactory(list -> versionChoiceCell());
         versionPicker.setButtonCell(versionChoiceCell());
@@ -266,43 +331,79 @@ public final class LauncherApp extends Application {
                     downloadSelectedVersion(newVersion);
                 }
             }
+            updateInstallButton();
+            updateReadiness();
         });
-        versionCard.getChildren().addAll(versionTitle, versionPicker);
+        // While the version list loads, a pulsing placeholder sits under the picker instead of an empty box.
+        Region versionSkeleton = Widgets.skeleton(0, 12);
+        versionSkeleton.visibleProperty().bind(versionPicker.disabledProperty());
+        versionSkeleton.managedProperty().bind(versionSkeleton.visibleProperty());
+        versionCard.getChildren().addAll(versionTitle, versionPicker, versionSkeleton);
         javafx.scene.layout.FlowPane versionActions = new javafx.scene.layout.FlowPane(10, 10);
         versionActions.setAlignment(Pos.CENTER_LEFT);
-        installVersionButton = button("INSTALL / REPAIR SELECTED VERSION", "#292642", 10);
-        installVersionButton.setOnAction(event -> installSelectedVersion());
-        refreshVersionsButton = button("REFRESH VERSIONS", "#292642", 10);
-        refreshVersionsButton.setOnAction(event -> refreshVersions(selectedVersionId));
-        versionStatusLabel = label("Fetching the Mojang version catalog...", 11, MUTED);
-        versionStatusLabel.setWrapText(true);
-        Button offlineToggle = button("", "#292642", 10);
-        Runnable updateOfflineToggle = () -> {
-            boolean offline = settings.offlineMode();
-            offlineToggle.setText(offline ? "OFFLINE MODE: ON" : "OFFLINE MODE: OFF");
-            offlineToggle.setStyle(offlineToggle.getStyle().replaceAll("-fx-background-color: [^;]+;",
-                    "-fx-background-color: " + (offline ? "#244a38" : "#292642") + ";"));
-            installVersionButton.setDisable(offline);
-        };
-        updateOfflineToggle.run();
-        offlineToggle.setOnAction(event -> {
-            settings.setOfflineMode(!settings.offlineMode());
-            saveSettings();
-            appendLog(settings.offlineMode()
-                    ? "Offline mode on: V-Client will not contact Mojang, Modrinth, skin servers, or download anything."
-                    : "Offline mode off: V-Client can download versions, libraries, assets, and Java again.");
-            updateOfflineToggle.run();
-            refreshVersions(selectedVersionId);
+        // INSTALL only while the chosen version is missing; once it is installed this becomes a small REPAIR action.
+        installVersionButton = button("INSTALL", ACCENT, 12);
+        installVersionButton.setOnAction(event -> {
+            VersionChoice chosen = versionPicker.getValue();
+            if (chosen != null && chosen.installed() != null) repairSelectedVersion();
+            else installSelectedVersion();
         });
-        versionActions.getChildren().addAll(installVersionButton, refreshVersionsButton, offlineToggle);
-        versionCard.getChildren().addAll(versionActions, versionStatusLabel);
-        HBox connectionRow = new HBox(12);
-        connectionRow.setAlignment(Pos.CENTER_LEFT);
-        connectionTestButton = button("TEST CONNECTION", "#292642", 11);
+        refreshVersionsButton = button("REFRESH VERSIONS", "#292642", 11);
+        refreshVersionsButton.setOnAction(event -> refreshVersions(selectedVersionId));
+        versionActions.getChildren().addAll(installVersionButton, refreshVersionsButton);
+        versionStatusLabel = label("Fetching the Mojang version catalog...", 12, MUTED);
+        versionStatusLabel.setWrapText(true);
+        installProgress = new javafx.scene.control.ProgressBar(0);
+        installProgress.setMaxWidth(Double.MAX_VALUE);
+        installProgress.setStyle("-fx-accent: " + ACCENT + ";");
+        installProgressLabel = label("", 12, "#d6d3ee");
+        VBox progressBox = new VBox(6, installProgress, installProgressLabel);
+        progressBox.setVisible(false);
+        progressBox.managedProperty().bind(progressBox.visibleProperty());
+        installProgress.setUserData(progressBox);
+        HBox offlineRow = Widgets.switchRow("Offline mode",
+                "Nothing is contacted and nothing is downloaded while this is on.", settings.offlineMode(), ACCENT, offline -> {
+                    settings.setOfflineMode(offline);
+                    saveSettings();
+                    appendLog(offline
+                            ? "Offline mode on: V-Client will not contact Mojang, Modrinth, skin servers, or download anything."
+                            : "Offline mode off: V-Client can download versions, libraries, assets, and Java again.");
+                    updateInstallButton();
+                    updateReadiness();
+                    refreshVersions(selectedVersionId);
+                    if (!offline) runConnectionTest();
+                    else renderChecklist(List.of(), true);
+                });
+        versionCard.getChildren().addAll(versionActions, progressBox, versionStatusLabel, offlineRow);
+
+        // Short folder label with an Open folder button, plus quick access to crash reports.
+        gameFolderLabel = label("Game folder: " + Widgets.shortPath(settings.minecraftDirectory()), 13, "#d6d3ee");
+        gameFolderLabel.setTooltip(new javafx.scene.control.Tooltip(settings.minecraftDirectory().toString()));
+        Button openFolder = button("OPEN FOLDER", "#292642", 11);
+        openFolder.setOnAction(event -> {
+            if (!Widgets.openFolder(settings.minecraftDirectory())) {
+                versionStatusLabel.setText("Could not open " + settings.minecraftDirectory());
+            }
+        });
+        Button crashButton = button("CRASH REPORTS", "#292642", 11);
+        crashButton.setOnAction(event -> showCrashReports(null));
+        Region folderSpacer = new Region();
+        HBox.setHgrow(folderSpacer, Priority.ALWAYS);
+        HBox folderRow = new HBox(10, gameFolderLabel, folderSpacer, openFolder, crashButton);
+        folderRow.setAlignment(Pos.CENTER_LEFT);
+        versionCard.getChildren().add(folderRow);
+
+        // Connection checklist (DNS, TLS, Mojang, Backend), run automatically at startup.
+        connectionTestButton = button("TEST AGAIN", "#292642", 11);
         connectionTestButton.setOnAction(event -> runConnectionTest());
-        connectionResultLabel = label("Check internet, DNS, TLS, and Mojang access.", 12, MUTED);
-        connectionRow.getChildren().addAll(connectionTestButton, connectionResultLabel);
-        versionCard.getChildren().add(connectionRow);
+        connectionResultLabel = label("Connection check", 12, MUTED);
+        Label checklistTitle = label("CONNECTION CHECK", 11, MUTED);
+        Region checklistSpacer = new Region();
+        HBox.setHgrow(checklistSpacer, Priority.ALWAYS);
+        HBox checklistHeader = new HBox(12, checklistTitle, connectionResultLabel, checklistSpacer, connectionTestButton);
+        checklistHeader.setAlignment(Pos.CENTER_LEFT);
+        checklistBox = new VBox(8);
+        versionCard.getChildren().addAll(checklistHeader, checklistBox);
 
         HBox launchRow = new HBox(14);
         launchRow.setAlignment(Pos.CENTER_LEFT);
@@ -311,7 +412,7 @@ public final class LauncherApp extends Application {
         HBox.setHgrow(playButton, Priority.ALWAYS);
         playButton.setMaxWidth(Double.MAX_VALUE);
         playButton.setOnAction(event -> launchGame(null));
-        singleplayerButton = button("JOIN OUR SMP", "#292642", 14);
+        singleplayerButton = button(smpButtonText, "#292642", 14);
         singleplayerButton.setPrefHeight(54);
         singleplayerButton.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(singleplayerButton, Priority.ALWAYS);
@@ -321,20 +422,422 @@ public final class LauncherApp extends Application {
         settingsButton.setOnAction(event -> showSettings());
         launchRow.getChildren().addAll(playButton, singleplayerButton, settingsButton);
 
-        HBox statusRow = new HBox(8, dot("#39d98a"), label("LAUNCHER READY", 11, "#b3c0d3"));
+        // "Launcher ready" reflects the real state: green ready, yellow working / degraded, red blocked.
+        readyDot = dot(Widgets.YELLOW);
+        readyLabel = label("CHECKING…", 12, "#d6d3ee");
+        HBox statusRow = new HBox(8, readyDot, readyLabel);
         statusRow.setAlignment(Pos.CENTER_LEFT);
-        Label logTitle = label("LAUNCH OUTPUT", 11, MUTED);
+
         log = new TextArea();
         log.setEditable(false);
         log.setWrapText(true);
-        log.setPrefRowCount(8);
-        log.setStyle("-fx-control-inner-background: rgba(9, 10, 28, 0.82); -fx-text-fill: #c3bfdc; -fx-font-family: 'Consolas'; -fx-font-size: 11px; -fx-background-color: rgba(9, 10, 28, 0.82); -fx-border-color: #37334f; -fx-border-radius: 8; -fx-background-radius: 8;");
+        log.setPrefRowCount(10);
+        log.setStyle("-fx-control-inner-background: rgba(9, 10, 28, 0.82); -fx-text-fill: #d5d1ec; -fx-font-family: 'Consolas'; -fx-font-size: 12px; -fx-background-color: rgba(9, 10, 28, 0.82); -fx-border-color: #37334f; -fx-border-radius: 8; -fx-background-radius: 8;");
         log.setText(String.join(System.lineSeparator(), logLines));
-        VBox.setVgrow(log, Priority.ALWAYS);
-        content.getChildren().addAll(heading, launchEventBanner(), homeAnnouncements, homeStatusRow, versionCard, launchRow, statusRow, logTitle, log);
+        Button copyLogs = button("COPY LOGS", "#292642", 11);
+        copyLogs.setOnAction(event -> {
+            copyLogsToClipboard();
+            copyLogs.setText("COPIED");
+        });
+        VBox detailsBody = new VBox(10, log, copyLogs);
+        javafx.scene.control.TitledPane launchDetails = Widgets.details("Details — launch output", detailsBody);
+        content.getChildren().addAll(heading, launchEventBanner(), homeAnnouncements, homeStatusRow, problemBox, versionCard,
+                launchRow, statusRow, launchDetails);
         setPageContent(root, content);
         stage.setScene(new Scene(root, stage.getWidth(), stage.getHeight()));
+        updateInstallButton();
+        updateReadiness();
         refreshVersions(selectedVersionId);
+        if (settings.offlineMode()) {
+            connection = Connection.OFFLINE;
+            renderChecklist(List.of(), true);
+        } else if (!startupChecklistRan) {
+            startupChecklistRan = true;
+            runConnectionTest();
+        } else {
+            runConnectionTest();
+        }
+    }
+
+    // ---- Readiness light, install/repair button, problem banner ----
+
+    /** Recomputes the "Launcher ready" light from what is really going on. Safe to call from any FX-thread code. */
+    private void updateReadiness() {
+        if (readyDot == null || readyLabel == null) return;
+        VersionChoice choice = versionPicker == null ? null : versionPicker.getValue();
+        String color = Widgets.GREEN;
+        String text = "LAUNCHER READY";
+        if (account == null) {
+            color = Widgets.RED;
+            text = "NO ACCOUNT — SIGN IN FIRST";
+        } else if (GameSession.running()) {
+            text = "GAME RUNNING";
+        } else if (!versionsDownloading.isEmpty()) {
+            color = Widgets.YELLOW;
+            text = "INSTALLING " + versionsDownloading.iterator().next().toUpperCase(java.util.Locale.ROOT) + "…";
+        } else if (connection == Connection.CHECKING) {
+            color = Widgets.YELLOW;
+            text = "CHECKING CONNECTION…";
+        } else if (!lastProblem.isEmpty()) {
+            color = Widgets.RED;
+            text = "LAST LAUNCH FAILED — SEE DETAILS";
+        } else if (connection == Connection.FAILED && !settings.offlineMode()) {
+            color = Widgets.RED;
+            text = "CONNECTION PROBLEM — SEE THE CHECKLIST";
+        } else if (versionPicker != null && choice == null) {
+            color = Widgets.YELLOW;
+            text = versionPicker.isDisable() ? "LOADING VERSIONS…" : "NO VERSION SELECTED";
+        } else if (choice != null && choice.installed() == null) {
+            color = Widgets.YELLOW;
+            text = "VERSION NOT INSTALLED";
+        } else if (connection == Connection.WAKING) {
+            color = Widgets.YELLOW;
+            text = "SERVER WAKING UP…";
+        } else if (connection == Connection.DEGRADED) {
+            text = "LAUNCHER READY · USING SAVED SERVER INFO";
+        } else if (settings.offlineMode()) {
+            text = "LAUNCHER READY · OFFLINE MODE";
+        }
+        readyDot.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 50%;");
+        readyLabel.setText(text);
+    }
+
+    /** INSTALL (prominent) while the chosen version is missing, otherwise a small REPAIR action. */
+    private void updateInstallButton() {
+        if (installVersionButton == null) return;
+        VersionChoice choice = versionPicker == null ? null : versionPicker.getValue();
+        boolean installed = choice != null && choice.installed() != null;
+        boolean busy = choice != null && versionsDownloading.contains(choice.id());
+        boolean visible = choice != null && (choice.available() != null || installed);
+        installVersionButton.setVisible(visible);
+        installVersionButton.managedProperty().bind(installVersionButton.visibleProperty());
+        if (installed) {
+            installVersionButton.setText("REPAIR");
+            installVersionButton.setStyle("-fx-background-color: transparent; -fx-text-fill: #c9c6e6; -fx-font-size: 11px;"
+                    + " -fx-border-color: #48415f; -fx-border-radius: 7; -fx-background-radius: 7; -fx-padding: 6 12 6 12; -fx-cursor: hand;");
+        } else {
+            installVersionButton.setText("INSTALL");
+            installVersionButton.setStyle("-fx-background-color: " + ACCENT + "; -fx-text-fill: #171326; -fx-font-size: 13px;"
+                    + " -fx-font-weight: bold; -fx-background-radius: 9; -fx-padding: 12 22 12 22; -fx-cursor: hand;");
+        }
+        installVersionButton.setDisable(settings.offlineMode() || busy);
+    }
+
+    private void repairSelectedVersion() {
+        VersionChoice selected = versionPicker == null ? null : versionPicker.getValue();
+        if (selected == null) return;
+        if (selected.available() != null) {
+            appendLog("Repair: re-checking every file of " + selected.id() + " and downloading anything missing or damaged.");
+            downloadSelectedVersion(selected);
+            return;
+        }
+        // A mod-loader profile (for example V-Client 1.21.11) is repaired by reinstalling its bundled files.
+        Path directory = settings.minecraftDirectory();
+        versionStatusLabel.setText("Repairing " + selected.id() + "…");
+        executor.execute(() -> {
+            try {
+                VClientModInstaller.ensureInstalled(directory, line -> Platform.runLater(() -> appendLog(line)));
+                BundledResourcePack.ensureInstalled(directory, line -> Platform.runLater(() -> appendLog(line)));
+                Platform.runLater(() -> {
+                    versionStatusLabel.setText(selected.id() + " · repaired.");
+                    refreshVersions(selectedVersionId);
+                });
+            } catch (IOException e) {
+                Platform.runLater(() -> reportProblem(e));
+            }
+        });
+    }
+
+    /** Remembers a problem and shows it as a short message; the technical text stays under "Details". */
+    private void reportProblem(Throwable error) {
+        lastError = error;
+        FriendlyError.Message message = FriendlyError.of(error);
+        lastProblem = message.title();
+        appendLog("Problem: " + message.title() + " — " + message.message());
+        renderProblem();
+        updateReadiness();
+    }
+
+    private Throwable lastError;
+
+    private void renderProblem() {
+        if (problemBox == null) return;
+        problemBox.getChildren().clear();
+        if (lastError == null || lastProblem.isEmpty()) return;
+        FriendlyError.Message message = FriendlyError.of(lastError);
+        Label heading = label("⚠  " + message.title(), 15, "#ffb4bd");
+        heading.setStyle(heading.getStyle() + "-fx-font-weight: bold;");
+        Label text = label(message.message(), 13, "#f3f0ff");
+        text.setWrapText(true);
+        TextArea raw = new TextArea(message.details() + (settings.debugMode() ? System.lineSeparator() + BackendClient.stackTrace(lastError) : ""));
+        raw.setEditable(false);
+        raw.setWrapText(true);
+        raw.setPrefRowCount(6);
+        raw.setStyle("-fx-control-inner-background: rgba(9, 10, 28, 0.9); -fx-text-fill: #d5d1ec; -fx-font-family: 'Consolas'; -fx-font-size: 12px;");
+        Button copy = button("COPY LOGS", "#292642", 11);
+        copy.setOnAction(event -> {
+            copyLogsToClipboard();
+            copy.setText("COPIED");
+        });
+        Button crashes = button("CRASH REPORTS", "#292642", 11);
+        crashes.setOnAction(event -> showCrashReports(null));
+        Button dismiss = button("DISMISS", "#292642", 11);
+        dismiss.setOnAction(event -> {
+            lastError = null;
+            lastProblem = "";
+            renderProblem();
+            updateReadiness();
+        });
+        HBox actions = new HBox(10, copy, crashes, dismiss);
+        actions.setAlignment(Pos.CENTER_LEFT);
+        VBox box = new VBox(8, heading, text, Widgets.details("Details", raw), actions);
+        box.setPadding(new Insets(14, 18, 14, 18));
+        box.setStyle("-fx-background-color: rgba(120, 30, 50, 0.32); -fx-background-radius: 12; -fx-border-color: rgba(229, 98, 111, 0.6); -fx-border-radius: 12;");
+        problemBox.getChildren().add(box);
+    }
+
+    /** Everything useful for a bug report: versions, the launcher log, and the last error's technical details. */
+    private void copyLogsToClipboard() {
+        StringBuilder text = new StringBuilder();
+        text.append("V-Client ").append(AppInfo.VERSION).append(" · ").append(System.getProperty("os.name"))
+                .append(" · Java ").append(System.getProperty("java.version")).append(System.lineSeparator());
+        text.append("TLS: ").append(PlatformTls.truststoreSummary()).append(System.lineSeparator());
+        text.append("Offline mode: ").append(settings.offlineMode()).append(" · Game folder: ")
+                .append(settings.minecraftDirectory()).append(System.lineSeparator()).append(System.lineSeparator());
+        if (lastError != null) {
+            text.append("Last problem: ").append(PlatformTls.describeFailure(lastError)).append(System.lineSeparator())
+                    .append(BackendClient.stackTrace(lastError)).append(System.lineSeparator());
+        }
+        text.append(String.join(System.lineSeparator(), logLines));
+        Path logs = settings.minecraftDirectory().resolve("logs");
+        appendDiagnosticFile(text, logs.resolve("vclient-launch.log"), "V-Client launch log", 18_000);
+        appendDiagnosticFile(text, logs.resolve("latest.log"), "Minecraft latest.log", 12_000);
+        CrashReports.list(settings.minecraftDirectory(), 1).stream().findFirst().ifPresent(report ->
+                appendDiagnosticFile(text, report.file(), "Newest crash report", 20_000));
+        ClipboardContent clip = new ClipboardContent();
+        clip.putString(text.toString());
+        Clipboard.getSystemClipboard().setContent(clip);
+    }
+
+    // ---- Connection checklist ----
+
+    private void renderChecklist(List<NetworkDiagnostics.Check> checks, boolean offline) {
+        VBox box = checklistBox;
+        if (box == null) return;
+        box.getChildren().clear();
+        if (offline) {
+            connection = Connection.OFFLINE;
+            connectionResultLabel.setText("Offline mode is on — nothing is contacted.");
+            Label note = label("Turn Offline mode off to check DNS, TLS, Mojang and the V-Client server.", 12, MUTED);
+            note.setWrapText(true);
+            box.getChildren().add(note);
+            updateReadiness();
+            return;
+        }
+        for (NetworkDiagnostics.Check check : checks) {
+            // The V-Client server is optional: if it cannot be reached the launcher uses saved data, so this is grey, never red.
+            boolean optional = check.name().equals("Backend");
+            String color = check.passed() ? Widgets.GREEN : optional ? "#8a93a8" : Widgets.RED;
+            Label name = label(check.name(), 13, "#f3f0ff");
+            name.setStyle(name.getStyle() + "-fx-font-weight: bold;");
+            name.setMinWidth(76);
+            Label state = label(check.passed() ? "OK" : optional ? "UNAVAILABLE (using saved data)" : "FAILED", 12, color);
+            state.setStyle(state.getStyle() + "-fx-font-weight: bold;");
+            HBox line = new HBox(10, dot(color), name, state);
+            line.setAlignment(Pos.CENTER_LEFT);
+            VBox item = new VBox(3, line);
+            if (!check.passed() && !check.hint().isBlank()) {
+                Label hint = label((optional ? "" : "Fix: ") + check.hint(), 12, optional ? MUTED : "#ffd9a0");
+                hint.setWrapText(true);
+                hint.setPadding(new Insets(0, 0, 0, 20));
+                item.getChildren().add(hint);
+            }
+            box.getChildren().add(item);
+        }
+    }
+
+    private void showChecklistLoading() {
+        if (checklistBox == null) return;
+        checklistBox.getChildren().setAll(Widgets.skeletonBlock(4));
+    }
+
+    private void runConnectionTest() {
+        if (settings.offlineMode()) {
+            renderChecklist(List.of(), true);
+            return;
+        }
+        if (connectionTestButton == null || connection == Connection.CHECKING) return;
+        Button button = connectionTestButton;
+        Label summary = connectionResultLabel;
+        button.setDisable(true);
+        button.setText("TESTING...");
+        summary.setText("Checking DNS, TLS, Mojang and the V-Client server…");
+        connection = Connection.CHECKING;
+        showChecklistLoading();
+        updateReadiness();
+        String backendAddress = settings.backendUrl();
+        executor.execute(() -> {
+            List<NetworkDiagnostics.Check> checks = NetworkDiagnostics.checklist(
+                    backendAddress, line -> Platform.runLater(() -> appendLog(line)));
+            Platform.runLater(() -> {
+                button.setDisable(false);
+                button.setText("TEST AGAIN");
+                boolean core = checks.stream().filter(check -> !check.name().equals("Backend")).allMatch(NetworkDiagnostics.Check::passed);
+                NetworkDiagnostics.Check backendCheck = checks.stream().filter(check -> check.name().equals("Backend")).findFirst().orElse(null);
+                if (!core) connection = Connection.FAILED;
+                else if (backendCheck != null && !backendCheck.passed()) {
+                    connection = backendCheck.detail().startsWith("Server waking up") ? Connection.WAKING : Connection.DEGRADED;
+                } else connection = Connection.OK;
+                summary.setText(switch (connection) {
+                    case OK -> "All checks passed.";
+                    case WAKING -> "Server is waking up — this can take a minute.";
+                    case DEGRADED -> "Game connection is fine; the V-Client server is unreachable.";
+                    default -> "Some checks failed — see the fixes below.";
+                });
+                renderChecklist(checks, false);
+                appendLog("Connection check: " + checks.stream()
+                        .map(check -> check.name() + (check.passed() ? " OK" : " FAILED")).collect(java.util.stream.Collectors.joining(", ")));
+                updateReadiness();
+            });
+        });
+    }
+
+    // ---- Crash reports ----
+
+    /** Lists the game's crash reports with a viewer; {@code focus} selects one (the newest by default). */
+    private void showCrashReports(CrashReports.Report focus) {
+        Path gameDirectory = settings.minecraftDirectory();
+        List<CrashReports.Report> reports = CrashReports.list(gameDirectory, 50);
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.initOwner(stage);
+        dialog.setTitle("Crash reports");
+        dialog.setHeaderText(reports.isEmpty() ? "No crash reports found" : reports.size() + " crash report" + (reports.size() == 1 ? "" : "s"));
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        TextArea viewer = new TextArea(reports.isEmpty() ? "Minecraft has not written any crash reports in " + gameDirectory.resolve("crash-reports") + "." : "");
+        viewer.setEditable(false);
+        viewer.setWrapText(false);
+        viewer.setPrefSize(640, 400);
+        viewer.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 12px;");
+        ListView<CrashReports.Report> list = new ListView<>();
+        list.getItems().setAll(reports);
+        list.setPrefWidth(250);
+        list.setCellFactory(view -> new ListCell<>() {
+            @Override
+            protected void updateItem(CrashReports.Report item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.label() + "\n" + item.summary());
+            }
+        });
+        list.getSelectionModel().selectedItemProperty().addListener((observable, was, report) -> {
+            if (report == null) return;
+            try {
+                viewer.setText(CrashReports.read(report));
+                viewer.positionCaret(0);
+            } catch (IOException e) {
+                viewer.setText("Could not read " + report.file() + ": " + e.getMessage());
+            }
+        });
+        Button copy = button("COPY REPORT", "#292642", 11);
+        copy.setOnAction(event -> {
+            ClipboardContent clip = new ClipboardContent();
+            clip.putString(viewer.getText());
+            Clipboard.getSystemClipboard().setContent(clip);
+        });
+        Button openFolder = button("OPEN FOLDER", "#292642", 11);
+        openFolder.setOnAction(event -> Widgets.openFolder(gameDirectory.resolve("crash-reports")));
+        HBox actions = new HBox(10, copy, openFolder);
+        VBox right = new VBox(10, viewer, actions);
+        HBox.setHgrow(right, Priority.ALWAYS);
+        dialog.getDialogPane().setContent(new HBox(12, list, right));
+        dialog.getDialogPane().setPrefWidth(960);
+        if (!reports.isEmpty()) {
+            CrashReports.Report initial = focus == null ? reports.getFirst() : reports.stream()
+                    .filter(report -> report.file().equals(focus.file())).findFirst().orElse(reports.getFirst());
+            list.getSelectionModel().select(initial);
+        }
+        dialog.show();
+    }
+
+    // ---- First-run onboarding ----
+
+    private void maybeShowOnboarding() {
+        if (settings.onboardingDone()) return;
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.initOwner(stage);
+        dialog.setTitle("Welcome to V-Client");
+        dialog.setHeaderText("Let's get you ready to play");
+        ButtonType finish = new ButtonType("Get started", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        ButtonType skip = new ButtonType("Skip", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(finish, skip);
+
+        Label intro = label("V-Client keeps its own private Minecraft folder, so it never touches your other launchers. "
+                + "Three quick choices, all changeable later in Settings.", 13, "#222");
+        intro.setWrapText(true);
+        intro.setStyle("-fx-font-size: 14px;");
+        Label memoryLabel = new Label("Game memory: " + settings.memoryGb() + " GB");
+        Slider memory = new Slider(1, LauncherSettings.maxMemory(), settings.memoryGb());
+        memory.setMajorTickUnit(1);
+        memory.setMinorTickCount(0);
+        memory.setSnapToTicks(true);
+        memory.valueProperty().addListener((observable, was, now) -> {
+            memoryLabel.setText("Game memory: " + now.intValue() + " GB");
+            settings.setMemoryGb(now.intValue());
+        });
+        Label memoryHint = new Label("4–6 GB suits most setups. Leave some RAM for Windows.");
+        memoryHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #555;");
+        HBox online = Widgets.switchRow("Download Minecraft (go online)",
+                "Turns Offline mode off so V-Client can fetch game versions and Java. Recommended.",
+                !settings.offlineMode(), ACCENT, goOnline -> settings.setOfflineMode(!goOnline));
+        Button importProfile = button("IMPORT A PROFILE FILE", "#292642", 11);
+        importProfile.setOnAction(event -> importProfileFile());
+        Label importHint = new Label("Already set up on another PC? Import the profile you exported there.");
+        importHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #555;");
+        VBox body = new VBox(14, intro, new Separator(), memoryLabel, memory, memoryHint, new Separator(), online,
+                new Separator(), importProfile, importHint);
+        body.setPrefWidth(520);
+        dialog.getDialogPane().setContent(body);
+        dialog.showAndWait();
+        settings.setOnboardingDone(true);
+        saveSettings();
+        // The memory / offline choices change what the home page shows; a sign-in screen is left as it is.
+        if (account != null && activePage == Page.HOME) showHome();
+    }
+
+    // ---- Profile import / export ----
+
+    private void exportProfileFile() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Export V-Client profile");
+        chooser.setInitialFileName("v-client-profile.json");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("V-Client profile", "*.json"));
+        var target = chooser.showSaveDialog(stage);
+        if (target == null) return;
+        try {
+            ProfileTransfer.export(settings, target.toPath());
+            appendLog("Exported profile to " + target);
+            if (status != null) status.setText("Profile exported.");
+        } catch (IOException e) {
+            reportProblem(e);
+            showError("Could not export the profile", e);
+        }
+    }
+
+    private void importProfileFile() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Import V-Client profile");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("V-Client profile", "*.json"));
+        var source = chooser.showOpenDialog(stage);
+        if (source == null) return;
+        try {
+            String summary = ProfileTransfer.importInto(settings, source.toPath());
+            saveSettings();
+            Theme.apply(settings.themeId(), settings.customAccent());
+            appendLog(summary);
+            if (status != null) status.setText(summary);
+            if (settingsPage) showSettings();
+        } catch (IOException e) {
+            showError("Could not import the profile", e);
+        }
     }
 
     private void showSettings() {
@@ -407,18 +910,43 @@ public final class LauncherApp extends Application {
         VBox javaCard = card();
         Label javaTitle = label("MINECRAFT JAVA RUNTIME", 11, MUTED);
         ComboBox<String> javaChoice = new ComboBox<>();
-        String automaticJava = "Automatic (Java 25 for Minecraft 1.21.1)";
-        String java25Choice = "Always use Java 25";
-        javaChoice.getItems().setAll(automaticJava, java25Choice);
-        javaChoice.setValue(settings.javaMajorOverride() == 25 ? java25Choice : automaticJava);
+        String automaticJava = "Automatic (recommended: the version Minecraft needs)";
+        java.util.Map<Integer, String> javaNames = new java.util.LinkedHashMap<>();
+        javaNames.put(0, automaticJava);
+        javaNames.put(17, "Always use Java 17");
+        javaNames.put(21, "Always use Java 21");
+        javaNames.put(25, "Always use Java 25");
+        javaChoice.getItems().setAll(javaNames.values());
+        javaChoice.setValue(javaNames.getOrDefault(settings.javaMajorOverride(), automaticJava));
         javaChoice.setMaxWidth(Double.MAX_VALUE);
-        javaChoice.setStyle("-fx-background-color: rgba(20, 20, 45, 0.92); -fx-text-fill: #f3f0ff; -fx-font-size: 14px; -fx-border-color: #48415f; -fx-border-radius: 8; -fx-background-radius: 8;");
+        javaChoice.setStyle("-fx-background-color: #14142d; -fx-text-fill: #f3f0ff; -fx-font-size: 15px; -fx-border-color: #48415f; -fx-border-radius: 8; -fx-background-radius: 8;");
         Label javaStatus = label("Checking for an installed 64-bit Java 25 runtime...", 11, MUTED);
         javaStatus.setWrapText(true);
         javaChoice.valueProperty().addListener((observable, oldChoice, newChoice) -> {
-            settings.setJavaMajorOverride(java25Choice.equals(newChoice) ? 25 : 0);
+            int major = javaNames.entrySet().stream().filter(entry -> entry.getValue().equals(newChoice))
+                    .map(java.util.Map.Entry::getKey).findFirst().orElse(0);
+            settings.setJavaMajorOverride(major);
+            saveSettings();
+            if (major != 0 && major < 21) javaStatus.setText("Minecraft 1.21 needs Java 21 or newer; an older runtime will fail to start it. Use Automatic unless you know you need this.");
+        });
+        TextField jvmField = new TextField(settings.jvmArguments());
+        jvmField.setPromptText("e.g. -XX:+UseG1GC -Dfile.encoding=UTF-8");
+        jvmField.setStyle(fieldStyle());
+        Label jvmStatus = label("Extra JVM arguments (only -X…, -XX:… and -D… are accepted). Applied at the next launch.", 11, MUTED);
+        jvmStatus.setWrapText(true);
+        jvmField.textProperty().addListener((observable, was, now) -> {
+            String problem = JvmArgs.validate(now);
+            if (problem != null) {
+                jvmStatus.setText(problem);
+                jvmStatus.setStyle(jvmStatus.getStyle() + "-fx-text-fill: #ff9aa8;");
+                return;
+            }
+            jvmStatus.setStyle(label("", 11, MUTED).getStyle());
+            jvmStatus.setText("Saved. Applied at the next launch.");
+            settings.setJvmArguments(now);
             saveSettings();
         });
+        javaCard.getChildren().addAll(javaTitle, javaChoice, javaStatus, label("JVM ARGUMENTS", 11, MUTED), jvmField, jvmStatus);
         javaCard.getChildren().addAll(javaTitle, javaChoice, javaStatus);
         executor.execute(() -> {
             try {
@@ -434,6 +962,26 @@ public final class LauncherApp extends Application {
             }
         });
 
+        VBox profileCard = card();
+        Button exportProfile = button("EXPORT PROFILE", "#292642", 11);
+        exportProfile.setOnAction(event -> exportProfileFile());
+        Button importProfile = button("IMPORT PROFILE", "#292642", 11);
+        importProfile.setOnAction(event -> importProfileFile());
+        Label profileHint = label("Share your memory, Java, JVM, theme and clip settings between PCs. Accounts and sign-ins are never included.", 12, MUTED);
+        profileHint.setWrapText(true);
+        profileCard.getChildren().addAll(label("PROFILE", 11, MUTED), new HBox(10, exportProfile, importProfile), profileHint);
+
+        VBox updateCard = card();
+        HBox autoUpdateRow = Widgets.switchRow("Update V-Client automatically",
+                "Checks for a new launcher at startup, verifies the download (SHA-256), then installs and reopens.",
+                settings.autoUpdate(), ACCENT, enabled -> {
+                    settings.setAutoUpdate(enabled);
+                    saveSettings();
+                });
+        Button checkUpdates = button("CHECK FOR UPDATES NOW", "#292642", 11);
+        checkUpdates.setOnAction(event -> checkForUpdates(true));
+        updateCard.getChildren().addAll(label("LAUNCHER UPDATES  ·  V-Client " + AppInfo.VERSION, 11, MUTED), autoUpdateRow, checkUpdates);
+
         VBox accountCard = buildAccountCard();
         VBox playerModeCard = buildPlayerModeCard();
 
@@ -444,7 +992,7 @@ public final class LauncherApp extends Application {
         backButton.setOnAction(event -> showHome());
         status = label("Settings save automatically.", 12, MUTED);
         footer.getChildren().addAll(backButton, status);
-        content.getChildren().addAll(title, subtitle, directoryCard, memoryCard, javaCard, buildVpnCard(), ThemeCard.build(featureHost()), accountCard);
+        content.getChildren().addAll(title, subtitle, directoryCard, memoryCard, javaCard, profileCard, updateCard, buildVpnCard(), ThemeCard.build(featureHost()), accountCard);
         // Hacker / Cheater mode is for the admin account only, so nobody else even sees the option.
         if (settings.isAdmin(account)) content.getChildren().add(playerModeCard);
         content.getChildren().add(footer);
@@ -2071,24 +2619,32 @@ public final class LauncherApp extends Application {
         VBox box = new VBox(8);
         BackendClient client = backend();
         if (!client.configured()) return box;
+        // Last known announcements show at once (the backend may be asleep); a pulsing placeholder covers a first run.
+        BackendClient.Cached<List<BackendClient.Announcement>> cached = client.cachedAnnouncements();
+        if (cached != null) fillAnnouncements(box, cached.value());
+        else box.getChildren().add(Widgets.skeleton(0, 38));
         executor.execute(() -> {
             try {
                 List<BackendClient.Announcement> items = client.announcements();
-                Platform.runLater(() -> {
-                    for (BackendClient.Announcement item : items) {
-                        Label message = label(item.message(), 12, "#f3f6fc");
-                        message.setWrapText(true);
-                        HBox row = new HBox(message);
-                        row.setPadding(new Insets(10, 14, 10, 14));
-                        row.setStyle("-fx-background-color: " + announcementColor(item.level()) + "; -fx-background-radius: 9;");
-                        box.getChildren().add(row);
-                    }
-                });
+                Platform.runLater(() -> fillAnnouncements(box, items));
             } catch (IOException | InterruptedException e) {
                 if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+                if (cached == null) Platform.runLater(() -> box.getChildren().clear());
             }
         });
         return box;
+    }
+
+    private void fillAnnouncements(VBox box, List<BackendClient.Announcement> items) {
+        box.getChildren().clear();
+        for (BackendClient.Announcement item : items) {
+            Label message = label(item.message(), 13, "#f3f6fc");
+            message.setWrapText(true);
+            HBox row = new HBox(message);
+            row.setPadding(new Insets(10, 14, 10, 14));
+            row.setStyle("-fx-background-color: " + announcementColor(item.level()) + "; -fx-background-radius: 9;");
+            box.getChildren().add(row);
+        }
     }
 
     /** Fills {@code target} with the VSMP server state; safe to call from the FX thread. */
@@ -2098,21 +2654,55 @@ public final class LauncherApp extends Application {
             target.setText("VSMP status unavailable — set the backend address on the News page.");
             return;
         }
-        target.setText("Checking VSMP…");
+        BackendClient.Cached<BackendClient.ServerStatus> cached = client.cachedServerStatus();
+        if (cached != null) {
+            showServerStatus(target, indicator, cached.value(), "last known " + timeAgoMillis(cached.savedAtMillis()), true);
+        } else {
+            target.setText("Checking VSMP…");
+        }
         executor.execute(() -> {
             try {
                 BackendClient.ServerStatus state = client.serverStatus();
-                Platform.runLater(() -> {
-                    indicator.setStyle("-fx-background-color: " + (state.online() ? "#39d98a" : "#e5626f") + "; -fx-background-radius: 50%;");
-                    target.setText(state.online()
-                            ? "VSMP ONLINE  ·  " + state.players() + " / " + state.maxPlayers() + " players  ·  " + state.version()
-                            : "VSMP is offline right now");
-                });
+                Platform.runLater(() -> showServerStatus(target, indicator, state, "", false));
             } catch (IOException | InterruptedException e) {
                 if (e instanceof InterruptedException) Thread.currentThread().interrupt();
-                Platform.runLater(() -> target.setText("VSMP status unavailable (" + e.getMessage() + ")"));
+                boolean waking = BackendClient.isWaking(e);
+                Platform.runLater(() -> {
+                    indicator.setStyle("-fx-background-color: " + (waking ? Widgets.YELLOW : "#64728a") + "; -fx-background-radius: 50%;");
+                    if (cached != null) {
+                        showServerStatus(target, indicator, cached.value(),
+                                (waking ? "server waking up… · " : "") + "last known " + timeAgoMillis(cached.savedAtMillis()), true);
+                        indicator.setStyle("-fx-background-color: " + (waking ? Widgets.YELLOW : "#64728a") + "; -fx-background-radius: 50%;");
+                    } else {
+                        target.setText(waking ? "Server waking up… (this can take up to a minute)"
+                                : "VSMP status unavailable — " + FriendlyError.of(e).title().toLowerCase(java.util.Locale.ROOT));
+                    }
+                });
             }
         });
+    }
+
+    private void showServerStatus(Label target, Region indicator, BackendClient.ServerStatus state, String note, boolean stale) {
+        indicator.setStyle("-fx-background-color: " + (stale ? "#64728a" : state.online() ? Widgets.GREEN : Widgets.RED)
+                + "; -fx-background-radius: 50%;");
+        String suffix = note.isBlank() ? "" : "  ·  " + note;
+        target.setText((state.online()
+                ? "VSMP ONLINE  ·  " + state.players() + " / " + state.maxPlayers() + " players  ·  " + state.version()
+                : "VSMP is offline right now") + suffix);
+        if (!stale && state.online()) {
+            smpButtonText = "JOIN OUR SMP  ·  " + state.players() + " online";
+        } else if (!stale) {
+            smpButtonText = "JOIN OUR SMP";
+        }
+        if (singleplayerButton != null && !singleplayerButton.isDisable()) singleplayerButton.setText(smpButtonText);
+    }
+
+    private static String timeAgoMillis(long millis) {
+        long seconds = Math.max(0, (System.currentTimeMillis() - millis) / 1000);
+        if (seconds < 90) return "just now";
+        if (seconds < 3600) return seconds / 60 + " min ago";
+        if (seconds < 86_400) return seconds / 3600 + " h ago";
+        return seconds / 86_400 + " d ago";
     }
 
     private void showServers() {
@@ -2383,10 +2973,7 @@ public final class LauncherApp extends Application {
 
     private void checkForUpdates(boolean manual) {
         BackendClient client = backend();
-        if (!client.configured()) {
-            if (manual) showError("Updates unavailable", new IOException("Set the V-Client backend address first."));
-            return;
-        }
+        // The update file lives on the website, so updates work even while the (sleeping) backend is unreachable.
         executor.execute(() -> {
             try {
                 BackendClient.UpdateInfo info = client.checkForUpdate(AppInfo.VERSION);
@@ -2439,12 +3026,21 @@ public final class LauncherApp extends Application {
         dialog.initOwner(stage);
         dialog.setTitle("Updating V-Client");
         dialog.setHeaderText("Downloading V-Client " + release.version() + "…");
-        dialog.getDialogPane().setContent(bar);
+        Label speed = new Label("Starting…");
+        dialog.getDialogPane().setContent(new VBox(8, bar, speed));
         dialog.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
+        long startedNanos = System.nanoTime();
         Thread worker = new Thread(() -> {
             try {
-                Path installer = UpdateService.download(release, fraction -> Platform.runLater(() -> bar.setProgress(fraction)));
-                backend().reportEvent(settings.installId(), "update");
+                Path installer = UpdateService.download(release, fraction -> Platform.runLater(() -> {
+                    bar.setProgress(fraction);
+                    double seconds = Math.max(0.5, (System.nanoTime() - startedNanos) / 1e9);
+                    if (release.size() > 0 && fraction > 0) {
+                        double rate = release.size() * fraction / seconds;
+                        long eta = Math.round(seconds * (1 - fraction) / fraction);
+                        speed.setText(DownloadStats.formatSpeed(rate) + "  ·  ETA " + DownloadStats.formatDuration(eta));
+                    }
+                }));
                 UpdateService.launchInstallerAfterExit(installer);
                 Platform.runLater(() -> {
                     dialog.close();
@@ -2549,9 +3145,25 @@ public final class LauncherApp extends Application {
 
     /** Anonymous usage counters, on a background thread so the UI never waits for the network. */
     private void reportEventAsync(String event) {
+        // Only one anonymous "launch" event per day per install is ever sent (random local install id, no IP or personal
+        // data), and nothing at all while Offline mode is on. Other event names are intentionally not reported.
+        if (!"launch".equals(event) || settings.offlineMode()) return;
+        String day = java.time.LocalDate.now(java.time.ZoneOffset.UTC).toString();
+        if (day.equals(settings.lastLaunchEventDay())) return;
         BackendClient client = backend();
         if (!client.configured()) return;
-        executor.execute(() -> client.reportEvent(settings.installId(), event));
+        executor.execute(() -> {
+            if (client.reportEvent(settings.installId(), event)) {
+                Platform.runLater(() -> {
+                    settings.setLastLaunchEventDay(day);
+                    try {
+                        settings.save();
+                    } catch (IOException ignored) {
+                        // the event is re-sent next start at worst
+                    }
+                });
+            }
+        });
     }
 
     private void startBackendTasks() {
@@ -3193,35 +3805,40 @@ public final class LauncherApp extends Application {
         navigation.setSpacing(3);
         navigation.setPrefWidth(92);
         navigation.setStyle("-fx-background-color: rgba(9, 10, 27, 0.68); -fx-border-color: transparent rgba(145, 127, 186, 0.18) transparent transparent;");
-        for (Page page : Page.values()) {
-            String[] parts = navigationText(page).split("\n", 2);
-            Label glyph = new Label(parts[0]);
-            glyph.setMinSize(32, 24);
-            glyph.setPrefSize(32, 24);
-            glyph.setMaxSize(32, 24);
-            glyph.setAlignment(Pos.CENTER);
-            Label caption = new Label(parts.length > 1 ? parts[1] : "");
-            caption.setAlignment(Pos.CENTER);
-            VBox stack = new VBox(3, glyph, caption);
-            stack.setAlignment(Pos.CENTER);
-            Button item = new Button();
-            item.setGraphic(stack);
-            item.setContentDisplay(javafx.scene.control.ContentDisplay.GRAPHIC_ONLY);
-            item.setMinSize(78, 50);
-            item.setPrefSize(78, 50);
-            item.setMaxSize(78, 50);
-            item.setOnAction(event -> navigate(page));
-            item.setOnMouseEntered(event -> {
-                hoveredPage = page;
-                updateNavigationState();
-            });
-            item.setOnMouseExited(event -> {
-                if (hoveredPage == page) hoveredPage = null;
-                updateNavigationState();
-            });
-            navigationButtons.put(page, item);
-            navigation.getChildren().add(item);
+        // Sections keep the sidebar readable; rarely used pages are folded under "More".
+        record NavSection(String title, List<Page> pages) {}
+        List<NavSection> sections = List.of(
+                new NavSection("PLAY", List.of(Page.HOME, Page.SERVERS, Page.LIBRARY)),
+                new NavSection("CUSTOMIZE", List.of(Page.MODS, Page.PACKS, Page.COSMETICS, Page.WARDROBE)),
+                new NavSection("SOCIAL", List.of(Page.FRIENDS, Page.NEWS, Page.DISCORD)),
+                new NavSection("YOU", List.of(Page.PROFILE, Page.RECORDINGS, Page.SCREENSHOTS, Page.SETTINGS)));
+        List<Page> morePages = List.of(Page.BOOST, Page.PERFORMANCE, Page.BROWSER, Page.ASSISTANT, Page.LOGS, Page.CONSOLE);
+        if (morePages.contains(activePage)) moreNavigationExpanded = true;
+        navigationButtons.clear();
+        for (NavSection section : sections) {
+            navigation.getChildren().add(navigationHeader(section.title()));
+            for (Page page : section.pages()) navigation.getChildren().add(navigationItem(page));
         }
+        VBox moreItems = new VBox(3);
+        moreItems.setAlignment(Pos.TOP_CENTER);
+        for (Page page : morePages) moreItems.getChildren().add(navigationItem(page));
+        moreItems.setVisible(moreNavigationExpanded);
+        moreItems.managedProperty().bind(moreItems.visibleProperty());
+        Button moreToggle = new Button();
+        moreToggle.setMinSize(78, 30);
+        moreToggle.setPrefSize(78, 30);
+        Runnable styleMore = () -> {
+            moreToggle.setText((moreNavigationExpanded ? "▾ " : "▸ ") + "MORE");
+            moreToggle.setStyle("-fx-background-color: transparent; -fx-text-fill: #c9c6e6; -fx-font-size: 11px;"
+                    + " -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0;");
+        };
+        styleMore.run();
+        moreToggle.setOnAction(event -> {
+            moreNavigationExpanded = !moreNavigationExpanded;
+            moreItems.setVisible(moreNavigationExpanded);
+            styleMore.run();
+        });
+        navigation.getChildren().addAll(moreToggle, moreItems);
         // In a short window the sidebar scrolls instead of pushing the whole layout past the window edges
         // (the root centres its content, so an over-tall sidebar used to clip the header and the last items).
         javafx.scene.control.ScrollPane navigationScroll = new javafx.scene.control.ScrollPane(navigation);
@@ -3237,6 +3854,45 @@ public final class LauncherApp extends Application {
         updateNavigationState();
         root.getChildren().add(layout);
         return root;
+    }
+
+    private static Label navigationHeader(String title) {
+        Label header = new Label(title);
+        header.setMaxWidth(Double.MAX_VALUE);
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setPadding(new Insets(8, 0, 2, 8));
+        header.setStyle("-fx-font-size: 9px; -fx-font-weight: bold; -fx-text-fill: #8f8fb8; -fx-letter-spacing: 1.5;");
+        return header;
+    }
+
+    private Button navigationItem(Page page) {
+        String[] parts = navigationText(page).split("\n", 2);
+        Label glyph = new Label(parts[0]);
+        glyph.setMinSize(32, 24);
+        glyph.setPrefSize(32, 24);
+        glyph.setMaxSize(32, 24);
+        glyph.setAlignment(Pos.CENTER);
+        Label caption = new Label(parts.length > 1 ? parts[1] : "");
+        caption.setAlignment(Pos.CENTER);
+        VBox stack = new VBox(3, glyph, caption);
+        stack.setAlignment(Pos.CENTER);
+        Button item = new Button();
+        item.setGraphic(stack);
+        item.setContentDisplay(javafx.scene.control.ContentDisplay.GRAPHIC_ONLY);
+        item.setMinSize(78, 50);
+        item.setPrefSize(78, 50);
+        item.setMaxSize(78, 50);
+        item.setOnAction(event -> navigate(page));
+        item.setOnMouseEntered(event -> {
+            hoveredPage = page;
+            updateNavigationState();
+        });
+        item.setOnMouseExited(event -> {
+            if (hoveredPage == page) hoveredPage = null;
+            updateNavigationState();
+        });
+        navigationButtons.put(page, item);
+        return item;
     }
 
     private void navigate(Page page) {
@@ -3283,7 +3939,7 @@ public final class LauncherApp extends Application {
             if (item.getGraphic() instanceof VBox stack && stack.getChildren().size() == 2) {
                 stack.getChildren().get(0).setStyle("-fx-font-size: 17px; -fx-font-family: 'Segoe UI Symbol', 'Segoe UI';"
                         + " -fx-text-fill: " + color + ";");
-                stack.getChildren().get(1).setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
+                stack.getChildren().get(1).setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
             }
         });
     }
@@ -3353,8 +4009,8 @@ public final class LauncherApp extends Application {
                 Platform.runLater(() -> {
                     if (refreshVersionsButton != null) refreshVersionsButton.setDisable(false);
                     if (versionPicker != null) versionPicker.setDisable(false);
-                    versionStatusLabel.setText("Could not scan installed versions: " + e.getMessage());
-                    showError("Could not scan installed Minecraft versions", e);
+                    versionStatusLabel.setText("Could not scan installed versions.");
+                    reportProblem(e);
                 });
                 return;
             }
@@ -3383,8 +4039,9 @@ public final class LauncherApp extends Application {
                         selectedVersionId = chosen.id();
                     }
                     versionStatusLabel.setText("Mojang versions: " + catalog.versions().size()
-                            + " · Installed profiles: " + versions.size()
-                            + " · Game folder: " + directory);
+                            + " · Installed profiles: " + versions.size());
+                    updateInstallButton();
+                    updateReadiness();
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
@@ -3419,8 +4076,9 @@ public final class LauncherApp extends Application {
             versionPicker.getSelectionModel().select(chosen);
             selectedVersionId = chosen.id();
         }
-        versionStatusLabel.setText(reason + " · Installed profiles: " + versions.size()
-                + " · Game folder: " + directory);
+        versionStatusLabel.setText(reason + " · Installed profiles: " + versions.size());
+        updateInstallButton();
+        updateReadiness();
     }
 
     private List<VersionChoice> buildVersionChoices(MinecraftLauncher.VersionCatalog catalog,
@@ -3499,20 +4157,34 @@ public final class LauncherApp extends Application {
                     .ifPresent(choice -> versionPicker.getSelectionModel().select(choice));
         }
         if (versionStatusLabel != null) {
-            versionStatusLabel.setText("Downloading " + selected.id()
-                    + " into " + settings.minecraftDirectory().resolve("versions") + "...");
+            versionStatusLabel.setText("Downloading " + selected.id() + "…");
         }
         if (playButton != null) playButton.setDisable(true);
         if (singleplayerButton != null) singleplayerButton.setDisable(true);
         if (versionPicker != null) versionPicker.setDisable(true);
         if (installVersionButton != null) installVersionButton.setDisable(true);
         if (refreshVersionsButton != null) refreshVersionsButton.setDisable(true);
+        updateReadiness();
+        // Progress bar with download speed and ETA: bytes come from the downloader, file counts from its progress lines.
+        DownloadStats downloadStats = new DownloadStats();
+        downloadStats.start();
+        javafx.animation.Timeline progressTicker = new javafx.animation.Timeline(new javafx.animation.KeyFrame(
+                javafx.util.Duration.millis(500), event -> {
+            downloadStats.sample();
+            showInstallProgress(selected.id(), downloadStats);
+        }));
+        progressTicker.setCycleCount(javafx.animation.Animation.INDEFINITE);
+        progressTicker.play();
+        showInstallProgress(selected.id(), downloadStats);
         appendLog("Downloading Minecraft " + selected.id() + " and preparing its libraries, assets, and Java runtime.");
         executor.execute(() -> {
             try {
                 MinecraftLauncher.InstalledVersion installed = gameLauncher.installVersion(
                         settings.minecraftDirectory(), selected.available(),
-                        line -> Platform.runLater(() -> appendLog(line)));
+                        line -> {
+                            downloadStats.accept(line);
+                            Platform.runLater(() -> appendLog(line));
+                        });
                 List<MinecraftLauncher.InstalledVersion> profiles =
                         gameLauncher.findVersions(settings.minecraftDirectory());
                 Platform.runLater(() -> {
@@ -3530,15 +4202,18 @@ public final class LauncherApp extends Application {
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
-                    versionStatusLabel.setText(selected.id() + " · Not Installed · " + e.getMessage());
+                    versionStatusLabel.setText(selected.id() + " · Not Installed · " + FriendlyError.of(e).title());
                     appendLog("Minecraft " + selected.id() + " installation failed: " + e.getMessage());
-                    showError("Could not install Minecraft " + selected.id(), e);
+                    reportProblem(e);
                 });
             } finally {
                 versionsDownloading.remove(selected.id());
                 Platform.runLater(() -> {
+                    progressTicker.stop();
+                    hideInstallProgress();
                     if (versionPicker != null) versionPicker.setDisable(false);
-                    if (installVersionButton != null) installVersionButton.setDisable(false);
+                    updateInstallButton();
+                    updateReadiness();
                     if (refreshVersionsButton != null) refreshVersionsButton.setDisable(false);
                     if (playButton != null) playButton.setDisable(false);
                     if (singleplayerButton != null) singleplayerButton.setDisable(false);
@@ -3554,34 +4229,16 @@ public final class LauncherApp extends Application {
         });
     }
 
-    private void runConnectionTest() {
-        if (settings.offlineMode()) {
-            connectionResultLabel.setText("Offline mode is on, so nothing is contacted. Turn it off to run the connection test.");
-            return;
-        }
-        connectionTestButton.setDisable(true);
-        connectionTestButton.setText("TESTING...");
-        connectionResultLabel.setText("Checking internet, DNS, TLS, and Mojang...");
-        executor.execute(() -> {
-            NetworkDiagnostics.Report report = NetworkDiagnostics.test(
-                    line -> Platform.runLater(() -> appendLog(line)));
-            Platform.runLater(() -> {
-                connectionTestButton.setDisable(false);
-                connectionTestButton.setText("TEST CONNECTION");
-                connectionResultLabel.setText(report.passed()
-                        ? "Connection checks passed." : "One or more connection checks failed.");
-                Alert alert = new Alert(report.passed()
-                        ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR);
-                alert.initOwner(stage);
-                alert.setTitle("V-Client Connection Test");
-                alert.setHeaderText(report.passed()
-                        ? "Network connection is ready" : "Connection test found a problem");
-                alert.setContentText(report.format());
-                alert.getDialogPane().setPrefWidth(640);
-                alert.show();
-                appendLog(report.format());
-            });
-        });
+    private void showInstallProgress(String versionId, DownloadStats stats) {
+        if (installProgress == null || !(installProgress.getUserData() instanceof VBox box)) return;
+        box.setVisible(true);
+        double fraction = stats.fraction();
+        installProgress.setProgress(fraction < 0 ? javafx.scene.control.ProgressIndicator.INDETERMINATE_PROGRESS : fraction);
+        installProgressLabel.setText("Installing " + versionId + "  ·  " + stats.describe());
+    }
+
+    private void hideInstallProgress() {
+        if (installProgress != null && installProgress.getUserData() instanceof VBox box) box.setVisible(false);
     }
 
     /** Starts the selected version; with a {@code server} it connects straight to that server. */
@@ -3613,6 +4270,10 @@ public final class LauncherApp extends Application {
         }
         MinecraftLauncher.InstalledVersion selected = choice.installed();
         PlayerAccount selectedAccount = account;
+        long launchedAt = System.currentTimeMillis();
+        lastError = null;
+        lastProblem = "";
+        renderProblem();
         reportEventAsync(joinSmp ? "join" : "play");
         recordPlayerAsync(selectedAccount);
         boolean offline = settings.offlineMode();
@@ -3678,7 +4339,7 @@ public final class LauncherApp extends Application {
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     appendLog("Launch failed: " + e.getMessage());
-                    showLaunchFailure(e, settings.minecraftDirectory());
+                    showLaunchFailure(e, settings.minecraftDirectory(), launchedAt);
                 });
             } finally {
                 setPresence("In the launcher", "");
@@ -3689,8 +4350,9 @@ public final class LauncherApp extends Application {
                     }
                     if (singleplayerButton != null) {
                         singleplayerButton.setDisable(false);
-                        singleplayerButton.setText("JOIN OUR SMP");
+                        singleplayerButton.setText(smpButtonText);
                     }
+                    updateReadiness();
                 });
             }
         });
@@ -4247,50 +4909,42 @@ public final class LauncherApp extends Application {
         }
     }
 
+    /** A short, friendly error dialog; the technical text is folded under an expandable "Details" section. */
     private void showError(String title, Throwable error) {
+        FriendlyError.Message message = FriendlyError.of(error);
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.initOwner(stage);
         alert.setTitle("V-Client");
         alert.setHeaderText(title);
-        alert.setContentText(error.getMessage() == null ? error.toString() : error.getMessage());
+        alert.setContentText(message.title() + ". " + message.message());
+        TextArea raw = new TextArea(message.details() + (settings != null && settings.debugMode()
+                ? System.lineSeparator() + BackendClient.stackTrace(error) : ""));
+        raw.setEditable(false);
+        raw.setWrapText(true);
+        raw.setPrefRowCount(8);
+        raw.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 12px;");
+        alert.getDialogPane().setExpandableContent(raw);
+        ButtonType copy = new ButtonType("Copy logs", javafx.scene.control.ButtonBar.ButtonData.LEFT);
+        alert.getButtonTypes().add(copy);
+        alert.getDialogPane().setPrefWidth(520);
+        alert.resultProperty().addListener((observable, was, result) -> {
+            if (result == copy) copyLogsToClipboard();
+        });
         alert.show();
     }
 
-    private void showLaunchFailure(Throwable error, Path gameDirectory) {
-        StringBuilder details = new StringBuilder("Launch failure details:\n");
-        Throwable cause = error;
-        int causeDepth = 0;
-        while (cause != null && causeDepth++ < 12) {
-            details.append(causeDepth == 1 ? "- " : "Caused by: ")
-                    .append(cause.getClass().getSimpleName())
-                    .append(": ")
-                    .append(cause.getMessage() == null ? "(no message)" : cause.getMessage())
-                    .append(System.lineSeparator());
-            cause = cause.getCause();
+    /**
+     * A failed launch becomes a short banner on the home page. When Minecraft wrote a crash report during this
+     * launch, the crash report viewer opens on it.
+     */
+    private void showLaunchFailure(Throwable error, Path gameDirectory, long launchedAtMillis) {
+        lastError = error;
+        reportProblem(error);
+        CrashReports.Report crash = CrashReports.newestSince(gameDirectory, launchedAtMillis - 2_000);
+        if (crash != null) {
+            appendLog("Crash detected: " + crash.summary() + " (" + crash.file() + ")");
+            showCrashReports(crash);
         }
-        Path launchLog = gameDirectory.resolve("logs").resolve("vclient-launch.log");
-        details.append("\nDetailed V-Client launch log:\n").append(launchLog)
-                .append(System.lineSeparator());
-        appendDiagnosticFile(details, launchLog, "V-Client launch log", 18_000);
-        appendLatestDiagnosticFile(details, gameDirectory.resolve("crash-reports"),
-                "crash-", ".txt", "Minecraft crash report", 20_000);
-        appendDiagnosticFile(details, gameDirectory.resolve("logs").resolve("latest.log"),
-                "Minecraft latest.log", 12_000);
-
-        TextArea diagnosticText = new TextArea(details.toString());
-        diagnosticText.setEditable(false);
-        diagnosticText.setWrapText(true);
-        diagnosticText.setPrefColumnCount(78);
-        diagnosticText.setPrefRowCount(24);
-        diagnosticText.setStyle("-fx-control-inner-background: rgba(9, 10, 28, 0.96); "
-                + "-fx-text-fill: #e8e8f5; -fx-font-family: 'Consolas'; -fx-font-size: 11px;");
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.initOwner(stage);
-        alert.setTitle("V-Client launch diagnostics");
-        alert.setHeaderText("Minecraft could not finish launching");
-        alert.getDialogPane().setContent(diagnosticText);
-        alert.getDialogPane().setPrefSize(760, 620);
-        alert.show();
     }
 
     private static void appendDiagnosticFile(StringBuilder details, Path file, String label,
@@ -4303,28 +4957,6 @@ public final class LauncherApp extends Application {
         } catch (IOException e) {
             details.append("Could not read diagnostic file: ").append(e.getMessage())
                     .append(System.lineSeparator());
-        }
-    }
-
-    private static void appendLatestDiagnosticFile(StringBuilder details, Path directory,
-                                                  String prefix, String suffix, String label,
-                                                  int maximumCharacters) {
-        if (!Files.isDirectory(directory)) return;
-        try (var files = Files.list(directory)) {
-            Path latest = files.filter(Files::isRegularFile)
-                    .filter(file -> file.getFileName().toString().startsWith(prefix)
-                            && file.getFileName().toString().endsWith(suffix))
-                    .max((left, right) -> {
-                        try {
-                            return Files.getLastModifiedTime(left).compareTo(Files.getLastModifiedTime(right));
-                        } catch (IOException e) {
-                            return left.getFileName().compareTo(right.getFileName());
-                        }
-                    }).orElse(null);
-            if (latest != null) appendDiagnosticFile(details, latest, label, maximumCharacters);
-        } catch (IOException e) {
-            details.append("\nCould not list ").append(label).append(" files in ")
-                    .append(directory).append(": ").append(e.getMessage()).append(System.lineSeparator());
         }
     }
 
@@ -4343,9 +4975,9 @@ public final class LauncherApp extends Application {
             }
 
             private void updateCellStyle() {
-                String background = isSelected() ? "#806c2f" : isHover() ? "#292642" : "#14142d";
-                setStyle("-fx-background-color: " + background + "; -fx-padding: 7 9 7 9;");
-                setTextFill(Color.web("#f3f0ff"));
+                String background = isSelected() ? "#34305a" : isHover() ? "#292642" : "#14142d";
+                setStyle("-fx-background-color: " + background + "; -fx-padding: 8 10 8 10; -fx-font-size: 14px;");
+                setTextFill(Color.web(isSelected() ? "#ffffff" : "#f3f0ff"));
             }
         };
     }
@@ -4359,14 +4991,19 @@ public final class LauncherApp extends Application {
 
     private static Label label(String text, int size, String color) {
         Label label = new Label(text);
-        label.setStyle("-fx-font-size: " + size + "px; -fx-text-fill: " + color + ";");
+        label.setStyle("-fx-font-size: " + readableSize(size) + "px; -fx-text-fill: " + color + ";");
         return label;
+    }
+
+    /** Small text was hard to read on the dark background: everything up to 14 px grows a little. */
+    private static int readableSize(int size) {
+        return size <= 11 ? size + 2 : size <= 14 ? size + 1 : size;
     }
 
     private static Button button(String text, String color, int size) {
         Button button = new Button(text);
         String foreground = color.equalsIgnoreCase(ACCENT) ? "#171326" : "#f3f0ff";
-        button.setStyle("-fx-background-color: " + color + "; -fx-text-fill: " + foreground + "; -fx-font-size: " + size
+        button.setStyle("-fx-background-color: " + color + "; -fx-text-fill: " + foreground + "; -fx-font-size: " + readableSize(size)
                 + "px; -fx-font-weight: bold; -fx-background-radius: 9; -fx-padding: 12 18 12 18; -fx-cursor: hand;");
         return button;
     }
