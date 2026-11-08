@@ -26,6 +26,12 @@ final class LauncherSettings {
     private final java.util.Map<String, String> backendTokens = new java.util.LinkedHashMap<>();
     private String installId = "";
     private boolean autoUpdate = true;
+    /** UTC day (yyyy-MM-dd) of the last anonymous "launch" event, so at most one is sent per day. */
+    private String lastLaunchEventDay = "";
+    /** Extra JVM arguments for the game (validated by {@link JvmArgs}). */
+    private String jvmArguments = "";
+    /** False on a fresh install until the first-run onboarding has been shown. Existing installs count as done. */
+    private boolean onboardingDone = true;
     /** Logs every backend request with its URL, status and stack traces of failures. */
     private boolean debugMode;
     /** VSMP Boost Mode: when on, the chosen profile's video settings, JVM flags and memory apply at every launch. */
@@ -69,6 +75,7 @@ final class LauncherSettings {
         Path defaultDirectory = privateMinecraftDirectory(appData);
         if (!Files.exists(SETTINGS_FILE)) {
             LauncherSettings fresh = new LauncherSettings(defaultDirectory, defaultMemory(), 0, "", "", true);
+            fresh.onboardingDone = false;
             fresh.installId = java.util.UUID.randomUUID().toString();
             return fresh;
         }
@@ -79,12 +86,12 @@ final class LauncherSettings {
         Path minecraftDirectory = migrateLegacyDirectory(
                 normalizeMinecraftDirectory(selectedDirectory), appData);
         LauncherSettings settings = new LauncherSettings(minecraftDirectory,
-                Math.clamp(memory, 1, maxMemory()), saved.path("javaMajorOverride").asInt(0) == 25 ? 25 : 0,
+                Math.clamp(memory, 1, maxMemory()), isSelectableJava(saved.path("javaMajorOverride").asInt(0)) ? saved.path("javaMajorOverride").asInt(0) : 0,
                 saved.path("lastAccountId").asText(""),
                 saved.path("discordInvite").asText(""),
                 saved.path("offlineMode").asBoolean(true));
         settings.backendUrl = saved.path("backendUrl").asText("");
-        if (BackendClient.normalize(settings.backendUrl).equalsIgnoreCase(AppInfo.RETIRED_BACKEND_URL)) {
+        if (AppInfo.isRetiredBackend(settings.backendUrl)) {
             settings.backendUrl = "";
         }
         saved.path("backendTokens").fields().forEachRemaining(entry -> {
@@ -97,6 +104,9 @@ final class LauncherSettings {
             settings.backendTokens.put(settings.lastAccountId, legacyToken);
         }
         settings.autoUpdate = saved.path("autoUpdate").asBoolean(true);
+        settings.lastLaunchEventDay = saved.path("lastLaunchEventDay").asText("");
+        settings.jvmArguments = String.join(" ", JvmArgs.parse(saved.path("jvmArguments").asText("")));
+        settings.onboardingDone = saved.path("onboardingDone").asBoolean(true);
         settings.debugMode = saved.path("debugMode").asBoolean(false);
         settings.boostEnabled = saved.path("boostEnabled").asBoolean(false);
         settings.boostProfile = BoostProfile.parse(saved.path("boostProfile").asText(""), BoostProfile.BALANCED);
@@ -155,6 +165,9 @@ final class LauncherSettings {
         ObjectNode tokens = saved.putObject("backendTokens");
         backendTokens.forEach(tokens::put);
         saved.put("autoUpdate", autoUpdate);
+        saved.put("lastLaunchEventDay", lastLaunchEventDay);
+        saved.put("jvmArguments", jvmArguments);
+        saved.put("onboardingDone", onboardingDone);
         saved.put("debugMode", debugMode);
         saved.put("boostEnabled", boostEnabled);
         saved.put("boostProfile", boostProfile.name());
@@ -186,10 +199,31 @@ final class LauncherSettings {
     }
 
     void setJavaMajorOverride(int javaMajorOverride) {
-        if (javaMajorOverride != 0 && javaMajorOverride != 25) {
-            throw new IllegalArgumentException("Only Java 25 can be selected as a runtime override.");
+        if (!isSelectableJava(javaMajorOverride)) {
+            throw new IllegalArgumentException("Java " + javaMajorOverride + " cannot be selected as a runtime override.");
         }
         this.javaMajorOverride = javaMajorOverride;
+    }
+
+    /** 0 means automatic; otherwise a Java version V-Client can install and run (see JavaRuntimeManager). */
+    static boolean isSelectableJava(int major) {
+        return major == 0 || major == 17 || major == 21 || major == 25;
+    }
+
+    String jvmArguments() {
+        return jvmArguments;
+    }
+
+    void setJvmArguments(String jvmArguments) {
+        this.jvmArguments = jvmArguments == null ? "" : jvmArguments.strip();
+    }
+
+    boolean onboardingDone() {
+        return onboardingDone;
+    }
+
+    void setOnboardingDone(boolean onboardingDone) {
+        this.onboardingDone = onboardingDone;
     }
 
     String lastAccountId() {
@@ -303,6 +337,14 @@ final class LauncherSettings {
     /** Random id for anonymous usage counts. It is not derived from the PC or the player. */
     String installId() {
         return installId;
+    }
+
+    String lastLaunchEventDay() {
+        return lastLaunchEventDay;
+    }
+
+    void setLastLaunchEventDay(String day) {
+        this.lastLaunchEventDay = day == null ? "" : day;
     }
 
     boolean autoUpdate() {

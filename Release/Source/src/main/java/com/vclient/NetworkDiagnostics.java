@@ -28,7 +28,16 @@ final class NetworkDiagnostics {
     private static final HttpClient HTTP = PlatformTls.httpClientBuilder(Duration.ofSeconds(10))
             .followRedirects(HttpClient.Redirect.NORMAL).build();
 
-    record Check(String name, boolean passed, String detail) {}
+    /** {@code hint} is a one-line fix suggestion shown next to a failed check; empty when the check passed. */
+    record Check(String name, boolean passed, String detail, String hint) {
+        Check(String name, boolean passed, String detail) {
+            this(name, passed, detail, "");
+        }
+
+        Check withHint(String hint) {
+            return new Check(name, passed, detail, passed ? "" : hint);
+        }
+    }
 
     record Report(List<Check> checks, String proxy, String tlsProtocols) {
         boolean passed() {
@@ -68,6 +77,49 @@ final class NetworkDiagnostics {
         Check apiCheck = testMojangApi(log);
         checks.add(apiCheck);
         return new Report(List.copyOf(checks), proxy, PlatformTls.enabledProtocols());
+    }
+
+    /**
+     * The four-line startup checklist: DNS, TLS, Mojang and the V-Client backend, each with a fix hint when it fails.
+     * Never called in Offline mode (the caller skips it, because nothing may be contacted then).
+     */
+    static List<Check> checklist(String backendUrl, Consumer<String> log) {
+        List<Check> result = new ArrayList<>();
+        Check dns = resolveHosts();
+        result.add(new Check("DNS", dns.passed(), dns.detail()).withHint(
+                "Set this PC's DNS to automatic, or to 1.1.1.1 / 8.8.8.8, and make sure no filter or VPN blocks Mojang hosts."));
+        Check tls = testMojangTls(log);
+        result.add(new Check("TLS", tls.passed(), tls.detail(), tls.hint()));
+        Check mojang = testMojangApi(log);
+        result.add(new Check("Mojang", mojang.passed(), mojang.detail(), "").withHint(
+                "Mojang may be down or blocked by your network. Check status.minecraft.net, or try another network."));
+        result.add(testBackend(backendUrl, log));
+        return List.copyOf(result);
+    }
+
+    /** Reaches the V-Client backend; a sleeping free-tier server counts as "waking up", not as a failure. */
+    static Check testBackend(String backendUrl, Consumer<String> log) {
+        BackendClient client = new BackendClient(BackendClient.resolveUrl(backendUrl));
+        if (!client.configured()) {
+            return new Check("Backend", false, "No backend address is set.",
+                    "Open News → Backend & updates and enter the V-Client backend address.");
+        }
+        try {
+            client.serverStatus();
+            return new Check("Backend", true, "Backend answered at " + client.baseUrl() + ".");
+        } catch (IOException e) {
+            log.accept("FAIL Backend: " + PlatformTls.describeFailure(e));
+            if (BackendClient.isWaking(e)) {
+                return new Check("Backend", false, "Server waking up… " + e.getMessage(),
+                        "The free backend sleeps when idle and takes up to a minute to start. Wait a moment and press Test again.");
+            }
+            String interception = PlatformTls.interceptionHint(e);
+            return new Check("Backend", false, PlatformTls.describeFailure(e),
+                    interception.isEmpty() ? "Check the backend address on the News page and your internet connection." : interception);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new Check("Backend", false, "Backend check was interrupted.", "");
+        }
     }
 
     static void requireInternetAccess(Consumer<String> log) throws IOException, InterruptedException {
@@ -124,17 +176,12 @@ final class NetworkDiagnostics {
             return new Check("TLS certificate validation", true, detail);
         } catch (IOException e) {
             String detail = PlatformTls.describeFailure(e);
-            if (PlatformTls.hasHostnameMismatch(e)) {
-                detail += ". The certificate name does not match the requested host; this can indicate "
-                        + "DNS redirection, a captive portal, or HTTPS interception.";
-            } else if (PlatformTls.hasCertificateFailure(e)) {
-                detail += ". The peer certificate was rejected by both the Windows and Java trust stores. "
-                        + "If a proxy or antivirus replaces HTTPS certificates, install its verified root "
-                        + "certificate through your administrator; V-Client will not bypass validation.";
-            }
+            String interception = PlatformTls.interceptionHint(e);
+            if (!interception.isEmpty()) detail += ". " + interception;
             detail += " Proxy: " + PlatformTls.proxyDescription(MOJANG_MANIFEST) + ".";
             log.accept("FAIL TLS certificate validation: " + detail);
-            return new Check("TLS certificate validation", false, detail);
+            return new Check("TLS certificate validation", false, detail,
+                    interception.isEmpty() ? "Check your PC clock and Windows Update, then run the test again." : interception);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return new Check("TLS certificate validation", false, "TLS check was interrupted.");

@@ -11,6 +11,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +55,7 @@ final class BackendClient {
     }
 
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final HttpClient HTTP = PlatformTls.httpClientBuilder(Duration.ofSeconds(8))
+    private static final HttpClient HTTP = PlatformTls.httpClientBuilder(Duration.ofSeconds(5))
             .followRedirects(HttpClient.Redirect.NORMAL).build();
 
     private final String baseUrl;
@@ -107,7 +109,9 @@ final class BackendClient {
 
     List<Announcement> announcements() throws IOException, InterruptedException {
         List<Announcement> result = new ArrayList<>();
-        for (JsonNode item : get("/api/announcements").path("items")) {
+        JsonNode root = get("/api/announcements");
+        cachePut("announcements", root);
+        for (JsonNode item : root.path("items")) {
             result.add(new Announcement(item.path("id").asInt(), item.path("message").asText(), item.path("level").asText("info")));
         }
         return result;
@@ -115,10 +119,8 @@ final class BackendClient {
 
     ServerStatus serverStatus() throws IOException, InterruptedException {
         JsonNode root = get("/api/server/status");
-        JsonNode java = root.path("java");
-        if (!java.path("online").asBoolean()) return ServerStatus.OFFLINE;
-        return new ServerStatus(true, java.path("players").path("online").asInt(), java.path("players").path("max").asInt(),
-                java.path("version").asText(""), java.path("latencyMs").asLong());
+        cachePut("serverStatus", root);
+        return parseStatus(root);
     }
 
     /** The website on GitHub Pages: its update.json and installer are published by every push to main. */
@@ -139,7 +141,7 @@ final class BackendClient {
 
     private UpdateInfo checkSiteForUpdate(String currentVersion) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(SITE_URL + "/update.json?t=" + System.currentTimeMillis()))
-                .timeout(Duration.ofSeconds(TIMEOUT_SECONDS)).header("Accept", "application/json")
+                .timeout(Duration.ofSeconds(15)).header("Accept", "application/json")
                 .header("User-Agent", "V-Client/" + AppInfo.VERSION + " (" + AppInfo.PLATFORM + ")").GET().build();
         HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (response.statusCode() != 200) throw new IOException("HTTP " + response.statusCode());
@@ -189,14 +191,16 @@ final class BackendClient {
     }
 
     /** Anonymous usage counter; failures are ignored because statistics must never disturb the player. */
-    void reportEvent(String installId, String event) {
-        if (!configured() || installId == null || installId.isBlank()) return;
+    boolean reportEvent(String installId, String event) {
+        if (!configured() || installId == null || installId.isBlank()) return false;
         try {
             ObjectNode body = JSON.createObjectNode().put("installId", installId).put("platform", AppInfo.PLATFORM)
                     .put("version", AppInfo.VERSION).put("event", event);
             send("POST", "/api/stats/event", body, null);
+            return true;
         } catch (IOException | InterruptedException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            return false;
         }
     }
 
@@ -270,10 +274,10 @@ final class BackendClient {
 
     /** Tells the backend which account started the game; failures are ignored because it only feeds the admin list. */
     void recordPlayer(String uuid, String name, String accountType) {
-        if (!configured() || uuid == null || uuid.isBlank() || name == null || name.isBlank()) return;
+        if (!configured() || uuid == null || uuid.isBlank()) return;
         try {
-            ObjectNode body = JSON.createObjectNode().put("uuid", uuid.replace("-", "")).put("name", name)
-                    .put("accountType", accountType).put("version", AppInfo.VERSION);
+            // Only the account id is sent (the server keeps a one-way hash of it, never the name).
+            ObjectNode body = JSON.createObjectNode().put("uuid", uuid.replace("-", ""));
             send("POST", "/api/players/seen", body, null);
         } catch (IOException | InterruptedException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
@@ -366,15 +370,71 @@ final class BackendClient {
         return writer.toString();
     }
 
-    /** Backend requests give up after this long, so a sleeping or unreachable server never means "loading forever". */
-    static final int TIMEOUT_SECONDS = 10;
+    /**
+     * One backend request may take this long. The Cloudflare Worker is always awake, so a short limit keeps the launcher snappy;
+     * anything slower is treated as "unavailable" and the cached data is used.
+     */
+    static final int TIMEOUT_SECONDS = 5;
+    /** Tries per request (the first plus retries) and the pause before the first retry, doubled each time (1 s, 2 s). */
+    static final int MAX_ATTEMPTS = 3;
+    static final long FIRST_RETRY_DELAY_MILLIS = 1_000;
+
+    /** Called with a short message when the server looks like it is waking up, and with "" once it answered. */
+    private static volatile java.util.function.Consumer<String> wakingListener = message -> {};
+
+    static void setWakingListener(java.util.function.Consumer<String> listener) {
+        wakingListener = listener == null ? message -> {} : listener;
+    }
+
+    /** The server did not answer in time or answered 502/503/504, which a sleeping free-tier host does while it starts. */
+    static final class WakingException extends IOException {
+        WakingException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    static boolean isWaking(Throwable error) {
+        for (Throwable current = error; current != null; current = current.getCause()) {
+            if (current instanceof WakingException) return true;
+        }
+        return false;
+    }
+
+    /** Test hook: divides the retry pauses so unit tests do not wait seconds. */
+    static volatile long retryDelayScale = 1;
 
     private JsonNode send(String method, String path, ObjectNode body, String token) throws IOException, InterruptedException {
         if (!configured()) throw new BackendException("The V-Client backend address is not set. Add it on the News page.");
+        boolean idempotent = method.equals("GET");
+        long delay = FIRST_RETRY_DELAY_MILLIS;
+        for (int attempt = 1; ; attempt++) {
+            try {
+                JsonNode result = sendOnce(method, path, body, token);
+                if (attempt > 1) wakingListener.accept("");
+                return result;
+            } catch (WakingException e) {
+                // Only repeat requests that are safe to repeat; a login or registration is never sent twice.
+                if (attempt >= MAX_ATTEMPTS || !idempotent) {
+                    wakingListener.accept("");
+                    throw e;
+                }
+                wakingListener.accept("Server waking up…");
+                requestLog.accept("Backend " + method + " " + baseUrl + path + " -> server waking up; retry "
+                        + attempt + "/" + (MAX_ATTEMPTS - 1) + " in " + delay / 1000.0 + " s");
+                Thread.sleep(Math.max(1, delay / retryDelayScale));
+                delay *= 2;
+            }
+        }
+    }
+
+    private JsonNode sendOnce(String method, String path, ObjectNode body, String token) throws IOException, InterruptedException {
         String url = baseUrl + path;
         long start = System.nanoTime();
         try {
-            HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(url))
+            URI uri = URI.create(url);
+            // HTTPS must go to a host name so SNI and certificate host name checks apply; plain http is for local dev only.
+            if ("https".equalsIgnoreCase(uri.getScheme())) PlatformTls.requireHostName(uri);
+            HttpRequest.Builder request = HttpRequest.newBuilder(uri)
                     .timeout(Duration.ofSeconds(TIMEOUT_SECONDS))
                     .header("Accept", "application/json")
                     .header("User-Agent", "V-Client/" + AppInfo.VERSION + " (" + AppInfo.PLATFORM + ")");
@@ -388,36 +448,108 @@ final class BackendClient {
             HttpResponse<String> response = HTTP.send(request.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             requestLog.accept("Backend " + method + " " + url + " -> HTTP " + response.statusCode()
                     + " (" + (System.nanoTime() - start) / 1_000_000 + " ms)");
+            int status = response.statusCode();
+            if (status == 502 || status == 503 || status == 504) {
+                throw new WakingException("The backend answered HTTP " + status + " (a free-tier server is usually still starting).", null);
+            }
             JsonNode root;
             try {
                 root = response.body().isBlank() ? JSON.createObjectNode() : JSON.readTree(response.body());
             } catch (IOException e) {
                 String type = response.headers().firstValue("Content-Type").orElse("no content type");
-                boolean plainNotFound = response.statusCode() == 404 && type.startsWith("text/plain");
+                boolean plainNotFound = status == 404 && type.startsWith("text/plain");
+                if (!plainNotFound && type.startsWith("text/html") && status < 400) {
+                    // Render serves an HTML "waking up" page with 200 while the service boots.
+                    throw new WakingException("The backend returned a start-up page instead of JSON.", e);
+                }
                 throw new IOException(plainNotFound
                         ? "This address answers /api requests with a plain \"Not Found\" (HTTP 404), so it is not running the "
                         + "V-Client backend. It is probably the website's static hosting. Point the launcher at the Node backend "
                         + "service instead (see backend/README.md and render.yaml)."
-                        : "The backend returned something that is not JSON (HTTP " + response.statusCode() + ", " + type + "). "
+                        : "The backend returned something that is not JSON (HTTP " + status + ", " + type + "). "
                         + "Check the backend address; a free host may still be waking up.", e);
             }
-            if (response.statusCode() >= 400) {
+            if (status >= 400) {
                 String message = root.path("error").asText("");
-                throw new BackendException(message.isBlank() ? "The backend returned HTTP " + response.statusCode() + "." : message);
+                throw new BackendException(message.isBlank() ? "The backend returned HTTP " + status + "." : message);
             }
             return root;
-        } catch (java.net.http.HttpTimeoutException e) {
-            IOException timeout = new IOException("The backend did not answer within " + TIMEOUT_SECONDS + " seconds ("
-                    + url + "). If it is hosted on a free plan it may be waking up; try again in a minute.", e);
-            requestLog.accept("Backend " + method + " " + url + " -> FAILED: " + timeout.getMessage()
+        } catch (WakingException e) {
+            requestLog.accept("Backend " + method + " " + url + " -> WAKING: " + e.getMessage());
+            throw e;
+        } catch (java.net.http.HttpTimeoutException | java.net.ConnectException e) {
+            WakingException waking = new WakingException("The backend did not answer within " + TIMEOUT_SECONDS + " seconds ("
+                    + url + "). If it is hosted on a free plan it is probably waking up; try again in a minute.", e);
+            requestLog.accept("Backend " + method + " " + url + " -> TIMEOUT: " + waking.getMessage()
                     + (debug ? "\n" + stackTrace(e) : ""));
-            throw timeout;
+            throw waking;
         } catch (IOException | RuntimeException e) {
             requestLog.accept("Backend " + method + " " + url + " -> FAILED: " + e.getMessage()
                     + (debug ? "\n" + stackTrace(e) : ""));
             if (e instanceof RuntimeException) throw new IOException("Invalid backend request " + url + ": " + e.getMessage(), e);
             throw e;
         }
+    }
+
+    // ---- Last known answers, so a sleeping server never leaves the home screen empty ----
+
+    /** A value read from the on-disk cache together with when it was saved (epoch milliseconds). */
+    record Cached<T>(T value, long savedAtMillis) {}
+
+    private static volatile Path cacheFile = Path.of(
+            System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")), "V-Client", "cache", "backend-cache.json");
+
+    static void setCacheFile(Path file) {
+        cacheFile = file;
+    }
+
+    private static synchronized void cachePut(String key, JsonNode value) {
+        try {
+            Files.createDirectories(cacheFile.getParent());
+            ObjectNode root = Files.isRegularFile(cacheFile) && JSON.readTree(cacheFile.toFile()) instanceof ObjectNode existing
+                    ? existing : JSON.createObjectNode();
+            ObjectNode entry = root.putObject(key);
+            entry.put("savedAt", System.currentTimeMillis());
+            entry.set("value", value);
+            Files.writeString(cacheFile, root.toString(), StandardCharsets.UTF_8);
+        } catch (IOException | RuntimeException ignored) {
+            // the cache is a convenience; never fail a request because it could not be written
+        }
+    }
+
+    private static synchronized JsonNode cacheGet(String key) {
+        try {
+            if (!Files.isRegularFile(cacheFile)) return null;
+            JsonNode entry = JSON.readTree(cacheFile.toFile()).path(key);
+            return entry.isObject() ? entry : null;
+        } catch (IOException | RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** Last announcements the backend returned, or null when none were ever saved. */
+    Cached<List<Announcement>> cachedAnnouncements() {
+        JsonNode entry = cacheGet("announcements");
+        if (entry == null) return null;
+        List<Announcement> result = new ArrayList<>();
+        for (JsonNode item : entry.path("value").path("items")) {
+            result.add(new Announcement(item.path("id").asInt(), item.path("message").asText(), item.path("level").asText("info")));
+        }
+        return new Cached<>(List.copyOf(result), entry.path("savedAt").asLong());
+    }
+
+    /** Last VSMP status the backend returned, or null when none was ever saved. */
+    Cached<ServerStatus> cachedServerStatus() {
+        JsonNode entry = cacheGet("serverStatus");
+        if (entry == null) return null;
+        return new Cached<>(parseStatus(entry.path("value")), entry.path("savedAt").asLong());
+    }
+
+    private static ServerStatus parseStatus(JsonNode root) {
+        JsonNode java = root.path("java");
+        if (!java.path("online").asBoolean()) return ServerStatus.OFFLINE;
+        return new ServerStatus(true, java.path("players").path("online").asInt(), java.path("players").path("max").asInt(),
+                java.path("version").asText(""), java.path("latencyMs").asLong());
     }
 
     private static String encode(String value) {

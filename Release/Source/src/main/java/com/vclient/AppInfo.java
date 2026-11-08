@@ -3,20 +3,26 @@ package com.vclient;
 /** Build-time constants shared by the launcher's backend features. */
 final class AppInfo {
     /** Launcher version reported to the update service. Bump together with the pom version and the published release. */
-    static final String VERSION = "1.6.24";
+    static final String VERSION = "1.6.25";
 
     /**
-     * Base URL of the V-Client backend (the {@code backend/} project), for example {@code https://vclient.example.com}.
-     * Players can override it in the News page; the {@code VCLIENT_BACKEND_URL} environment variable also wins over this value.
-     * Leave empty to ship a build that does not contact any backend until one is configured.
+     * The one place the V-Client API address lives (a Cloudflare Worker, see {@code cloudflare/}). Players can override it
+     * on the News page and the {@code VCLIENT_BACKEND_URL} environment variable wins over both. Change it here after
+     * deploying the Worker to your own workers.dev address or custom domain.
      */
-    static final String DEFAULT_BACKEND_URL = "https://vsmp-client-backend.onrender.com";
+    static final String DEFAULT_BACKEND_URL = "https://vclient-api.vclient-api.workers.dev";
 
-    /** The old static-website service. It has no API, so a saved copy of this address is replaced by the default. */
-    static final String RETIRED_BACKEND_URL = "https://vsmp-client.onrender.com";
+    /** Old backends that no longer exist; a saved copy of one of these is replaced by the default. */
+    static final java.util.List<String> RETIRED_BACKEND_URLS = java.util.List.of(
+            "https://vsmp-client.onrender.com", "https://vsmp-client-backend.onrender.com");
 
     static final String PLATFORM = "windows";
 
     private AppInfo() {
+    }
+
+    static boolean isRetiredBackend(String url) {
+        String normalized = BackendClient.normalize(url);
+        return RETIRED_BACKEND_URLS.stream().anyMatch(normalized::equalsIgnoreCase);
     }
 }

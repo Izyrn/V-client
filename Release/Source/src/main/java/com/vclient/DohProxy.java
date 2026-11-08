@@ -23,9 +23,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * A loopback HTTP proxy for the built-in browser. Every host name is looked up through Cloudflare's DNS-over-HTTPS
- * endpoint (reached by IP, so it needs no DNS itself) instead of the PC's resolver, which means a network's DNS
- * filter or hijack cannot redirect the browser. HTTPS pages are tunnelled with CONNECT, so TLS still runs end to
+ * A loopback HTTP proxy for the built-in browser. Host names are looked up through DNS-over-HTTPS servers that are
+ * themselves reached by host name (normal SNI and certificate checks, never an IP address in the URL), so a
+ * network's DNS filter or hijack cannot redirect the browser. HTTPS pages are tunnelled with CONNECT, so TLS still runs end to
  * end between the page and the site. If the DoH lookup fails the system resolver is used as a fallback.
  */
 final class DohProxy {
@@ -198,11 +198,27 @@ final class DohProxy {
      * these through, so each is tried in turn and the one that last worked goes first.
      */
     private static final String[] DOH_SERVERS = {
-            "https://1.0.0.1/dns-query", "https://8.8.8.8/resolve", "https://8.8.4.4/resolve",
-            "https://1.1.1.1/dns-query", "https://9.9.9.9:5053/dns-query"};
+            "https://cloudflare-dns.com/dns-query", "https://dns.google/resolve",
+            "https://dns.quad9.net:5053/dns-query"};
+    /** The DoH servers' own names are never looked up over DoH (that would recurse); the system resolver answers them. */
+    private static final java.util.Set<String> DOH_HOSTS = java.util.Set.of(
+            "cloudflare-dns.com", "dns.google", "dns.quad9.net");
     private static volatile int preferredServer;
 
+    static boolean isDohHost(String host) {
+        return host != null && DOH_HOSTS.contains(host.toLowerCase(java.util.Locale.ROOT));
+    }
+
+    /**
+     * An address that keeps its host name. {@code InetAddress.getByName(ip)} would create a nameless address, and TLS
+     * would then verify the certificate against the bare IP ("No subject alternative names matching IP address").
+     */
+    static InetAddress named(String host, String ip) throws java.net.UnknownHostException {
+        return InetAddress.getByAddress(host, InetAddress.getByName(ip).getAddress());
+    }
+
     static InetAddress lookup(String host) {
+        if (host == null || host.isBlank() || isDohHost(host) || host.matches("[0-9.]+") || host.contains(":")) return null;
         String name = URLEncoder.encode(host, StandardCharsets.UTF_8);
         for (int i = 0; i < DOH_SERVERS.length; i++) {
             int index = (preferredServer + i) % DOH_SERVERS.length;
@@ -214,7 +230,7 @@ final class DohProxy {
                 preferredServer = index;
                 for (JsonNode answer : JSON.readTree(response.body()).path("Answer")) {
                     if (answer.path("type").asInt() != 1) continue;
-                    InetAddress address = InetAddress.getByName(answer.path("data").asText());
+                    InetAddress address = named(host, answer.path("data").asText());
                     long ttl = Math.max(30, Math.min(answer.path("TTL").asLong(60), 600));
                     CACHE.put(host, new Answer(address, System.currentTimeMillis() + ttl * 1000));
                     return address;

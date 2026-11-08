@@ -66,6 +66,13 @@ final class MinecraftLauncher {
         this.boostTuning = boostTuning;
     }
 
+    private volatile java.util.function.Supplier<List<String>> extraJvmArguments = List::of;
+
+    /** Extra JVM arguments from Settings, added after the memory flags (already validated by {@link JvmArgs}). */
+    void setExtraJvmArguments(java.util.function.Supplier<List<String>> extraJvmArguments) {
+        this.extraJvmArguments = extraJvmArguments;
+    }
+
     /** Admin accounts get every cosmetic unlocked in the game ({@code -Dvclient.cosmetics.unlockAll=true}). */
     void setAdminPermission(java.util.function.Predicate<PlayerAccount> adminPermission) {
         this.adminPermission = adminPermission;
@@ -590,6 +597,11 @@ final class MinecraftLauncher {
         } else {
             command.add("-Xmx" + memoryGb + "G");
             command.add("-Xms512M");
+        }
+        List<String> userJvm = extraJvmArguments.get();
+        if (!userJvm.isEmpty()) {
+            command.addAll(userJvm);
+            onOutput.accept("Extra JVM arguments from Settings: " + String.join(" ", userJvm));
         }
         if (account.type() == PlayerAccount.Type.ELY_BY) {
             Path authlibInjector = offlineOnly
@@ -1308,6 +1320,11 @@ final class MinecraftLauncher {
         if (!sha1.isBlank() && !sha1.equalsIgnoreCase(sha1(file))) {
             Files.deleteIfExists(file);
             throw new IOException("Downloaded Minecraft file failed its SHA-1 check: " + file.getFileName());
+        }
+        try {
+            DownloadStats.addBytes(Files.size(file));
+        } catch (IOException ignored) {
+            // statistics only
         }
     }
 

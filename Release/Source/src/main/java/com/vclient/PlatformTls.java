@@ -105,6 +105,7 @@ final class PlatformTls {
             HttpRequest request,
             HttpResponse.BodyHandler<T> bodyHandler,
             Consumer<String> log) throws IOException, InterruptedException {
+        if ("https".equalsIgnoreCase(request.uri().getScheme())) requireHostName(request.uri());
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             try {
                 log.accept("HTTPS " + request.method() + " " + request.uri()
@@ -165,6 +166,7 @@ final class PlatformTls {
             if (message != null) {
                 String normalized = message.toLowerCase(java.util.Locale.ROOT);
                 if (normalized.contains("no subject alternative dns name")
+                        || normalized.contains("no subject alternative names matching")
                         || normalized.contains("no name matching")
                         || normalized.contains("doesn't match") && normalized.contains("certificate")) return true;
             }
@@ -176,7 +178,82 @@ final class PlatformTls {
     private static SSLParameters secureProtocols() {
         SSLParameters parameters = new SSLParameters();
         parameters.setProtocols(TLS_PROTOCOLS.toArray(String[]::new));
+        // Always verify that the certificate matches the host name we asked for (the JDK also sends it as SNI).
+        parameters.setEndpointIdentificationAlgorithm("HTTPS");
         return parameters;
+    }
+
+    /** True for URLs like https://150.171.109.163/..., which can never pass host name verification. */
+    static boolean isIpLiteral(URI uri) {
+        String host = uri == null ? null : uri.getHost();
+        return host != null && (host.matches("[0-9.]+") || host.startsWith("[") || host.contains(":"));
+    }
+
+    /** Refuses IP-address URLs: every Mojang / Microsoft / backend request must use a host name (SNI + verification). */
+    static URI requireHostName(URI uri) {
+        if (isIpLiteral(uri)) {
+            throw new IllegalArgumentException("Refusing to connect to an IP address (" + uri.getHost()
+                    + "): V-Client only makes HTTPS requests by host name so the certificate can be verified.");
+        }
+        return uri;
+    }
+
+    private static final List<String> INTERCEPTORS = List.of(
+            "kaspersky", "eset", "avast", "avg ", "bitdefender", "mcafee", "norton", "symantec", "sophos", "trend micro",
+            "malwarebytes", "webroot", "panda", "f-secure", "zscaler", "fortinet", "fortigate", "palo alto", "cisco",
+            "umbrella", "netskope", "forcepoint", "blue coat", "barracuda", "fiddler", "charles proxy", "mitmproxy",
+            "burp", "proxyman", "adguard", "dr.web", "comodo");
+
+    /**
+     * Explains a TLS failure in plain words: antivirus / proxy interception (the certificate chain ends in a security
+     * product's own root), a host name mismatch (captive portal or DNS redirection), or a missing root. Returns an
+     * empty string when the failure does not look like a certificate problem. Certificate validation is never relaxed.
+     */
+    static String interceptionHint(Throwable error) {
+        if (error == null) return "";
+        String all = describeFailure(error).toLowerCase(java.util.Locale.ROOT);
+        if (hasHostnameMismatch(error)) {
+            return "The server certificate does not belong to the host V-Client asked for. This usually means a captive portal "
+                    + "(hotel / school Wi-Fi sign-in), a DNS filter, or antivirus \"web protection\" is answering instead of the real server. "
+                    + "Open a browser, finish any sign-in page, or switch off HTTPS scanning in your antivirus.";
+        }
+        if (!hasCertificateFailure(error)) return "";
+        for (String vendor : INTERCEPTORS) {
+            if (all.contains(vendor)) {
+                return "The certificate chain was issued by \"" + vendor.strip() + "\", which is a security product or proxy, not a public "
+                        + "certificate authority. Its HTTPS scanning is replacing Mojang's / Microsoft's certificates. Turn off HTTPS / SSL "
+                        + "scanning for V-Client in that product (or add V-Client.exe and javaw.exe to its exclusions). "
+                        + "V-Client will not bypass certificate checks.";
+            }
+        }
+        return "The certificate chain could not be verified against the Windows or the bundled Java trust store ("
+                + truststoreSummary() + "). Possible causes: antivirus / proxy HTTPS scanning, a wrong PC clock, or an outdated "
+                + "Windows root certificate list (run Windows Update).";
+    }
+
+    /** One line about the trust stores V-Client uses: the Windows root store and the bundled Java public roots. */
+    static String truststoreSummary() {
+        int windows = -1;
+        int java = -1;
+        try {
+            KeyStore store = KeyStore.getInstance("Windows-ROOT");
+            store.load(null);
+            windows = store.size();
+        } catch (GeneralSecurityException | IOException | RuntimeException ignored) {
+            // not on Windows or the store is unreadable
+        }
+        try {
+            TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            factory.init((KeyStore) null);
+            for (TrustManager manager : factory.getTrustManagers()) {
+                if (manager instanceof javax.net.ssl.X509TrustManager x509) java = x509.getAcceptedIssuers().length;
+            }
+        } catch (GeneralSecurityException | RuntimeException ignored) {
+            // reported as unavailable
+        }
+        return "Windows roots: " + (windows < 0 ? "unavailable" : windows)
+                + ", bundled Java roots: " + (java < 0 ? "unavailable" : java)
+                + ", Java " + System.getProperty("java.version");
     }
 
     private static ProxySelector proxySelector() {

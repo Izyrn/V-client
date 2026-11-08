@@ -5,3 +5,5 @@
 /mod/.work/
 /Release/runtime/
 /Release/runtimes/
+cloudflare/node_modules/
+cloudflare/.wrangler/
