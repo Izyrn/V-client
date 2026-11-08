@@ -144,7 +144,8 @@ final class BrowserPage {
         });
         HBox.setHgrow(address, Priority.ALWAYS);
 
-        HBox bar = new HBox(6, back, forward, reload, address, vpn, fullscreen);
+        Button realBrowser = button("↗", "Open this page in a real Edge/Chrome window (use this for Discord / human-verification pages)", this::openInRealBrowser);
+        HBox bar = new HBox(6, back, forward, reload, address, realBrowser, vpn, fullscreen);
         bar.setAlignment(Pos.CENTER);
 
         HBox tabRow = new HBox(6, tabStrip, newTab);
@@ -358,6 +359,32 @@ final class BrowserPage {
     }
 
     // ---- full screen ---------------------------------------------------------------------------------
+
+    /**
+     * Opens the current page in a normal, visible Edge/Chrome window. Sites such as Discord support and Cloudflare-protected
+     * pages run human-verification checks that an embedded, automated engine cannot honestly pass; a real browser can.
+     * It uses its own profile and the same secure-DNS proxy, so it never touches the player's everyday browser profile.
+     */
+    private void openInRealBrowser() {
+        String url = selected == null ? "" : selected.content.locationProperty().get();
+        if (url == null || !url.matches("(?i)https?://.+")) url = HOME;
+        java.nio.file.Path exe = ChromiumHost.findChromium();
+        if (exe == null) {
+            status.setText("Microsoft Edge or Google Chrome was not found on this PC.");
+            return;
+        }
+        try {
+            java.nio.file.Path profile = java.nio.file.Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
+                    "V-Client", "browser-real");
+            java.nio.file.Files.createDirectories(profile);
+            new ProcessBuilder(exe.toString(), "--user-data-dir=" + profile,
+                    "--proxy-server=http://127.0.0.1:" + DohProxy.shared().port(), "--no-first-run", "--new-window", url)
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD).start();
+            status.setText("Opened in " + exe.getFileName() + ".");
+        } catch (IOException e) {
+            status.setText("Could not open the browser: " + e.getMessage());
+        }
+    }
 
     private void toggleFullscreen() {
         if (fullscreenStage != null) {
