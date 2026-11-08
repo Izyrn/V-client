@@ -144,7 +144,7 @@ final class BrowserPage {
         });
         HBox.setHgrow(address, Priority.ALWAYS);
 
-        Button realBrowser = button("↗", "Open this page in a real Edge/Chrome window (use this for Discord / human-verification pages)", this::openInRealBrowser);
+        Button realBrowser = button("↗", "Open this page in a real Edge/Chrome window (use this for Discord / human-verification pages)", () -> openInRealBrowser(null));
         HBox bar = new HBox(6, back, forward, reload, address, realBrowser, vpn, fullscreen);
         bar.setAlignment(Pos.CENTER);
 
@@ -297,8 +297,19 @@ final class BrowserPage {
     private void go(String input) {
         String url = toUrl(input);
         if (url == null || selected == null) return;
+        if (needsRealBrowser(url)) {
+            openInRealBrowser(url);
+            return;
+        }
         selected.content.load(url);
         selected.content.focus();
+    }
+
+    /** Discord's sites run human-verification checks, so they open in a real Edge/Chrome window instead. */
+    private static boolean needsRealBrowser(String url) {
+        String host = hostOf(url).toLowerCase(java.util.Locale.ROOT);
+        return host.equals("discord.com") || host.endsWith(".discord.com") || host.equals("discord.gg")
+                || host.equals("discordapp.com") || host.endsWith(".discordapp.com");
     }
 
     private static String toUrl(String input) {
@@ -365,8 +376,8 @@ final class BrowserPage {
      * pages run human-verification checks that an embedded, automated engine cannot honestly pass; a real browser can.
      * It uses its own profile and the same secure-DNS proxy, so it never touches the player's everyday browser profile.
      */
-    private void openInRealBrowser() {
-        String url = selected == null ? "" : selected.content.locationProperty().get();
+    private void openInRealBrowser(String target) {
+        String url = target != null ? target : selected == null ? "" : selected.content.locationProperty().get();
         if (url == null || !url.matches("(?i)https?://.+")) url = HOME;
         java.nio.file.Path exe = ChromiumHost.findChromium();
         if (exe == null) {
