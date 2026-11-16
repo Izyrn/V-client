@@ -21,10 +21,10 @@ import java.util.Locale;
 
 /** Draws the movable HUD elements and tracks clicks per second. */
 public final class Hud {
-    static final int PANEL = 0x90000000;
+    static final int PANEL = 0xA00C1F33;
     static final int TEXT = 0xFFFFFFFF;
-    static final int ACCENT = 0xFFE6BD59;
-    static final int MUTED = 0xFFB3B3CF;
+    static final int ACCENT = 0xFF00CFFF;
+    static final int MUTED = 0xFFA9D2E8;
     private static final int KEY = 22;
     private static final int GAP = 2;
     private static final int LINE = 12;
@@ -44,6 +44,7 @@ public final class Hud {
     private Hud() {}
 
     public static void render(DrawContext context) {
+        PerfProbe.frame();
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null || client.options.hudHidden) return;
         trackClicks(client);
@@ -57,6 +58,34 @@ public final class Hud {
     }
 
     /** Elements that only appear while relevant (the editor shows them all). */
+    /**
+     * Frosted-glass HUD background with an ice border. FPS gets a crystal border (bright corners), CPS a soft blue
+     * glow, everything else a thin frost edge.
+     */
+    static void frostPanel(DrawContext context, Module module, int width, int height) {
+        if (module == Module.CPS) {
+            context.fill(-2, -2, width + 2, height + 2, 0x2600CFFF);
+            context.fill(-1, -1, width + 1, height + 1, 0x3A00CFFF);
+        }
+        context.fill(0, 0, width, height, PANEL);
+        context.fill(0, 0, width, 1, 0x667CEBFF);
+        context.fill(0, height - 1, width, height, 0x447CEBFF);
+        context.fill(0, 0, 1, height, 0x447CEBFF);
+        context.fill(width - 1, 0, width, height, 0x447CEBFF);
+        if (module == Module.FPS) {
+            int corner = 3;
+            int bright = 0xFFB8F4FF;
+            context.fill(0, 0, corner, 1, bright);
+            context.fill(0, 0, 1, corner, bright);
+            context.fill(width - corner, 0, width, 1, bright);
+            context.fill(width - 1, 0, width, corner, bright);
+            context.fill(0, height - 1, corner, height, bright);
+            context.fill(0, height - corner, 1, height, bright);
+            context.fill(width - corner, height - 1, width, height, bright);
+            context.fill(width - 1, height - corner, width, height, bright);
+        }
+    }
+
     private static boolean visible(MinecraftClient client, Module module) {
         return switch (module) {
             case TOGGLE_SPRINT -> client.options.sprintKey.isPressed();
@@ -171,7 +200,7 @@ public final class Hud {
             case KEYSTROKES -> keystrokes(context, client, background);
             case ARMOR_STATUS -> armor(context, client, editing);
             case COORDINATES -> {
-                if (background) context.fill(0, 0, width, height, PANEL);
+                if (background) frostPanel(context, module, width, height);
                 context.drawText(font, "XYZ: ", 4, 3, label, true);
                 context.drawText(font, coordinateText(client.player), 4 + font.getWidth("XYZ: "), 3, TEXT, true);
                 if (VConfig.bool(module, "facing")) {
@@ -181,7 +210,7 @@ public final class Hud {
                 }
             }
             case POTION_EFFECTS -> {
-                if (background) context.fill(0, 0, width, height, PANEL);
+                if (background) frostPanel(context, module, width, height);
                 int line = 0;
                 for (String text : effectLines(client, editing)) {
                     context.drawText(font, text, 4, 3 + line * LINE, line % 2 == 0 ? label : TEXT, true);
@@ -190,7 +219,7 @@ public final class Hud {
             }
             default -> {
                 String[] text = text(client, module);
-                if (background) context.fill(0, 0, width, height, PANEL);
+                if (background) frostPanel(context, module, width, height);
                 context.drawText(font, text[0], 4, 3, label, true);
                 context.drawText(font, text[1], 4 + font.getWidth(text[0]), 3, TEXT, true);
             }
@@ -333,14 +362,14 @@ public final class Hud {
     private static void key(DrawContext context, TextRenderer font, int x, int y, int width, int height,
                             String text, KeyBinding binding, boolean background) {
         boolean pressed = binding.isPressed();
-        if (pressed || background) context.fill(x, y, x + width, y + height, pressed ? 0xD0FFFFFF : PANEL);
+        if (pressed || background) context.fill(x, y, x + width, y + height, pressed ? 0xD0B8F4FF : PANEL);
         if (text.isEmpty()) {
             int barY = y + height / 2;
-            context.fill(x + width / 4, barY, x + width * 3 / 4, barY + 1, pressed ? 0xFF000000 : TEXT);
+            context.fill(x + width / 4, barY, x + width * 3 / 4, barY + 1, pressed ? 0xFF071321 : TEXT);
             return;
         }
         context.drawText(font, text, x + (width - font.getWidth(text)) / 2, y + (height - 8) / 2,
-                pressed ? 0xFF000000 : TEXT, !pressed);
+                pressed ? 0xFF071321 : TEXT, !pressed);
     }
 
     private static void armor(DrawContext context, MinecraftClient client, boolean editing) {

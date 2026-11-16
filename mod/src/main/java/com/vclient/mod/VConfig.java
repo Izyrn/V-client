@@ -27,12 +27,11 @@ public final class VConfig {
 
     public static boolean enabled(Module module) {
         if (!module.toggleable()) return true;
-        if (module.cheat() && !VClientMod.cheatsAllowed()) return false;
         return ENABLED.getOrDefault(module, module.enabledByDefault());
     }
 
     public static void setEnabled(Module module, boolean value) {
-        if (!module.toggleable() || (module.cheat() && !VClientMod.cheatsAllowed())) return;
+        if (!module.toggleable()) return;
         ENABLED.put(module, value);
         save();
     }

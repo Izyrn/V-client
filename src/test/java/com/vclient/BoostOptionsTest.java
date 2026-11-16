@@ -103,8 +103,8 @@ final class BoostOptionsTest {
 
     @Test
     void modSetsGrowWithTheProfileAndMemoryNeverExceedsHalfTheRam() {
-        assertEquals(4, BoostProfile.ULTRA.mods().size());
-        assertEquals(7, BoostProfile.BALANCED.mods().size());
+        assertEquals(7, BoostProfile.ULTRA.mods().size());
+        assertEquals(9, BoostProfile.BALANCED.mods().size());
         assertEquals(9, BoostProfile.COMPETITIVE.mods().size());
         assertEquals(9, BoostProfile.POTATO.mods().size());
 

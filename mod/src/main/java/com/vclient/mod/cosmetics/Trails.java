@@ -21,7 +21,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * Particle trails. The definition is
  * <pre>
  * "trail": { "particle": "minecraft:end_rod", "rate": 2, "count": 1, "spread": [0.3, 0.2, 0.3],
- *            "offset": [0, 0.1, 0], "velocity": [0, 0.01, 0], "color": "#E6BD59", "scale": 1,
+ *            "offset": [0, 0.1, 0], "velocity": [0, 0.01, 0], "color": "#00CFFF", "scale": 1,
  *            "onlyMoving": true }
  * </pre>
  * Particles are spawned client-side only with the game's normal particle limits and the player's particle

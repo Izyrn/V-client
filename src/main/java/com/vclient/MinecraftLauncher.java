@@ -45,7 +45,6 @@ final class MinecraftLauncher {
             "[A-Za-z0-9](?:[A-Za-z0-9._+ -]{0,126}[A-Za-z0-9_+-])?");
     private static final int MAX_DOWNLOADS = 8;
     private final JavaRuntimeResolver javaRuntimeResolver;
-    private volatile java.util.function.Predicate<PlayerAccount> cheatPermission = account -> false;
     private volatile java.util.function.Supplier<String> backendUrl = () -> "";
     private volatile java.util.function.Predicate<PlayerAccount> adminPermission = account -> false;
     private volatile java.util.function.Supplier<BoostProfile.Tuning> boostTuning = () -> null;
@@ -56,14 +55,17 @@ final class MinecraftLauncher {
         Path resolve(int javaMajor, Consumer<String> onOutput, boolean allowDownloads) throws Exception;
     }
 
-    /** Decides per account whether the in-game cheat modules are unlocked ({@code -Dvclient.cheats=true}). */
-    void setCheatPermission(java.util.function.Predicate<PlayerAccount> cheatPermission) {
-        this.cheatPermission = cheatPermission;
-    }
 
     /** VSMP Boost Mode: returns the tuning to apply at launch, or null while Boost Mode is off. */
     void setBoostTuning(java.util.function.Supplier<BoostProfile.Tuning> boostTuning) {
         this.boostTuning = boostTuning;
+    }
+
+    private volatile java.util.function.Supplier<BenchmarkStore.Request> benchmarkRequest = () -> null;
+
+    /** Asked once per launch: a non-null request makes the in-game mod run the FPS benchmark. */
+    void setBenchmarkRequest(java.util.function.Supplier<BenchmarkStore.Request> benchmarkRequest) {
+        this.benchmarkRequest = benchmarkRequest;
     }
 
     private volatile java.util.function.Supplier<List<String>> extraJvmArguments = List::of;
@@ -598,6 +600,14 @@ final class MinecraftLauncher {
             command.add("-Xmx" + memoryGb + "G");
             command.add("-Xms512M");
         }
+        BenchmarkStore.Request benchmark = benchmarkRequest.get();
+        if (benchmark != null) {
+            command.add("-Dvclient.benchmark.seconds=" + benchmark.seconds());
+            command.add("-Dvclient.benchmark.label=" + benchmark.label());
+            command.add("-Dvclient.benchmark.profile=" + benchmark.profile());
+            onOutput.accept("FPS benchmark (" + benchmark.label() + "): join a world and the V-Client mod measures "
+                    + benchmark.seconds() + " seconds.");
+        }
         List<String> userJvm = extraJvmArguments.get();
         if (!userJvm.isEmpty()) {
             command.addAll(userJvm);
@@ -619,7 +629,6 @@ final class MinecraftLauncher {
                 }
             }
         }
-        if (cheatPermission.test(account)) command.add("-Dvclient.cheats=true");
         if (adminPermission.test(account)) command.add("-Dvclient.cosmetics.unlockAll=true");
         command.addAll(skinArguments(account, offlineOnly, onOutput));
         String backend = backendUrl.get();

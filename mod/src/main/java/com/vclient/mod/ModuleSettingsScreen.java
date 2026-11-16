@@ -60,17 +60,17 @@ public final class ModuleSettingsScreen extends Screen {
 
     @Override
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
-        context.fill(0, 0, width, height, 0x90080918);
+        context.fill(0, 0, width, height, 0x90071321);
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
-        context.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + panelHeight, 0xEE0F1027);
-        context.drawStrokedRectangle(panelX, panelY, PANEL_WIDTH, panelHeight, 0x66AA97CF);
+        context.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + panelHeight, 0xEE0B1B30);
+        context.drawStrokedRectangle(panelX, panelY, PANEL_WIDTH, panelHeight, 0x667CEBFF);
         context.drawText(textRenderer, module.title().toUpperCase(java.util.Locale.ROOT), panelX + 12,
                 panelY + 10, Hud.ACCENT, true);
-        context.drawText(textRenderer, module.description(), panelX + 12, panelY + 24, 0xFF8E8EB2, false);
+        context.drawText(textRenderer, module.description(), panelX + 12, panelY + 24, 0xFF86B3CE, false);
 
         int index = 0;
         if (module.toggleable()) {
@@ -103,13 +103,13 @@ public final class ModuleSettingsScreen extends Screen {
         context.drawText(textRenderer, label, panelX + 12, y + 6, 0xFFF3F6FC, false);
         Area control = control(index);
         boolean hovered = control.contains(mouseX, mouseY);
-        int color = toggle ? (on ? 0xFF244A38 : 0xFF482332) : 0xFF292642;
+        int color = toggle ? (on ? 0xFF244A38 : 0xFF482332) : 0xFF11263D;
         context.fill(control.x(), control.y(), control.x() + control.width(), control.y() + control.height(), color);
         if (hovered) {
             context.fill(control.x(), control.y(), control.x() + control.width(), control.y() + control.height(),
                     0x25FFFFFF);
         }
-        int textColor = toggle ? (on ? 0xFF7CF29A : 0xFFFF8F8F) : 0xFFF3F0FF;
+        int textColor = toggle ? (on ? 0xFF7CF29A : 0xFFFF8F8F) : 0xFFEAF9FF;
         String shown = textRenderer.trimToWidth(value, control.width() - (arrows ? 24 : 8));
         context.drawText(textRenderer, shown, control.x() + (control.width() - textRenderer.getWidth(shown)) / 2,
                 control.y() + (control.height() - 8) / 2, textColor, false);

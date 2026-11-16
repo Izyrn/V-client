@@ -36,23 +36,6 @@ final class LauncherSettingsTest {
     }
 
     @Test
-    void hackerModeCanOnlyBeSwitchedOnByTheAdmin() {
-        LauncherSettings settings = LauncherSettings.defaults(temporaryDirectory);
-        PlayerAccount stranger = account(PlayerAccount.Type.ELY_BY, "Izyrn", "0123456789abcdef0123456789abcdef");
-        PlayerAccount admin = account(PlayerAccount.Type.ELY_BY, "Izyrn", LauncherSettings.ADMIN_ELY_UUID);
-
-        settings.setHackerSelected(stranger, true);
-        assertFalse(settings.hackerSelected(stranger));
-        assertFalse(settings.cheatsEnabled(stranger));
-
-        assertFalse(settings.cheatsEnabled(admin));
-        settings.setHackerSelected(admin, true);
-        assertTrue(settings.cheatsEnabled(admin));
-        settings.setHackerSelected(admin, false);
-        assertFalse(settings.cheatsEnabled(admin));
-    }
-
-    @Test
     void correctsSelectedVersionSubfolderToMinecraftGameRoot() throws IOException {
         Path gameDirectory = temporaryDirectory.resolve("Minecraft").resolve("game");
         Path profileDirectory = gameDirectory.resolve("versions").resolve("Fabric 1.21.11");

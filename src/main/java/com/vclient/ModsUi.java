@@ -31,14 +31,14 @@ import java.util.List;
  * gradient fill, a light top edge and a soft shadow over the animated night sky.
  */
 final class ModsUi {
-    static String ACCENT = "#e6bd59";
-    static final String MUTED = "#a9a9cc";
+    static String ACCENT = "#00CFFF";
+    static final String MUTED = "#9fc6dc";
     static final String TEXT = "#f5f7fd";
     static final String WARNING = "#ffb454";
     static final String GOOD = "#39d98a";
 
     private static final String GLASS = "-fx-background-color: linear-gradient(to bottom right, rgba(255,255,255,0.085),"
-            + " rgba(255,255,255,0.025)), rgba(13,14,36,0.78);"
+            + " rgba(255,255,255,0.025)), rgba(7, 19, 33,0.78);"
             + " -fx-background-radius: 16, 16; -fx-background-insets: 0, 0;"
             + " -fx-border-color: linear-gradient(to bottom, rgba(255,255,255,0.20), rgba(255,255,255,0.05));"
             + " -fx-border-radius: 16; -fx-border-width: 1;";
@@ -118,7 +118,7 @@ final class ModsUi {
                 + "; -fx-background-radius: 17;");
         Label heading = text(title, 14, WARNING, true);
         heading.setWrapText(true);
-        Label body = text(detail, 12, "#e9d9bd", false);
+        Label body = text(detail, 12, "#cfeeff", false);
         body.setWrapText(true);
         body.setMinHeight(Region.USE_PREF_SIZE);
         VBox message = new VBox(4, heading, body);
@@ -276,7 +276,7 @@ final class ModsUi {
 
         Button install = new Button(installed ? "INSTALLED" : downloading ? "INSTALLING…" : "INSTALL");
         String color = installed ? "#244a38" : ACCENT;
-        String foreground = installed ? "#8ff0b8" : "#171326";
+        String foreground = installed ? "#8ff0b8" : "#071321";
         install.setStyle("-fx-background-color: " + color + "; -fx-text-fill: " + foreground
                 + "; -fx-font-size: 11px; -fx-font-weight: bold; -fx-background-radius: 11; -fx-padding: 0 18 0 18; -fx-cursor: hand;");
         install.setMinSize(Region.USE_PREF_SIZE, 38);

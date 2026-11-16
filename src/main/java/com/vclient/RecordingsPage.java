@@ -225,7 +225,7 @@ final class RecordingsPage {
         thumb.setFitWidth(THUMB_WIDTH);
         thumb.setFitHeight(THUMB_HEIGHT);
         thumb.setPreserveRatio(true);
-        Label placeholder = ModsUi.text("▶", 30, "#7f7fa6", false);
+        Label placeholder = ModsUi.text("▶", 30, "#6f9bb5", false);
         StackPane frame = new StackPane(placeholder, thumb);
         frame.setMinSize(THUMB_WIDTH, THUMB_HEIGHT);
         frame.setPrefSize(THUMB_WIDTH, THUMB_HEIGHT);
@@ -437,7 +437,7 @@ final class RecordingsPage {
         Button external = UiKit.button("OPEN IN DEFAULT PLAYER", false, () -> openExternally(recording.file()));
         HBox controls = UiKit.row(12, toggle, position, time, external);
         controls.setPadding(new Insets(12, 16, 12, 16));
-        controls.setStyle("-fx-background-color: rgba(13,14,36,0.95);");
+        controls.setStyle("-fx-background-color: rgba(7, 19, 33,0.95);");
         layout.setBottom(controls);
 
         Runnable[] cleanup = {() -> {}};

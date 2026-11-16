@@ -6,26 +6,24 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.util.Identifier;
-
 import java.util.Random;
 
 /**
- * The V-Client launcher's animated pixel night sky (stars, crescent moon, comet, dusk hills).
+ * V-Client's frozen menu backdrop: a polar sky with an aurora, falling snow and glacier ridges.
  *
- * <p>The static layers (sky, moon glow, moon, halo dots, hills) are painted once per window size
- * into two half-resolution textures; only the twinkling stars and the comet are drawn per frame.
- * Minecraft's GUI renderer compares every element with every other, so thousands of small
- * fills per frame would stall the menu.
+ * <p>The static layers (sky, aurora, glow, glaciers) are painted once per window size into two half-resolution
+ * textures; only the falling snow and a faint aurora shimmer are drawn per frame. Minecraft's GUI renderer compares
+ * every element with every other, so thousands of small fills per frame would stall the menu.
  */
 public final class NightSky {
-    private static final int STAR_COUNT = 180;
-    private static final double[] STAR_X = new double[STAR_COUNT];
-    private static final double[] STAR_Y = new double[STAR_COUNT];
-    private static final int[] STAR_SIZE = new int[STAR_COUNT];
-    private static final double[] STAR_PHASE = new double[STAR_COUNT];
-    private static final double[] STAR_DRIFT = new double[STAR_COUNT];
-    private static final Identifier BASE_ID = Identifier.of("vclient", "night_sky_base");
-    private static final Identifier HILLS_ID = Identifier.of("vclient", "night_sky_hills");
+    private static final int SNOW_COUNT = 110;
+    private static final double[] SNOW_X = new double[SNOW_COUNT];
+    private static final double[] SNOW_Y = new double[SNOW_COUNT];
+    private static final int[] SNOW_SIZE = new int[SNOW_COUNT];
+    private static final double[] SNOW_PHASE = new double[SNOW_COUNT];
+    private static final double[] SNOW_SPEED = new double[SNOW_COUNT];
+    private static final Identifier BASE_ID = Identifier.of("vclient", "frost_sky_base");
+    private static final Identifier HILLS_ID = Identifier.of("vclient", "frost_sky_glaciers");
     private static final int DOWNSCALE = 2;
 
     private static int bakedWidth = -1;
@@ -34,14 +32,13 @@ public final class NightSky {
     private static int textureHeight;
 
     static {
-        // Same seed and sequence as the launcher, so the star field is identical.
         Random random = new Random(731921);
-        for (int index = 0; index < STAR_COUNT; index++) {
-            STAR_X[index] = random.nextDouble();
-            STAR_Y[index] = random.nextDouble();
-            STAR_SIZE[index] = 1 + random.nextInt(3);
-            STAR_PHASE[index] = random.nextDouble() * Math.PI * 2;
-            STAR_DRIFT[index] = 0.0003 + random.nextDouble() * 0.0011;
+        for (int index = 0; index < SNOW_COUNT; index++) {
+            SNOW_X[index] = random.nextDouble();
+            SNOW_Y[index] = random.nextDouble();
+            SNOW_SIZE[index] = 1 + random.nextInt(3);
+            SNOW_PHASE[index] = random.nextDouble() * Math.PI * 2;
+            SNOW_SPEED[index] = 0.012 + SNOW_SIZE[index] * 0.012 + random.nextDouble() * 0.01;
         }
     }
 
@@ -61,7 +58,8 @@ public final class NightSky {
         context.getMatrices().scale(1.0f / scale, 1.0f / scale);
         try {
             texture(context, BASE_ID, width, height);
-            stars(context, width, height, time, pixel);
+            if (VConfig.bool(Module.MENU_BACKGROUND, "comet")) shimmer(context, width, height, time);
+            if (VConfig.bool(Module.MENU_BACKGROUND, "twinkle")) snow(context, width, height, time, pixel);
             texture(context, HILLS_ID, width, height);
         } finally {
             context.getMatrices().popMatrix();
@@ -73,27 +71,24 @@ public final class NightSky {
                 textureWidth, textureHeight, textureWidth, textureHeight);
     }
 
-    private static void stars(DrawContext context, int width, int height, double time, int pixel) {
-        for (int index = 0; index < STAR_COUNT; index++) {
-            int x = (int) (((STAR_X[index] + time * STAR_DRIFT[index]) % 1.0) * width);
-            int y = (int) (STAR_Y[index] * height);
-            double twinkle = VConfig.bool(Module.MENU_BACKGROUND, "twinkle")
-                    ? 0.42 + 0.58 * (0.5 + 0.5 * Math.sin(time * 1.8 + STAR_PHASE[index])) : 0.85;
-            int size = STAR_SIZE[index] * pixel;
-            context.fill(x, y, x + size, y + size, argb(twinkle, 234, 225, 190));
-        }
-        double cometPhase = (time % 13.0) / 13.0;
-        if (cometPhase < 0.09 && VConfig.bool(Module.MENU_BACKGROUND, "comet")) {
-            double headX = width * (0.23 + cometPhase * 5.2);
-            double headY = height * (0.13 + cometPhase * 1.7);
-            int color = argb((0.09 - cometPhase) * 8, 235, 220, 176);
-            int thickness = 2 * pixel;
-            for (int step = 0; step <= 42; step += 3) {
-                double remaining = 1 - step / 42.0;
-                int x = (int) (headX - 42 * pixel * remaining);
-                int y = (int) (headY - 15 * pixel * remaining);
-                context.fill(x, y, x + thickness, y + thickness, color);
-            }
+    /** A slow pulse of green and cyan light across the upper sky: two wide fills, so it costs almost nothing. */
+    private static void shimmer(DrawContext context, int width, int height, double time) {
+        double pulse = 0.5 + 0.5 * Math.sin(time * 0.45);
+        double sway = Math.sin(time * 0.2);
+        int bandTop = (int) (height * (0.10 + 0.03 * sway));
+        context.fill(0, bandTop, width, bandTop + (int) (height * 0.16), argb(0.018 + 0.03 * pulse, 92, 255, 200));
+        context.fill(0, bandTop + (int) (height * 0.05), width, bandTop + (int) (height * 0.22),
+                argb(0.014 + 0.026 * (1 - pulse), 0, 207, 255));
+    }
+
+    private static void snow(DrawContext context, int width, int height, double time, int pixel) {
+        for (int index = 0; index < SNOW_COUNT; index++) {
+            double fall = (SNOW_Y[index] + time * SNOW_SPEED[index]) % 1.0;
+            double drift = Math.sin(time * 0.6 + SNOW_PHASE[index]) * 0.012 + time * 0.0035;
+            int x = (int) ((((SNOW_X[index] + drift) % 1.0) + 1.0) % 1.0 * width);
+            int y = (int) (fall * height);
+            int size = SNOW_SIZE[index] * pixel;
+            context.fill(x, y, x + size, y + size, argb(0.45 + 0.1 * SNOW_SIZE[index], 226, 247, 255));
         }
     }
 
@@ -108,7 +103,7 @@ public final class NightSky {
         Canvas base = new Canvas(textureWidth, textureHeight);
         paintSky(base);
         Canvas hills = new Canvas(textureWidth, textureHeight);
-        paintHills(hills);
+        paintGlaciers(hills);
         upload(client, BASE_ID, base);
         upload(client, HILLS_ID, hills);
     }
@@ -120,46 +115,53 @@ public final class NightSky {
                 image.setColorArgb(x, y, canvas.pixels[y * canvas.width + x]);
             }
         }
-        NativeImageBackedTexture texture = new NativeImageBackedTexture(() -> "V-Client night sky", image);
+        NativeImageBackedTexture texture = new NativeImageBackedTexture(() -> "VSMP frost sky", image);
         client.getTextureManager().registerTexture(id, texture);
     }
 
     private static void paintSky(Canvas canvas) {
         int width = canvas.width;
         int height = canvas.height;
-        canvas.fill(0, 0, width, height, rgb(8, 9, 26));
-
-        double moonX = width * 0.76;
-        double moonY = height * 0.31;
-        double moonRadius = Math.max(38.0 / DOWNSCALE, Math.min(width * 0.09, height * 0.15));
-        for (int layer = 12; layer >= 1; layer--) {
-            double glowRadius = moonRadius * (1.0 + layer * 0.17);
-            canvas.circle(moonX, moonY, glowRadius, argb(0.008 + (12 - layer) * 0.003, 115, 99, 190));
+        canvas.fill(0, 0, width, height, rgb(7, 19, 33));
+        // Deeper blue toward the top, a paler cold haze at the horizon.
+        for (int y = 0; y < height; y++) {
+            double t = (double) y / height;
+            canvas.fill(0, y, width, y + 1, argb(0.30 * (1 - t), 3, 10, 24));
+            canvas.fill(0, y, width, y + 1, argb(0.16 * t * t, 60, 150, 190));
         }
-        canvas.circle(moonX, moonY, moonRadius, argb(0.95, 230, 218, 168));
-        double shadowRadius = moonRadius * 0.93;
-        canvas.circle(moonX - moonRadius * 0.18 + shadowRadius, moonY - moonRadius * 1.10 + shadowRadius,
-                shadowRadius, rgb(15, 15, 40));
-
-        double dotSpacing = Math.max(7.0 / DOWNSCALE, moonRadius * 0.17);
-        int dotSize = (int) Math.max(1, dotSpacing * 0.42);
-        for (double y = moonY - moonRadius * 2.2; y <= moonY + moonRadius * 2.2; y += dotSpacing) {
-            for (double x = moonX - moonRadius * 2.2; x <= moonX + moonRadius * 2.2; x += dotSpacing) {
-                double distance = Math.hypot(x - moonX, y - moonY) / moonRadius;
-                if (distance < 1.18 || distance > 2.15) continue;
-                canvas.fill((int) x, (int) y, (int) x + dotSize, (int) y + dotSize,
-                        argb((2.15 - distance) * 0.14, 157, 143, 218));
+        // Aurora ribbons.
+        int[][] colours = {{0, 207, 255}, {92, 255, 200}, {124, 235, 255}};
+        for (int ribbon = 0; ribbon < colours.length; ribbon++) {
+            int[] c = colours[ribbon];
+            double base = height * (0.12 + ribbon * 0.085);
+            for (int x = 0; x < width; x += 3) {
+                double wave = Math.sin(x * 0.0085 + ribbon * 1.7) * height * 0.05
+                        + Math.sin(x * 0.022 + ribbon) * height * 0.018;
+                double strength = 0.5 + 0.5 * Math.sin(x * 0.0042 + ribbon * 2.3);
+                int top = (int) (base + wave);
+                int step = (int) Math.max(2, height * 0.03);
+                for (int layer = 0; layer < 8; layer++) {
+                    double alpha = (0.085 - layer * 0.0098) * (0.45 + strength);
+                    if (alpha <= 0) break;
+                    int y = top + layer * step;
+                    canvas.fill(x, y, x + 3, y + step + 1, argb(Math.min(0.22, alpha), c[0], c[1], c[2]));
+                }
             }
+        }
+        // Cold glow rising from the glaciers.
+        for (int layer = 10; layer >= 1; layer--) {
+            canvas.circle(width * 0.5, height * 1.04, width * (0.18 + layer * 0.045),
+                    argb(0.006 + (10 - layer) * 0.0016, 0, 207, 255));
         }
     }
 
-    private static void paintHills(Canvas canvas) {
-        ridge(canvas, argb(0.72, 12, 13, 34),
-                new double[]{0, 0.15, 0.27, 0.42, 0.55, 0.68, 0.84, 1.0},
-                new double[]{0.82, 0.77, 0.86, 0.79, 0.88, 0.78, 0.85, 0.76});
-        ridge(canvas, argb(0.78, 8, 10, 26),
-                new double[]{0, 0.12, 0.24, 0.38, 0.5, 0.63, 0.76, 0.9, 1.0},
-                new double[]{1.0, 0.9, 0.94, 0.85, 0.94, 0.86, 0.93, 0.86, 0.92});
+    private static void paintGlaciers(Canvas canvas) {
+        ridge(canvas, argb(0.82, 14, 40, 66),
+                new double[]{0, 0.10, 0.19, 0.30, 0.43, 0.56, 0.69, 0.82, 0.92, 1.0},
+                new double[]{0.80, 0.70, 0.79, 0.66, 0.80, 0.72, 0.83, 0.68, 0.78, 0.74});
+        ridge(canvas, argb(0.90, 8, 26, 46),
+                new double[]{0, 0.14, 0.27, 0.41, 0.54, 0.68, 0.80, 0.93, 1.0},
+                new double[]{0.91, 0.86, 0.93, 0.84, 0.92, 0.87, 0.93, 0.90, 0.90});
     }
 
     /** Fills the area under a polyline ridge (x and y as fractions of the canvas). */
@@ -172,6 +174,7 @@ public final class NightSky {
             double t = span <= 0 ? 0 : Math.clamp((fraction - xs[segment]) / span, 0, 1);
             int top = (int) (canvas.height * (ys[segment] + (ys[segment + 1] - ys[segment]) * t));
             canvas.fill(x, top, x + 1, canvas.height, color);
+            canvas.fill(x, top, x + 1, top + 1, argb(0.35, 190, 240, 255)); // snow-lit edge
         }
     }
 

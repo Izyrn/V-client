@@ -57,7 +57,7 @@ final class ProfileTransfer {
             applied++;
         }
         if (root.has("themeId")) {
-            settings.setTheme(root.path("themeId").asText("night"), root.path("customAccent").asText(settings.customAccent()));
+            settings.setTheme(root.path("themeId").asText("frost"), root.path("customAccent").asText(settings.customAccent()));
             applied++;
         }
         if (root.has("replayBufferEnabled")) {

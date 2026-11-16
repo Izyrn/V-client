@@ -72,12 +72,12 @@ final class Widgets {
     /** A labelled switch row: caption on the left (with an optional hint under it), the switch on the right. */
     static HBox switchRow(String caption, String hint, boolean initial, String accent, Consumer<Boolean> onChange) {
         Label title = new Label(caption);
-        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #f3f0ff;");
+        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #eaf9ff;");
         VBox text = new VBox(2, title);
         if (hint != null && !hint.isBlank()) {
             Label sub = new Label(hint);
             sub.setWrapText(true);
-            sub.setStyle("-fx-font-size: 12px; -fx-text-fill: #b9b9dc;");
+            sub.setStyle("-fx-font-size: 12px; -fx-text-fill: #a9d2e8;");
             text.getChildren().add(sub);
         }
         Switch toggle = new Switch(initial, accent);
@@ -95,7 +95,7 @@ final class Widgets {
         bar.setPrefSize(width, height);
         bar.setMaxHeight(height);
         if (width <= 0) bar.setMaxWidth(Double.MAX_VALUE);
-        bar.setStyle("-fx-background-color: rgba(185, 185, 220, 0.16); -fx-background-radius: 8;");
+        bar.setStyle("-fx-background-color: rgba(124, 235, 255, 0.16); -fx-background-radius: 8;");
         FadeTransition pulse = new FadeTransition(Duration.millis(850), bar);
         pulse.setFromValue(0.35);
         pulse.setToValue(1.0);
@@ -124,7 +124,7 @@ final class Widgets {
         TitledPane pane = new TitledPane(title, content);
         pane.setExpanded(false);
         pane.setAnimated(true);
-        pane.setStyle("-fx-text-fill: #d6d3ee; -fx-font-size: 12px; -fx-background-color: transparent;");
+        pane.setStyle("-fx-text-fill: #d4f3ff; -fx-font-size: 12px; -fx-background-color: transparent;");
         return pane;
     }
 

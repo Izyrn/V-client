@@ -23,7 +23,7 @@ final class UiKit {
     static Button button(String text, boolean primary, Runnable action) {
         Button button = new Button(text);
         String background = primary ? ModsUi.ACCENT : "rgba(255,255,255,0.09)";
-        String foreground = primary ? "#171326" : "#f3f0ff";
+        String foreground = primary ? "#071321" : "#eaf9ff";
         button.setStyle("-fx-background-color: " + background + "; -fx-text-fill: " + foreground
                 + "; -fx-font-size: 11px; -fx-font-weight: bold; -fx-background-radius: 10;"
                 + " -fx-padding: 9 15 9 15; -fx-cursor: hand;");

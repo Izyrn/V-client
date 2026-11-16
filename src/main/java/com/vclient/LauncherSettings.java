@@ -37,12 +37,17 @@ final class LauncherSettings {
     /** VSMP Boost Mode: when on, the chosen profile's video settings, JVM flags and memory apply at every launch. */
     private boolean boostEnabled;
     private BoostProfile boostProfile = BoostProfile.BALANCED;
+    /** "before" or "after" while the next game launch should run the 60-second FPS benchmark, otherwise empty. */
+    private String benchmarkPending = "";
+    /** Run the benchmark automatically on the first launch and recommend a profile. */
+    private boolean autoBenchmark = true;
+    private boolean autoBenchmarkDone;
     /** Keeps the last 30 seconds of the game window in memory so the clip hotkey can save them. */
     private boolean replayBufferEnabled = true;
     /** Also record the microphone into clips (game/system sound is always recorded). Off by default for privacy. */
     private boolean clipMicrophone;
     /** A {@link Theme} preset id, or "custom" to use {@link #customAccent}. */
-    private String themeId = "night";
+    private String themeId = "frost";
     private String customAccent = "#e6bd59";
     /** Name of the key that saves the last 30 seconds (a key of {@link WinInput#HOTKEYS}). */
     private String clipHotkey = WinInput.DEFAULT_HOTKEY;
@@ -51,8 +56,6 @@ final class LauncherSettings {
      * cannot). It is fixed here on purpose and is not read from settings.json, so editing that file cannot grant it.
      */
     static final String ADMIN_ELY_UUID = "1331c81d33844eb6baf6a511c8298af3";
-    /** Ids of accounts whose owner picked "Hacker / Cheater" instead of "Normal player". */
-    private final Set<String> hackerAccountIds = new LinkedHashSet<>();
 
     private LauncherSettings(Path minecraftDirectory, int memoryGb, int javaMajorOverride,
                              String lastAccountId, String discordInvite, boolean offlineMode) {
@@ -110,15 +113,17 @@ final class LauncherSettings {
         settings.debugMode = saved.path("debugMode").asBoolean(false);
         settings.boostEnabled = saved.path("boostEnabled").asBoolean(false);
         settings.boostProfile = BoostProfile.parse(saved.path("boostProfile").asText(""), BoostProfile.BALANCED);
+        settings.benchmarkPending = saved.path("benchmarkPending").asText("");
+        settings.autoBenchmark = saved.path("autoBenchmark").asBoolean(true);
+        settings.autoBenchmarkDone = saved.path("autoBenchmarkDone").asBoolean(false);
         settings.replayBufferEnabled = saved.path("replayBufferEnabled").asBoolean(true);
         settings.clipMicrophone = saved.path("clipMicrophone").asBoolean(false);
-        settings.themeId = saved.path("themeId").asText("night");
+        settings.themeId = saved.path("themeId").asText("frost");
         String accent = saved.path("customAccent").asText("#e6bd59");
         settings.customAccent = Theme.validHex(accent) ? accent : "#e6bd59";
         String hotkey = saved.path("clipHotkey").asText(WinInput.DEFAULT_HOTKEY);
         settings.clipHotkey = WinInput.HOTKEYS.containsKey(hotkey) ? hotkey : WinInput.DEFAULT_HOTKEY;
         settings.installId = saved.path("installId").asText("");
-        saved.path("hackerAccountIds").forEach(id -> settings.hackerAccountIds.add(id.asText("")));
         boolean newInstallId = settings.installId.isBlank();
         if (newInstallId) settings.installId = java.util.UUID.randomUUID().toString();
         if (!minecraftDirectory.equals(selectedDirectory) || newInstallId) settings.save();
@@ -171,14 +176,15 @@ final class LauncherSettings {
         saved.put("debugMode", debugMode);
         saved.put("boostEnabled", boostEnabled);
         saved.put("boostProfile", boostProfile.name());
+        saved.put("benchmarkPending", benchmarkPending);
+        saved.put("autoBenchmark", autoBenchmark);
+        saved.put("autoBenchmarkDone", autoBenchmarkDone);
         saved.put("replayBufferEnabled", replayBufferEnabled);
         saved.put("clipMicrophone", clipMicrophone);
         saved.put("themeId", themeId);
         saved.put("customAccent", customAccent);
         saved.put("clipHotkey", clipHotkey);
         saved.put("installId", installId);
-        var hackers = saved.putArray("hackerAccountIds");
-        hackerAccountIds.forEach(hackers::add);
         JSON.writerWithDefaultPrettyPrinter().writeValue(SETTINGS_FILE.toFile(), saved);
     }
 
@@ -270,6 +276,30 @@ final class LauncherSettings {
         this.boostProfile = boostProfile == null ? BoostProfile.BALANCED : boostProfile;
     }
 
+    String benchmarkPending() {
+        return benchmarkPending;
+    }
+
+    void setBenchmarkPending(String benchmarkPending) {
+        this.benchmarkPending = "before".equals(benchmarkPending) || "after".equals(benchmarkPending) ? benchmarkPending : "";
+    }
+
+    boolean autoBenchmark() {
+        return autoBenchmark;
+    }
+
+    void setAutoBenchmark(boolean autoBenchmark) {
+        this.autoBenchmark = autoBenchmark;
+    }
+
+    boolean autoBenchmarkDone() {
+        return autoBenchmarkDone;
+    }
+
+    void setAutoBenchmarkDone(boolean autoBenchmarkDone) {
+        this.autoBenchmarkDone = autoBenchmarkDone;
+    }
+
     String themeId() {
         return themeId;
     }
@@ -279,7 +309,7 @@ final class LauncherSettings {
     }
 
     void setTheme(String themeId, String customAccent) {
-        this.themeId = themeId == null || themeId.isBlank() ? "night" : themeId;
+        this.themeId = themeId == null || themeId.isBlank() ? "frost" : themeId;
         if (Theme.validHex(customAccent)) this.customAccent = customAccent;
     }
 
@@ -360,22 +390,6 @@ final class LauncherSettings {
                 && ADMIN_ELY_UUID.equalsIgnoreCase(account.uuid().replace("-", ""));
     }
 
-    boolean hackerSelected(PlayerAccount account) {
-        return account != null && hackerAccountIds.contains(account.id());
-    }
-
-    void setHackerSelected(PlayerAccount account, boolean hacker) {
-        if (account == null) return;
-        // Only the admin can ever turn Hacker / Cheater on; for anyone else the choice is ignored.
-        if (hacker && !isAdmin(account)) return;
-        if (hacker) hackerAccountIds.add(account.id());
-        else hackerAccountIds.remove(account.id());
-    }
-
-    /** Cheat modules are enabled only for an admin account that chose Hacker / Cheater. */
-    boolean cheatsEnabled(PlayerAccount account) {
-        return isAdmin(account) && hackerSelected(account);
-    }
 
     /** The most game memory the sliders offer. It used to follow the launcher's own heap (9 GB here). */
     static final int MAX_MEMORY_GB = 32;

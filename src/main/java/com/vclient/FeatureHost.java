@@ -34,6 +34,12 @@ interface FeatureHost {
 
     void showSettings();
 
+    /** Opens the FrostBoost page. */
+    void openBoost();
+
+    /** Opens the FPS comparison screen (also refreshes it when it is already open). */
+    void showFpsComparison();
+
     /** True while {@code page} is still the page on screen, so background timers can stop themselves. */
     boolean shown(Node page);
 

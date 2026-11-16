@@ -11,18 +11,18 @@ import java.util.Map;
  * Quality to Potato. Low-End PC maps to Potato and Extreme FPS to Competitive.
  */
 enum BoostProfile {
-    ULTRA("Ultra Quality", "Best graphics, still smoother than vanilla",
-            "+20% to +40%", 1,
-            "Keeps the pretty settings and adds the mods that cost nothing visually."),
-    BALANCED("Balanced", "A good mix of FPS and visuals",
-            "+60% to +100%", 2,
+    ULTRA("Crystal Mode", "Highest quality, still smoother than vanilla",
+            "+20% to +40%", 2,
+            "Keeps the pretty settings and adds the mods that cost nothing visually. High FPS without giving up how the game looks."),
+    BALANCED("Aurora Mode", "Balanced: a good mix of FPS and visuals",
+            "+60% to +100%", 3,
             "Fast lighting, shorter distances, culling and memory fixes. Looks almost the same."),
-    COMPETITIVE("Competitive", "Low graphics, maximum visibility, higher FPS",
+    COMPETITIVE("Blizzard Mode", "Competitive PvP: low graphics, maximum visibility",
             "+100% to +180%", 3,
-            "Everything that hides enemies or costs FPS is turned off. Extreme FPS mode."),
-    POTATO("Potato Mode", "The most FPS possible, for low-end PCs",
+            "Everything that hides enemies or costs FPS is turned off. Built for PvP."),
+    POTATO("Glacier Mode", "Maximum FPS, the default for low-end PCs",
             "+150% to +250%", 3,
-            "Minimum distances and effects, the leanest memory use. Low-End PC mode.");
+            "Minimum distances and effects, the leanest memory use. Maximum FPS on low-end PCs.");
 
     /** A Modrinth project to install: the slug the API uses and the name shown to the player. */
     record BoostMod(String slug, String name, String effect) {}
@@ -73,7 +73,7 @@ enum BoostProfile {
         return summary;
     }
 
-    /** The optimisation mods this profile installs (a lighter set for Ultra and Balanced). */
+    /** The optimisation mods this profile installs: seven for Quality, all nine for the others. */
     List<BoostMod> mods() {
         List<BoostMod> mods = new ArrayList<>(List.of(SODIUM, LITHIUM, FERRITE, IMMEDIATELY_FAST));
         if (modTier >= 2) mods.addAll(List.of(ENTITY_CULLING, MODERN_FIX, MEMORY_LEAK_FIX));
@@ -144,6 +144,49 @@ enum BoostProfile {
     }
 
     /**
+     * The options for a PC of this class. Low-end PCs are held to short distances whatever profile they picked;
+     * high-end PCs on Quality or Balanced get fancy graphics and longer distances, because they can afford them.
+     * Mid-range PCs get the profile exactly as written.
+     */
+    Map<String, String> options(PcAnalysis.Tier tier) {
+        Map<String, String> options = options();
+        switch (tier) {
+            case LOW -> {
+                capInt(options, "renderDistance", this == ULTRA || this == BALANCED ? 8 : 6);
+                capInt(options, "simulationDistance", 6);
+                capInt(options, "mipmapLevels", 2);
+                if (this == ULTRA || this == BALANCED) {
+                    options.put("graphicsPreset", "\"fast\"");
+                    options.put("ao", "false");
+                    options.put("entityShadows", "false");
+                    options.put("entityDistanceScaling", "0.75");
+                }
+            }
+            case HIGH -> {
+                if (this == ULTRA || this == BALANCED) {
+                    options.put("graphicsPreset", "\"fancy\"");
+                    options.put("ao", "true");
+                    options.put("entityDistanceScaling", "1.0");
+                    options.put("renderDistance", this == ULTRA ? "18" : "14");
+                    options.put("simulationDistance", this == ULTRA ? "12" : "8");
+                    options.put("biomeBlendRadius", "3");
+                    options.put("mipmapLevels", "4");
+                }
+            }
+            case MID -> { }
+        }
+        return options;
+    }
+
+    private static void capInt(Map<String, String> options, String key, int ceiling) {
+        try {
+            if (Integer.parseInt(options.get(key)) > ceiling) options.put(key, String.valueOf(ceiling));
+        } catch (NumberFormatException e) {
+            // Not a number: leave it as the profile wrote it.
+        }
+    }
+
+    /**
      * How much memory to give the game, in GB. More memory than the game needs does not add FPS and makes
      * garbage-collection pauses longer, so the leaner profiles ask for less. Never more than half the PC's RAM.
      */
@@ -192,6 +235,12 @@ enum BoostProfile {
     Tuning tuning(long physicalRamBytes) {
         int memory = recommendedMemoryGb(physicalRamBytes);
         return new Tuning(this, memory, initialHeap(memory), jvmFlags(), options());
+    }
+
+    /** The tuning for this exact PC: memory from its RAM, video settings from its class. */
+    Tuning tuning(PcAnalysis.Hardware hardware) {
+        int memory = recommendedMemoryGb(hardware.ramBytes());
+        return new Tuning(this, memory, initialHeap(memory), jvmFlags(), options(PcAnalysis.tier(hardware)));
     }
 
     /** Total RAM of this PC in bytes, or 8 GB when the JVM cannot tell. */

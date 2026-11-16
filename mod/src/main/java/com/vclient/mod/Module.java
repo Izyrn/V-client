@@ -9,9 +9,9 @@ import java.util.List;
 public enum Module {
     CLIENT("V-Client", "Menu key", true, Kind.ALWAYS_ON,
             Setting.key("menuKey", "Mod menu key", GLFW.GLFW_KEY_RIGHT_SHIFT)),
-    MENU_BACKGROUND("Night Sky Menus", "Animated menu sky", true, Kind.FEATURE,
-            Setting.toggle("comet", "Shooting comet", true),
-            Setting.toggle("twinkle", "Twinkling stars", true)),
+    MENU_BACKGROUND("Frost Menus", "Aurora, snowfall and glaciers behind menus", true, Kind.FEATURE,
+            Setting.toggle("comet", "Aurora shimmer", true),
+            Setting.toggle("twinkle", "Falling snow", true)),
     FPS("FPS", "Frames per second", true, Kind.HUD),
     CPS("CPS", "Clicks per second", true, Kind.HUD,
             Setting.toggle("rightClicks", "Show right clicks", true)),
@@ -55,57 +55,9 @@ public enum Module {
             Setting.toggle("debug", "Debug mode (requests + stack traces)", false)),
     NO_HURT_CAM("No Hurt Cam", "No shake when hit", false, Kind.FEATURE),
     TOGGLE_SPRINT("Toggle Sprint", "Tap to keep sprinting", false, Kind.HUD),
-    TOGGLE_SNEAK("Toggle Sneak", "Tap to keep sneaking", false, Kind.FEATURE),
-    // Hacker mode only: shown and usable when the launcher started the game with -Dvclient.cheats=true.
-    XRAY("X-Ray", "See ores through walls", false, Kind.CHEAT),
-    REACH("Reach-Hits", "Hit from further away", false, Kind.CHEAT,
-            Setting.number("distance", "Reach", 6, 3, 8, 0.5, " blocks")),
-    SPEED_HACK("Speed Hack", "Move faster", false, Kind.CHEAT,
-            Setting.number("multiplier", "Speed", 2, 1, 10, 0.5, "x")),
-    FREECAM("Freecam", "Fly the camera around", false, Kind.CHEAT,
-            Setting.number("speed", "Camera speed", 3, 1, 10, 1, "x")),
-    FLY("Fly", "Fly like in creative", false, Kind.CHEAT,
-            Setting.number("speed", "Flight speed", 1.5, 0.5, 5, 0.5, "x"),
-            Setting.toggle("hover", "Anti-kick hover", true)),
-    AUTO_SPRINT("Auto Sprint", "Always sprint while moving", false, Kind.CHEAT),
-    STEP("Step", "Hop up blocks automatically", false, Kind.CHEAT),
-    SPIDER("Spider", "Climb walls", false, Kind.CHEAT,
-            Setting.number("speed", "Climb speed", 1, 0.5, 3, 0.5, "x")),
-    HIGH_JUMP("High Jump", "Jump much higher", false, Kind.CHEAT,
-            Setting.number("power", "Jump power", 2, 1.5, 5, 0.5, "x")),
-    FAST_PLACE("Fast Place", "No delay between placing blocks", false, Kind.CHEAT),
-    GLOW_ESP("Glow ESP", "Outline players through walls", false, Kind.CHEAT,
-            Setting.toggle("mobs", "Include mobs", false)),
-    HITBOXES("Hitboxes", "Bigger enemy hitboxes", false, Kind.CHEAT,
-            Setting.number("size", "Extra size", 0.2, 0.1, 1, 0.1, " blocks")),
-    NO_FALL("No Fall", "No fall damage", false, Kind.CHEAT),
-    SAFE_WALK("Safe Walk", "Never walk off an edge", false, Kind.CHEAT),
-    ANTI_KNOCKBACK("Anti Knockback", "Ignore being pushed by hits", false, Kind.CHEAT),
-    AIR_JUMP("Air Jump", "Jump again in mid-air", false, Kind.CHEAT),
-    GLIDE("Glide", "Hold jump to fall slowly", false, Kind.CHEAT,
-            Setting.number("speed", "Fall speed", 0.1, 0.02, 0.3, 0.02, "")),
-    FAST_BREAK("Fast Break", "No delay between breaking blocks", false, Kind.CHEAT),
-    TIME_CHANGER("Time Changer", "Pick the time of day you see", false, Kind.CHEAT,
-            Setting.choice("time", "Time", 1, "Day", "Noon", "Sunset", "Night", "Midnight", "Sunrise")),
-    AUTO_WALK("Auto Walk", "Keep walking forward", false, Kind.CHEAT),
-    AUTO_TOOL("Auto Tool", "Pick the fastest tool for the block", false, Kind.CHEAT),
-    AUTO_EAT("Auto Eat", "Eat food when you get hungry", false, Kind.CHEAT,
-            Setting.number("hunger", "Eat at", 14, 4, 19, 1, " / 20")),
-    AUTO_TOTEM("Auto Totem", "Keep a totem in your off hand", false, Kind.CHEAT),
-    BUNNY_HOP("Bunny Hop", "Jump automatically while running", false, Kind.CHEAT),
-    LONG_JUMP("Long Jump", "Jump much further forward", false, Kind.CHEAT,
-            Setting.number("boost", "Distance", 1.8, 1.2, 4, 0.2, "x")),
-    FAST_CLIMB("Fast Climb", "Climb ladders and vines faster", false, Kind.CHEAT,
-            Setting.number("speed", "Climb speed", 0.4, 0.2, 1, 0.1, "")),
-    WATER_FLOAT("Water Float", "Walk on water", false, Kind.CHEAT),
-    AUTO_RESPAWN("Auto Respawn", "Respawn the moment you die", false, Kind.CHEAT),
-    ANTI_AFK("Anti AFK", "Stay active so you are not kicked", false, Kind.CHEAT,
-            Setting.number("interval", "Every", 30, 10, 120, 10, " s")),
-    AUTO_SNEAK("Auto Sneak", "Always sneak", false, Kind.CHEAT),
-    FAST_SWIM("Fast Swim", "Swim much faster", false, Kind.CHEAT,
-            Setting.number("speed", "Swim speed", 1.6, 1.2, 4, 0.2, "x"));
+    TOGGLE_SNEAK("Toggle Sneak", "Tap to keep sneaking", false, Kind.FEATURE);
 
-    private enum Kind { ALWAYS_ON, FEATURE, HUD, CHEAT }
+    private enum Kind { ALWAYS_ON, FEATURE, HUD }
 
 
     private final String title;
@@ -129,14 +81,10 @@ public enum Module {
         this.settings = List.copyOf(all);
     }
 
-    /** Whether the module is a hacker-mode cheat, available only to admin accounts. */
-    public boolean cheat() {
-        return kind == Kind.CHEAT;
-    }
 
     /** The modules shown in the menu: everything except cheats the player is not allowed to use. */
     public static Module[] available() {
-        return java.util.Arrays.stream(values()).filter(module -> !module.cheat() || VClientMod.cheatsAllowed())
+        return java.util.Arrays.stream(values())
                 .toArray(Module[]::new);
     }
 

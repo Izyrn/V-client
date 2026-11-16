@@ -25,13 +25,13 @@ import java.util.List;
  * Equip saves it. Locked items can be previewed but not equipped. Everything here is visual only.
  */
 public final class CosmeticsScreen extends Screen {
-    private static final int BACKGROUND = 0xEE0F1027;
-    private static final int CARD = 0xFF1A1933;
-    private static final int CARD_HOVER = 0xFF24223F;
-    private static final int OUTLINE = 0x66AA97CF;
-    private static final int ACCENT = 0xFFE6BD59;
+    private static final int BACKGROUND = 0xEE0B1B30;
+    private static final int CARD = 0xFF0E2238;
+    private static final int CARD_HOVER = 0xFF173553;
+    private static final int OUTLINE = 0x667CEBFF;
+    private static final int ACCENT = 0xFF00CFFF;
     private static final int TEXT = 0xFFF3F6FC;
-    private static final int MUTED = 0xFF8E8EB2;
+    private static final int MUTED = 0xFF86B3CE;
     private static final int GOOD = 0xFF7CF29A;
     private static final int BAD = 0xFFFF8F8F;
     private static final int CARD_W = 82;
@@ -135,7 +135,7 @@ public final class CosmeticsScreen extends Screen {
 
     @Override
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
-        context.fill(0, 0, width, height, 0x90080918);
+        context.fill(0, 0, width, height, 0x90071321);
     }
 
     @Override
@@ -151,7 +151,7 @@ public final class CosmeticsScreen extends Screen {
         context.drawText(textRenderer, "V-CLIENT", 0, 0, ACCENT, true);
         context.getMatrices().popMatrix();
         context.drawText(textRenderer, "COSMETICS", panelX + 10 + (int) (textRenderer.getWidth("V-CLIENT") * 1.5f) + 6,
-                panelY + 13, 0xFFB3B3CF, false);
+                panelY + 13, 0xFFA9D2E8, false);
         boolean master = CosmeticState.enabled();
         drawPill(context, masterToggle, master ? "ON" : "OFF", master ? 0xFF244A38 : 0xFF482332,
                 master ? GOOD : BAD, mouseX, mouseY);
@@ -159,7 +159,7 @@ public final class CosmeticsScreen extends Screen {
         String statusText = (CosmeticNet.debug() ? "[DEBUG] " : "") + CosmeticCatalog.status();
         String status = textRenderer.trimToWidth(statusText, panelW - 190);
         int statusColor = loadState == CosmeticCatalog.State.FAILED ? BAD
-                : loadState == CosmeticCatalog.State.LOADING ? ACCENT : 0xFF7F7FA6;
+                : loadState == CosmeticCatalog.State.LOADING ? ACCENT : 0xFF6F9BB5;
         context.drawText(textRenderer, status, masterToggle.x() - 8 - textRenderer.getWidth(status), panelY + 13,
                 statusColor, false);
         if (loadState == CosmeticCatalog.State.FAILED && !CosmeticCatalog.error().isEmpty()) {
@@ -174,9 +174,9 @@ public final class CosmeticsScreen extends Screen {
         drawPreview(context, mouseX, mouseY);
         drawDetails(context, mouseX, mouseY);
 
-        drawButton(context, refreshButton, "REFRESH", 0xFF292642, true, mouseX, mouseY);
+        drawButton(context, refreshButton, "REFRESH", 0xFF11263D, true, mouseX, mouseY);
         drawButton(context, clearButton, "UNEQUIP ALL", 0xFF482332, true, mouseX, mouseY);
-        drawButton(context, diagnoseButton, showDiagnostics ? "HIDE" : "DIAGNOSE", 0xFF292642, true, mouseX, mouseY);
+        drawButton(context, diagnoseButton, showDiagnostics ? "HIDE" : "DIAGNOSE", 0xFF11263D, true, mouseX, mouseY);
         drawButton(context, closeButton, "DONE", ACCENT, true, mouseX, mouseY);
     }
 
@@ -187,7 +187,7 @@ public final class CosmeticsScreen extends Screen {
             boolean active = categories[i] == tab;
             context.fill(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + rect.h(),
                     active ? CARD_HOVER : rect.contains(mouseX, mouseY) ? 0xFF211F3A : CARD);
-            context.drawStrokedRectangle(rect.x(), rect.y(), rect.w(), rect.h(), active ? 0xAAE6BD59 : 0x44AA97CF);
+            context.drawStrokedRectangle(rect.x(), rect.y(), rect.w(), rect.h(), active ? 0xAA00CFFF : 0x447CEBFF);
             context.drawText(textRenderer, categories[i].label(), rect.x() + 6, rect.y() + 6,
                     active ? ACCENT : TEXT, false);
         }
@@ -202,7 +202,7 @@ public final class CosmeticsScreen extends Screen {
             context.fill(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + rect.h(),
                     active ? 0xFF2D2A52 : rect.contains(mouseX, mouseY) ? 0xFF211F3A : CARD);
             context.drawStrokedRectangle(rect.x(), rect.y(), rect.w(), rect.h(),
-                    active ? (tier == null ? ACCENT : tier.color()) : 0x44AA97CF);
+                    active ? (tier == null ? ACCENT : tier.color()) : 0x447CEBFF);
             String label = tier == null ? "All" : tier.label();
             context.drawText(textRenderer, label, rect.x() + (rect.w() - textRenderer.getWidth(label)) / 2,
                     rect.y() + 4, active ? (tier == null ? ACCENT : tier.color()) : TEXT, false);
@@ -233,7 +233,7 @@ public final class CosmeticsScreen extends Screen {
             y += 10;
             for (net.minecraft.text.OrderedText line : textRenderer.wrapLines(Text.literal(check.detail()), width - 8)) {
                 if (y > grid.y() + grid.h() - 10) break;
-                context.drawText(textRenderer, line, x + 6, y, 0xFFB3B3CF, false);
+                context.drawText(textRenderer, line, x + 6, y, 0xFFA9D2E8, false);
                 y += 9;
             }
         }
@@ -288,7 +288,7 @@ public final class CosmeticsScreen extends Screen {
         boolean unlocked = CosmeticCatalog.unlocked(cosmetic);
         context.fill(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + rect.h(), hovered ? CARD_HOVER : CARD);
         context.drawStrokedRectangle(rect.x(), rect.y(), rect.w(), rect.h(),
-                isSelected ? 0xFFFFFFFF : equipped ? 0xAAE6BD59 : 0x44AA97CF);
+                isSelected ? 0xFFFFFFFF : equipped ? 0xAA00CFFF : 0x447CEBFF);
         context.fill(rect.x(), rect.y(), rect.x() + 2, rect.y() + rect.h(), cosmetic.tier().color());
         context.drawText(textRenderer, textRenderer.trimToWidth(cosmetic.name(), rect.w() - 10), rect.x() + 6,
                 rect.y() + 5, unlocked ? TEXT : 0xFF9A9AB8, false);
@@ -375,7 +375,7 @@ public final class CosmeticsScreen extends Screen {
             }
         }
         if (selected.slot() == CosmeticSlot.EMOTE) {
-            drawButton(context, playButton, Emotes.active() ? "STOP" : "PLAY EMOTE", 0xFF292642, true, mouseX, mouseY);
+            drawButton(context, playButton, Emotes.active() ? "STOP" : "PLAY EMOTE", 0xFF11263D, true, mouseX, mouseY);
         }
         if (unlocked) {
             drawButton(context, equipButton, equipped ? "UNEQUIP" : "EQUIP", equipped ? 0xFF482332 : ACCENT, true,
@@ -402,7 +402,7 @@ public final class CosmeticsScreen extends Screen {
         if (enabled && rect.contains(mouseX, mouseY)) {
             context.fill(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + rect.h(), 0x30FFFFFF);
         }
-        int textColor = !enabled ? 0xFF8E8EA8 : color == ACCENT ? 0xFF171326 : 0xFFF3F0FF;
+        int textColor = !enabled ? 0xFF8E8EA8 : color == ACCENT ? 0xFF071321 : 0xFFEAF9FF;
         String trimmed = textRenderer.trimToWidth(label, rect.w() - 4);
         context.drawText(textRenderer, trimmed, rect.x() + (rect.w() - textRenderer.getWidth(trimmed)) / 2,
                 rect.y() + (rect.h() - 8) / 2, textColor, false);

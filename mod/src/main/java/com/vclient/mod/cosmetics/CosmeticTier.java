@@ -2,7 +2,7 @@ package com.vclient.mod.cosmetics;
 
 /** FREE is always usable, PREMIUM needs to be owned, EVENT is usable while its event window is open. */
 public enum CosmeticTier {
-    FREE("Free", 0xFF7CF29A), PREMIUM("Premium", 0xFFE6BD59), EVENT("Event", 0xFFFF8FD8);
+    FREE("Free", 0xFF7CF29A), PREMIUM("Premium", 0xFF00CFFF), EVENT("Event", 0xFFB8F4FF);
 
     private final String label;
     private final int color;

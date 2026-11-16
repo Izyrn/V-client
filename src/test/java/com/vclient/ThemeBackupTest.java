@@ -24,20 +24,20 @@ class ThemeBackupTest {
 
     @AfterEach
     void resetTheme() {
-        Theme.apply("night", "#e6bd59");
+        Theme.apply("frost", "#00cfff");
     }
 
     @Test
     void presetsAndCustomAccentChangeTheColours() {
-        Theme.apply("red", "#000000");
-        assertEquals("#ff5a64", Theme.accent());
-        assertEquals("#ff5a64", ModsUi.ACCENT);
+        Theme.apply("aurora", "#000000");
+        assertEquals("#5cffc8", Theme.accent());
+        assertEquals("#5cffc8", ModsUi.ACCENT);
         Theme.apply(Theme.CUSTOM, "#33CC99");
         assertEquals("#33cc99", Theme.accent());
         assertTrue(Theme.validHex(Theme.background()));
         assertEquals("rgba(51, 204, 153, 0.5)", Theme.accentRgba(0.5));
         Theme.apply(Theme.CUSTOM, "not a colour");
-        assertEquals("#e6bd59", Theme.accent(), "an invalid custom colour falls back to the default theme");
+        assertEquals("#00cfff", Theme.accent(), "an invalid custom colour falls back to the default theme");
         assertEquals(5, Theme.PRESETS.size());
     }
 
