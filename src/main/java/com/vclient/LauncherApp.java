@@ -3343,12 +3343,7 @@ public final class LauncherApp extends Application {
     }
 
     private void openExternalPage(String address) {
-        try {
-            if (!Desktop.isDesktopSupported()) throw new IOException("This computer does not support opening links from V-Client.");
-            Desktop.getDesktop().browse(URI.create(address));
-        } catch (IOException | IllegalArgumentException e) {
-            showError("Could not open link", e);
-        }
+        ExternalLinks.open(address, message -> Platform.runLater(() -> appendLog(message)));
     }
 
     private void showMods() {

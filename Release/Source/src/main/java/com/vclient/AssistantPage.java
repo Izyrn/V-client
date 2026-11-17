@@ -113,11 +113,7 @@ final class AssistantPage {
     }
 
     private void openPage(String address) {
-        try {
-            Desktop.getDesktop().browse(URI.create(address));
-        } catch (Exception e) {
-            host.log("Could not open " + address + ": " + e.getMessage());
-        }
+        ExternalLinks.open(address, host::log);
     }
 
     private static Path launcherDirectory() {

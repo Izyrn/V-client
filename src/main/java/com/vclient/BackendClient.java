@@ -124,7 +124,7 @@ final class BackendClient {
     }
 
     /** The website on GitHub Pages: its update.json and installer are published by every push to main. */
-    static final String SITE_URL = "https://eliteprofast.github.io/V-client";
+    static final String SITE_URL = "https://izyrn.github.io/V-client";
 
     /**
      * Reads the release from the website's update.json (GitHub Pages) first, and only asks the backend when the site

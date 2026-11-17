@@ -203,7 +203,7 @@ final class ModrinthModService {
             HttpResponse<Path> response = PlatformTls.sendWithRetries(HTTP,
                     HttpRequest.newBuilder(URI.create(project.downloadUrl()))
                             .timeout(Duration.ofMinutes(3))
-                            .header("User-Agent", "V-Client/1.0.0 (https://github.com/eliteprofast/V-client)")
+                            .header("User-Agent", "V-Client/1.0.0 (https://github.com/Izyrn/V-client)")
                             .GET().build(),
                     HttpResponse.BodyHandlers.ofFile(temporary), onProgress);
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
@@ -280,7 +280,7 @@ final class ModrinthModService {
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(Duration.ofSeconds(30))
                 .header("Accept", "application/json")
-                .header("User-Agent", "V-Client/1.0.0 (https://github.com/eliteprofast/V-client)")
+                .header("User-Agent", "V-Client/1.0.0 (https://github.com/Izyrn/V-client)")
                 .GET().build();
         HttpResponse<String> response;
         try {

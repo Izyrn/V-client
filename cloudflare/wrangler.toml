@@ -6,7 +6,7 @@ compatibility_date = "2025-01-01"
 
 [vars]
 # Browsers on this origin may call the API (CORS). The launcher is not a browser and sends no Origin header.
-ALLOWED_ORIGIN = "https://eliteprofast.github.io"
+ALLOWED_ORIGIN = "https://izyrn.github.io"
 SERVER_NAME = "VSMP"
 JAVA_HOST = "vsmp.meowlix.sh"
 JAVA_PORT = "19754"

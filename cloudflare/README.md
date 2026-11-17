@@ -12,7 +12,7 @@ Replaces the Render backend. It never sleeps and stores almost nothing.
 | `POST /api/admin/announcements`, `DELETE /api/admin/announcements/:id` | **API key required.** Manage announcements |
 | `GET /api/health`, `/api/config`, `/api/news`, `/api/launcher/update` | Small compatibility endpoints |
 
-CORS allows only `https://eliteprofast.github.io` (see `ALLOWED_ORIGIN` in `wrangler.toml`). The launcher is not a browser and sends no `Origin`, so it is unaffected; browsers on other sites get HTTP 403.
+CORS allows only `https://izyrn.github.io` (see `ALLOWED_ORIGIN` in `wrangler.toml`). The launcher is not a browser and sends no `Origin`, so it is unaffected; browsers on other sites get HTTP 403.
 
 ## Deploy (one time)
 
