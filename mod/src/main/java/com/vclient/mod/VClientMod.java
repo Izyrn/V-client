@@ -79,6 +79,8 @@ public final class VClientMod implements ClientModInitializer {
         trackDeath(client);
         FpsRecorder.tick(client);
         PerfProbe.tick(client);
+        SkinSync.tick(client);
+        FrostTitleScreen.replaceTitle(client);
 
 
         if (client.player != null) {

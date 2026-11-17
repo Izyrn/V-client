@@ -63,6 +63,15 @@ public final class SkinFix {
     }
 
     /** One line for the menu and the diagnostics: where the launcher-supplied skin and cape stand. */
+    /** The Ely.by skin address the launcher supplied, or an empty string. */
+    public static String launcherSkinUrl() {
+        return SKIN_URL;
+    }
+
+    public static String launcherSkinModel() {
+        return MODEL;
+    }
+
     public static String status() {
         return "skin: " + skinStatus + "; cape: " + capeStatus;
     }
@@ -135,8 +144,13 @@ public final class SkinFix {
      * is nothing to change, this is {@code original} itself.
      */
     public static SkinTextures apply(UUID id, SkinTextures original) {
+        return apply(id, null, original);
+    }
+
+    /** As {@link #apply(UUID, SkinTextures)}; {@code name} lets other players' Ely.by skins be looked up by name. */
+    public static SkinTextures apply(UUID id, String name, SkinTextures original) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (!isLocalPlayer(client, id)) return original;
+        if (!isLocalPlayer(client, id)) return remote(name, original);
         int state = CosmeticState.version();
         // The cape frame is part of the cache key: an animated cape needs a new SkinTextures each time its frame
         // changes (a few times a second), and a cape whose texture finished loading must replace the cached one.
@@ -154,6 +168,74 @@ public final class SkinFix {
         lastSkinVersion = loadedVersion;
         lastCatalogRevision = CosmeticCatalog.revision();
         return result;
+    }
+
+    // ---- other players' Ely.by skins ---------------------------------------------------------------------
+
+    /**
+     * On offline-mode servers every player arrives with the default skin, so nobody sees anybody's. When another
+     * player has the default skin, this looks their name up on Ely.by's skin system (once per name per session) and
+     * shows that skin instead. Only players with an Ely.by skin of that name are affected. Turn it off with
+     * {@code -Dvclient.skin.others=false}.
+     */
+    private static final boolean LOOK_UP_OTHERS = !"false".equalsIgnoreCase(System.getProperty("vclient.skin.others", "true"));
+    private record RemoteSkin(Identifier skin, PlayerSkinType model) {}
+    private static final java.util.concurrent.ConcurrentHashMap<String, RemoteSkin> REMOTE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final RemoteSkin NONE = new RemoteSkin(null, PlayerSkinType.byModelMetadata("default"));
+    private static final java.net.http.HttpClient HTTP = java.net.http.HttpClient.newBuilder()
+            .connectTimeout(java.time.Duration.ofSeconds(8)).build();
+
+    private static SkinTextures remote(String name, SkinTextures original) {
+        if (!LOOK_UP_OTHERS || name == null || !name.matches("[A-Za-z0-9_]{1,16}")) return original;
+        if (!original.comp_1626().comp_3627().getPath().startsWith("textures/")) return original; // a real skin loaded
+        String key = name.toLowerCase(java.util.Locale.ROOT);
+        RemoteSkin found = REMOTE.get(key);
+        if (found == null) {
+            if (REMOTE.putIfAbsent(key, NONE) == null) lookUp(name, key);
+            return original;
+        }
+        if (found.skin() == null) return original;
+        return new SkinTextures(new AssetInfo.TextureAssetInfo(found.skin(), found.skin()), original.comp_1627(),
+                original.comp_1628(), found.model(), original.comp_1630());
+    }
+
+    private static void lookUp(String name, String key) {
+        java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder(
+                        URI.create("https://skinsystem.ely.by/textures/" + name))
+                .timeout(java.time.Duration.ofSeconds(8)).header("User-Agent", "VSMP-Client").GET().build();
+        HTTP.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofString()).whenComplete((response, error) -> {
+            if (error != null || response.statusCode() != 200) return; // no Ely.by skin: keep the default
+            try {
+                com.google.gson.JsonObject skin = com.google.gson.JsonParser.parseString(response.body())
+                        .getAsJsonObject().getAsJsonObject("SKIN");
+                if (skin == null || !skin.has("url")) return;
+                String address = skin.get("url").getAsString().replaceFirst("^http://", "https://");
+                String model = skin.has("metadata") && skin.getAsJsonObject("metadata").has("model")
+                        ? skin.getAsJsonObject("metadata").get("model").getAsString() : "default";
+                URI uri = URI.create(address);
+                if (!"https".equals(uri.getScheme()) || uri.getHost() == null) return;
+                Path cache = CosmeticNet.directory().getParent().resolve("skin-cache")
+                        .resolve(CosmeticNet.sha256(address.getBytes(java.nio.charset.StandardCharsets.UTF_8)) + ".png");
+                CosmeticNet.download(uri, "", cache).whenComplete((bytes, downloadError) -> {
+                    if (downloadError != null) return;
+                    try {
+                        NativeImage image = processSkin(NativeImage.read(bytes));
+                        MinecraftClient client = MinecraftClient.getInstance();
+                        client.execute(() -> {
+                            Identifier id = Identifier.of("vclient", "others/" + key);
+                            client.getTextureManager().registerTexture(id,
+                                    new NativeImageBackedTexture(() -> "vclient skin " + key, image));
+                            REMOTE.put(key, new RemoteSkin(id, PlayerSkinType.byModelMetadata(model)));
+                            VClientMod.LOGGER.info("[Skin] Showing {}'s Ely.by skin.", name);
+                        });
+                    } catch (IOException | RuntimeException e) {
+                        VClientMod.LOGGER.warn("[Skin] {}'s Ely.by skin could not be used: {}", name, e.toString());
+                    }
+                });
+            } catch (RuntimeException e) {
+                VClientMod.LOGGER.warn("[Skin] Unreadable Ely.by answer for {}: {}", name, e.toString());
+            }
+        });
     }
 
     private static boolean loggedIdentity;

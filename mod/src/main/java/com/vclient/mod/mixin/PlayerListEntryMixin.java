@@ -19,7 +19,7 @@ public abstract class PlayerListEntryMixin {
     private void vclient$skin(CallbackInfoReturnable<SkinTextures> info) {
         PlayerListEntry self = (PlayerListEntry) (Object) this;
         SkinTextures original = info.getReturnValue();
-        SkinTextures replaced = SkinFix.apply(self.getProfile().id(), original);
+        SkinTextures replaced = SkinFix.apply(self.getProfile().id(), self.getProfile().name(), original);
         if (replaced != original) info.setReturnValue(replaced);
     }
 }

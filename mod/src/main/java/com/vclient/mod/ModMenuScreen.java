@@ -16,7 +16,7 @@ import java.util.List;
  */
 public final class ModMenuScreen extends Screen {
     private static final int CARD_WIDTH = 118;
-    private static final int CARD_HEIGHT = 40;
+    private static final int CARD_HEIGHT = 32;
     private static final int CARD_GAP = 6;
     private static final int BUTTON_HEIGHT = 18;
     private static final int GEAR = 14;
@@ -87,7 +87,7 @@ public final class ModMenuScreen extends Screen {
 
     @Override
     protected void init() {
-        panelWidth = Math.min(width - 16, SIDEBAR + 24 + 3 * CARD_WIDTH + 2 * CARD_GAP + 12);
+        panelWidth = Math.min(width - 16, 540);
         panelHeight = Math.min(height - 12, 270);
         panelX = (width - panelWidth) / 2;
         panelY = (height - panelHeight) / 2;
@@ -99,7 +99,7 @@ public final class ModMenuScreen extends Screen {
             sidebarAreas.add(new Area(panelX + 8, panelY + 34 + index * (rowHeight + 2), SIDEBAR - 8, rowHeight));
         }
 
-        columns = Math.max(1, Math.min(3, (content.width() + CARD_GAP) / (CARD_WIDTH + CARD_GAP)));
+        columns = 1; // Lunar-style list: one module per row
         layoutMods();
 
         int buttonWidth = Math.min(150, content.width());
@@ -135,11 +135,11 @@ public final class ModMenuScreen extends Screen {
         int column = index % columns;
         int row = index / columns;
         return new Area(grid.x() + column * (CARD_WIDTH + CARD_GAP),
-                grid.y() + row * (CARD_HEIGHT + CARD_GAP) - scroll, CARD_WIDTH, CARD_HEIGHT);
+                grid.y() + row * (CARD_HEIGHT + CARD_GAP) - scroll, grid.width() - 4, CARD_HEIGHT);
     }
 
     private static Area gear(Area card) {
-        return new Area(card.x() + card.width() - GEAR - 3, card.y() + 3, GEAR, GEAR - 2);
+        return new Area(card.x() + card.width() - GEAR - 8, card.y() + (card.height() - GEAR + 2) / 2, GEAR, GEAR - 2);
     }
 
     private void open(PageId target) {
@@ -332,29 +332,41 @@ public final class ModMenuScreen extends Screen {
         boolean enabled = VConfig.enabled(module);
         boolean hovered = area.contains(mouseX, mouseY);
         Area gear = gear(area);
-        context.fill(area.x(), area.y(), area.x() + area.width(), area.y() + area.height(),
-                hovered ? 0xFF173553 : 0xFF0E2238);
-        context.drawStrokedRectangle(area.x(), area.y(), area.width(), area.height(),
-                enabled ? 0xAA00CFFF : hovered ? 0x887CEBFF : 0x447CEBFF);
-        context.drawText(textRenderer, textRenderer.trimToWidth(module.title(), area.width() - GEAR - 14),
-                area.x() + 6, area.y() + 6, 0xFFEAF9FF, false);
-        String description = textRenderer.trimToWidth(module.description(), area.width() - 12);
-        context.drawText(textRenderer, description, area.x() + 6, area.y() + 17, 0xFF86B3CE, false);
+        int right = area.x() + area.width();
+        context.fill(area.x(), area.y(), right, area.y() + area.height(), hovered ? 0xCC173553 : 0xAA0E2238);
+        context.fill(area.x(), area.y(), area.x() + 2, area.y() + area.height(), enabled ? Hud.ACCENT : 0x447CEBFF);
+
+        // Icon tile with the module's initial, like the pack icons in Lunar's mod list.
+        int tile = area.height() - 8;
+        int tileX = area.x() + 8;
+        int tileY = area.y() + 4;
+        context.fill(tileX, tileY, tileX + tile, tileY + tile, enabled ? 0xFF0B5C78 : 0xFF11263D);
+        context.drawStrokedRectangle(tileX, tileY, tile, tile, enabled ? 0xAAB8F4FF : 0x447CEBFF);
+        String initial = module.title().substring(0, 1).toUpperCase();
+        context.drawText(textRenderer, initial, tileX + (tile - textRenderer.getWidth(initial)) / 2, tileY + (tile - 8) / 2,
+                enabled ? 0xFFFFFFFF : 0xFF86B3CE, false);
+
+        int textX = tileX + tile + 8;
+        int textWidth = right - textX - GEAR - 48;
+        context.drawText(textRenderer, textRenderer.trimToWidth(module.title(), textWidth), textX, area.y() + 6, 0xFFEAF9FF, false);
+        context.drawText(textRenderer, textRenderer.trimToWidth(module.description(), textWidth), textX, area.y() + 17, 0xFF86B3CE, false);
 
         boolean gearHovered = gear.contains(mouseX, mouseY);
-        context.fill(gear.x(), gear.y(), gear.x() + gear.width(), gear.y() + gear.height(),
-                gearHovered ? 0xFF1E4260 : 0xFF11263D);
+        context.fill(gear.x(), gear.y(), gear.x() + gear.width(), gear.y() + gear.height(), gearHovered ? 0xFF1E4260 : 0xFF11263D);
         context.drawText(textRenderer, "⚙", gear.x() + (gear.width() - textRenderer.getWidth("⚙")) / 2,
-                gear.y() + 2, gearHovered ? Hud.ACCENT : 0xFFC4E6F5, false);
+                gear.y() + (gear.height() - 8) / 2, gearHovered ? Hud.ACCENT : 0xFFC4E6F5, false);
 
-        String state = module.toggleable() ? (enabled ? "ON" : "OFF") : "SETTINGS";
-        int pillWidth = textRenderer.getWidth(state) + 8;
-        int pillX = area.x() + area.width() - 6 - pillWidth;
-        int pillY = area.y() + area.height() - 13;
-        int pillColor = !module.toggleable() ? 0xFF11263D : enabled ? 0xFF0B4F6A : 0xFF1B2F44;
-        int textColor = !module.toggleable() ? Hud.ACCENT : enabled ? 0xFFB8F4FF : 0xFF6F9BB5;
-        context.fill(pillX, pillY, pillX + pillWidth, pillY + 10, pillColor);
-        context.drawText(textRenderer, state, pillX + 4, pillY + 1, textColor, false);
+        if (module.toggleable()) {
+            // Toggle switch: a track with a knob that sits right when on.
+            int switchWidth = 26;
+            int switchHeight = 12;
+            int switchX = gear.x() - switchWidth - 8;
+            int switchY = area.y() + (area.height() - switchHeight) / 2;
+            context.fill(switchX, switchY, switchX + switchWidth, switchY + switchHeight, enabled ? 0xFF00A6CC : 0xFF1B2F44);
+            context.drawStrokedRectangle(switchX, switchY, switchWidth, switchHeight, enabled ? 0xFFB8F4FF : 0x557CEBFF);
+            int knobX = enabled ? switchX + switchWidth - switchHeight + 1 : switchX + 1;
+            context.fill(knobX, switchY + 1, knobX + switchHeight - 2, switchY + switchHeight - 1, enabled ? 0xFFFFFFFF : 0xFF86B3CE);
+        }
     }
 
     static void drawButton(DrawContext context, net.minecraft.client.font.TextRenderer font, Area area,

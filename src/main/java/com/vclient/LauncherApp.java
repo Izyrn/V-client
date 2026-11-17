@@ -217,6 +217,20 @@ public final class LauncherApp extends Application {
                 appendLog("Unknown vclient.startPage value: " + startPage);
             }
         }
+        if (Boolean.getBoolean("vclient.autoLaunch") && account != null) {
+            // Debugging aid: -Dvclient.autoLaunch=true starts the game a few seconds after the launcher opens,
+            // once the version list has loaded.
+            javafx.animation.PauseTransition wait = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(5));
+            wait.setOnFinished(event -> {
+                if (versionPicker != null && versionPicker.getValue() != null && playButton != null && !playButton.isDisabled()) {
+                    appendLog("Auto launch: starting the game.");
+                    launchGame(null);
+                } else {
+                    appendLog("Auto launch skipped: the launcher was not ready (no version selected yet).");
+                }
+            });
+            wait.play();
+        }
         startBackendTasks();
         // Dark combo-box popups, titled panes and progress bars for every scene.
         stage.sceneProperty().addListener((observable, was, scene) -> attachStylesheet(scene));
@@ -247,12 +261,12 @@ public final class LauncherApp extends Application {
             .combo-box .list-cell { -fx-text-fill: #eaf9ff; -fx-background-color: transparent; }
             .combo-box .arrow-button { -fx-background-color: transparent; }
             .combo-box .arrow-button .arrow { -fx-background-color: #c4e6f5; }
-            .combo-box:focused { -fx-background-color: #0c2036; -fx-border-color: #8f86c8; }
+            .combo-box:focused { -fx-background-color: #0c2036; -fx-border-color: #7cebff; }
             .titled-pane > .title { -fx-background-color: rgba(255, 255, 255, 0.07); -fx-background-radius: 8; }
-            .titled-pane > .title > .text { -fx-fill: #e4e1f5; }
+            .titled-pane > .title > .text { -fx-fill: #d4f3ff; }
             .titled-pane > .title > .arrow-button .arrow { -fx-background-color: #c4e6f5; }
             .titled-pane > .content { -fx-background-color: transparent; -fx-border-color: transparent; }
-            .progress-bar > .track { -fx-background-color: #262448; -fx-background-radius: 6; }
+            .progress-bar > .track { -fx-background-color: #11263D; -fx-background-radius: 6; }
             .progress-bar > .bar { -fx-background-radius: 6; }
             .scroll-bar { -fx-background-color: transparent; }
             """;
@@ -413,7 +427,7 @@ public final class LauncherApp extends Application {
 
         HBox launchRow = new HBox(14);
         launchRow.setAlignment(Pos.CENTER_LEFT);
-        playButton = button("▶    PLAY", ACCENT, 17);
+        playButton = button("▶    LAUNCH", ACCENT, 17);
         playButton.setPrefHeight(54);
         HBox.setHgrow(playButton, Priority.ALWAYS);
         playButton.setMaxWidth(Double.MAX_VALUE);
@@ -447,8 +461,93 @@ public final class LauncherApp extends Application {
         });
         VBox detailsBody = new VBox(10, log, copyLogs);
         javafx.scene.control.TitledPane launchDetails = Widgets.details("Details — launch output", detailsBody);
-        content.getChildren().addAll(heading, launchEventBanner(), homeAnnouncements, homeStatusRow, problemBox, versionCard,
-                launchRow, statusRow, launchDetails);
+        // Lunar-style home: a big art banner with a centred LAUNCH button, then Latest News beside Friends.
+        versionCard.getChildren().removeAll(versionTitle, versionPicker, versionSkeleton);
+        playButton.setText("▶    LAUNCH");
+        playButton.setPrefHeight(54);
+        playButton.setMinWidth(260);
+        playButton.setMaxWidth(260);
+        HBox.setHgrow(playButton, Priority.NEVER);
+        playButton.setStyle(playButton.getStyle() + " -fx-font-size: 17px; -fx-background-radius: 14;"
+                + " -fx-effect: dropshadow(gaussian, rgba(0,207,255,0.65), 26, 0.2, 0, 0);");
+        singleplayerButton.setPrefHeight(34);
+        singleplayerButton.setMaxWidth(Double.MAX_VALUE);
+        versionPicker.setPrefHeight(40);
+        versionPicker.setMaxWidth(260);
+        versionPicker.setMinWidth(260);
+        Canvas heroArt = new Canvas(900, 300);
+        StackPane hero = new StackPane(heroArt);
+        hero.setMinHeight(300);
+        hero.setPrefHeight(300);
+        // The artwork follows the banner's size and takes no part in layout: a Canvas cannot shrink, so sizing the
+        // banner from it made the centred LAUNCH button drift sideways and out of view.
+        heroArt.setManaged(false);
+        heroArt.widthProperty().bind(hero.widthProperty());
+        heroArt.heightProperty().bind(hero.heightProperty());
+        heroArt.widthProperty().addListener(observable -> drawHeroArt(heroArt));
+        heroArt.heightProperty().addListener(observable -> drawHeroArt(heroArt));
+        hero.setMinWidth(0);
+        javafx.scene.shape.Rectangle heroClip = new javafx.scene.shape.Rectangle();
+        heroClip.setArcWidth(40);
+        heroClip.setArcHeight(40);
+        heroClip.widthProperty().bind(hero.widthProperty());
+        heroClip.heightProperty().bind(hero.heightProperty());
+        hero.setClip(heroClip);
+        VBox launchBox = new VBox(10, playButton, versionPicker, statusRow);
+        launchBox.setAlignment(Pos.CENTER);
+        launchBox.setMaxWidth(280);
+        launchBox.setMaxHeight(Region.USE_PREF_SIZE);
+        statusRow.setAlignment(Pos.CENTER);
+        hero.getChildren().add(launchBox);
+        StackPane.setAlignment(launchBox, Pos.CENTER);
+        hero.setStyle("-fx-background-color: rgba(11, 28, 48, 0.9); -fx-background-radius: 20; -fx-border-color: rgba(124,235,255,0.35);"
+                + " -fx-border-radius: 20; -fx-effect: dropshadow(gaussian, rgba(0,207,255,0.20), 28, 0.1, 0, 0);");
+
+        // Latest news (left) and friends (right).
+        Label newsTitle = label("LATEST NEWS", 12, "#eaf9ff");
+        newsTitle.setStyle(newsTitle.getStyle() + "-fx-font-weight: bold; -fx-letter-spacing: 1.5;");
+        Button allNews = button("View all news", "#11263D", 10);
+        allNews.setOnAction(event -> navigate(Page.NEWS));
+        Region newsSpacer = new Region();
+        HBox.setHgrow(newsSpacer, Priority.ALWAYS);
+        HBox newsHeader = new HBox(10, newsTitle, newsSpacer, allNews);
+        newsHeader.setAlignment(Pos.CENTER_LEFT);
+        VBox newsColumn = new VBox(12, newsHeader, launchEventBanner(), homeAnnouncements);
+        HBox.setHgrow(newsColumn, Priority.ALWAYS);
+
+        Label friendsTitle = label("FRIENDS", 12, "#eaf9ff");
+        friendsTitle.setStyle(friendsTitle.getStyle() + "-fx-font-weight: bold; -fx-letter-spacing: 1.5;");
+        Button allFriends = button("View friends list", "#11263D", 10);
+        allFriends.setOnAction(event -> navigate(Page.FRIENDS));
+        Region friendsSpacer = new Region();
+        HBox.setHgrow(friendsSpacer, Priority.ALWAYS);
+        HBox friendsHeader = new HBox(10, friendsTitle, friendsSpacer, allFriends);
+        friendsHeader.setAlignment(Pos.CENTER_LEFT);
+        VBox friendsBody = new VBox(8);
+        if (localFriends.isEmpty()) {
+            Label none = label("No friends added yet. Open the friends list to add some.", 12, MUTED);
+            none.setWrapText(true);
+            friendsBody.getChildren().add(none);
+        } else {
+            for (String friend : localFriends.stream().limit(6).toList()) {
+                Label friendName = label(friend, 13, "#eaf9ff");
+                HBox friendRow = new HBox(10, dot("#4a6a85"), friendName);
+                friendRow.setAlignment(Pos.CENTER_LEFT);
+                friendRow.setPadding(new Insets(8, 12, 8, 12));
+                friendRow.setStyle("-fx-background-color: rgba(17, 38, 61, 0.75); -fx-background-radius: 10;"
+                        + " -fx-border-color: rgba(124,235,255,0.18); -fx-border-radius: 10;");
+                friendsBody.getChildren().add(friendRow);
+            }
+        }
+        VBox friendsColumn = new VBox(12, friendsHeader, friendsBody);
+        friendsColumn.setMinWidth(280);
+        friendsColumn.setPrefWidth(300);
+        friendsColumn.setMaxWidth(320);
+        HBox lowerRow = new HBox(22, newsColumn, friendsColumn);
+        lowerRow.setAlignment(Pos.TOP_LEFT);
+
+        javafx.scene.control.TitledPane setup = Widgets.details("Game setup, connection check and folder", versionCard);
+        content.getChildren().addAll(hero, lowerRow, homeStatusRow, problemBox, setup, singleplayerButton, launchDetails);
         setPageContent(root, content);
         stage.setScene(new Scene(root, stage.getWidth(), stage.getHeight()));
         updateInstallButton();
@@ -2189,7 +2288,7 @@ public final class LauncherApp extends Application {
         }
 
         private HBox friendRow(BackendClient.Friend friend) {
-            Region dot = dot(friend.online() ? ModsUi.GOOD : "#5b5b78");
+            Region dot = dot(friend.online() ? ModsUi.GOOD : "#4a6a85");
             Label name = ModsUi.text(friend.username(), 14, ModsUi.TEXT, true);
             String detail = friend.online()
                     ? (friend.activity().isBlank() ? "Online" : friend.activity()) + (friend.server().isBlank() ? "" : "  ·  " + friend.server())
@@ -2629,7 +2728,7 @@ public final class LauncherApp extends Application {
         detail.setWrapText(true);
         VBox box = new VBox(6, tag, headline, detail);
         box.setPadding(new Insets(16, 20, 16, 20));
-        box.setStyle("-fx-background-color: linear-gradient(to right, rgba(120, 40, 110, 0.55), rgba(17, 38, 61, 0.7)); -fx-background-radius: 12; -fx-border-color: rgba(255, 143, 216, 0.55); -fx-border-radius: 12;");
+        box.setStyle("-fx-background-color: linear-gradient(to right, rgba(0, 150, 200, 0.40), rgba(17, 38, 61, 0.7)); -fx-background-radius: 12; -fx-border-color: rgba(124, 235, 255, 0.55); -fx-border-radius: 12;");
         return box;
     }
 
@@ -3794,81 +3893,79 @@ public final class LauncherApp extends Application {
         backgroundAnimation.start();
         BorderPane layout = new BorderPane();
         layout.setStyle("-fx-background-color: transparent; -fx-font-family: 'Segoe UI';");
-        HBox header = new HBox(12);
+        // Top bar: brand and QUICK PLAY on the left, the account chip on the right.
+        HBox header = new HBox(14);
         header.setAlignment(Pos.CENTER_LEFT);
-        header.setPadding(new Insets(18, 30, 18, 30));
+        header.setPadding(new Insets(10, 22, 10, 18));
         avatar = new ImageView(createIcon());
-        avatar.setFitWidth(38);
-        avatar.setFitHeight(38);
+        avatar.setFitWidth(30);
+        avatar.setFitHeight(30);
         avatar.setPreserveRatio(true);
-        avatar.setClip(new Circle(19, 19, 19));
+        avatar.setClip(new Circle(15, 15, 15));
         if (account != null) loadAvatar(account, avatar);
-        Canvas logo = logo(34);
-        Label brand = label("VSMP CLIENT", 15, "#eaf9ff");
-        brand.setStyle(brand.getStyle() + "-fx-font-weight: bold; -fx-letter-spacing: 1.5;");
+        Canvas logo = logo(32);
+        HBox quickPlay = new HBox(8);
+        quickPlay.setAlignment(Pos.CENTER_LEFT);
+        quickPlay.setPadding(new Insets(5, 10, 5, 12));
+        quickPlay.setStyle("-fx-background-color: rgba(17, 38, 61, 0.85); -fx-background-radius: 12;"
+                + " -fx-border-color: rgba(124, 235, 255, 0.25); -fx-border-radius: 12;");
+        Label quickLabel = label("QUICK PLAY", 10, "#9fc6dc");
+        quickLabel.setStyle(quickLabel.getStyle() + "-fx-font-weight: bold; -fx-letter-spacing: 1.5;");
+        quickPlay.getChildren().add(quickLabel);
+        for (ServerEntry entry : SERVER_LIST) {
+            Button server = new Button(entry.name());
+            server.setStyle("-fx-background-color: rgba(0, 207, 255, 0.14); -fx-text-fill: #eaf9ff; -fx-font-size: 11px;"
+                    + " -fx-font-weight: bold; -fx-background-radius: 9; -fx-padding: 5 11 5 11; -fx-cursor: hand;");
+            server.setTooltip(new javafx.scene.control.Tooltip("Launch and join " + entry.host()));
+            server.setOnAction(event -> launchGame(entry));
+            quickPlay.getChildren().add(server);
+        }
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        headerAccountLabel = label(account == null ? "NO ACCOUNT" : account.name().toUpperCase()
-                + "  ·  " + account.type().label().toUpperCase(), 10,
-                account == null ? MUTED : ACCENT);
-        Button switchAccount = button("ACCOUNT", "#11263D", 10);
-        switchAccount.setOnAction(event -> showSettings());
-        header.getChildren().addAll(avatar, logo, brand, spacer,
-                dot(account == null ? "#64728a" : "#39d98a"), headerAccountLabel, switchAccount);
-        header.setStyle("-fx-background-color: rgba(7, 19, 33, 0.78); -fx-border-color: transparent transparent rgba(124, 235, 255, 0.22) transparent;");
+        headerAccountLabel = label(account == null ? "NO ACCOUNT" : account.name(), 12,
+                account == null ? MUTED : "#eaf9ff");
+        headerAccountLabel.setStyle(headerAccountLabel.getStyle() + "-fx-font-weight: bold;");
+        HBox accountChip = new HBox(9, avatar, headerAccountLabel, dot(account == null ? "#64728a" : "#39d98a"));
+        accountChip.setAlignment(Pos.CENTER_LEFT);
+        accountChip.setPadding(new Insets(5, 14, 5, 6));
+        accountChip.setCursor(javafx.scene.Cursor.HAND);
+        accountChip.setStyle("-fx-background-color: rgba(0, 150, 200, 0.30); -fx-background-radius: 14;"
+                + " -fx-border-color: rgba(124, 235, 255, 0.40); -fx-border-radius: 14;");
+        accountChip.setOnMouseClicked(event -> showSettings());
+        header.getChildren().addAll(logo, quickPlay, spacer, accountChip);
+        header.setStyle("-fx-background-color: rgba(7, 19, 33, 0.78); -fx-border-color: transparent transparent rgba(124, 235, 255, 0.18) transparent;");
         layout.setTop(header);
-        VBox navigation = new VBox(3);
+
+        // Slim icon sidebar: main pages, "more" for the rest, Settings at the bottom. Names show as tooltips.
+        VBox navigation = new VBox(6);
         navigation.setAlignment(Pos.TOP_CENTER);
-        navigation.setPadding(new Insets(10, 6, 10, 6));
-        navigation.setSpacing(3);
-        navigation.setPrefWidth(92);
-        navigation.setStyle("-fx-background-color: rgba(7, 19, 33, 0.68); -fx-border-color: transparent rgba(124, 235, 255, 0.18) transparent transparent;");
-        // Sections keep the sidebar readable; rarely used pages are folded under "More".
-        record NavSection(String title, List<Page> pages) {}
-        List<NavSection> sections = List.of(
-                new NavSection("PLAY", List.of(Page.HOME, Page.SERVERS, Page.LIBRARY)),
-                new NavSection("CUSTOMIZE", List.of(Page.MODS, Page.PACKS, Page.COSMETICS, Page.WARDROBE)),
-                new NavSection("SOCIAL", List.of(Page.FRIENDS, Page.NEWS, Page.DISCORD)),
-                new NavSection("YOU", List.of(Page.PROFILE, Page.RECORDINGS, Page.SCREENSHOTS, Page.SETTINGS)));
-        List<Page> morePages = List.of(Page.BOOST, Page.FPS_TEST, Page.PERFORMANCE, Page.BROWSER, Page.ASSISTANT, Page.LOGS, Page.CONSOLE);
-        if (morePages.contains(activePage)) moreNavigationExpanded = true;
+        navigation.setPadding(new Insets(12, 6, 12, 6));
+        navigation.setPrefWidth(66);
+        navigation.setMinWidth(66);
+        navigation.setStyle("-fx-background-color: rgba(7, 19, 33, 0.72); -fx-border-color: transparent rgba(124, 235, 255, 0.14) transparent transparent;");
+        List<Page> mainPages = List.of(Page.HOME, Page.MODS, Page.COSMETICS, Page.BOOST, Page.RECORDINGS, Page.NEWS);
+        List<Page> morePages = List.of(Page.SERVERS, Page.LIBRARY, Page.PACKS, Page.WARDROBE, Page.FRIENDS, Page.DISCORD,
+                Page.PROFILE, Page.SCREENSHOTS, Page.FPS_TEST, Page.PERFORMANCE, Page.BROWSER, Page.ASSISTANT,
+                Page.LOGS, Page.CONSOLE);
         navigationButtons.clear();
-        for (NavSection section : sections) {
-            navigation.getChildren().add(navigationHeader(section.title()));
-            for (Page page : section.pages()) navigation.getChildren().add(navigationItem(page));
+        for (Page page : mainPages) navigation.getChildren().add(navigationItem(page));
+        Region navigationSpacer = new Region();
+        VBox.setVgrow(navigationSpacer, Priority.ALWAYS);
+        Button moreButton = new Button("⋯");
+        moreButton.setMinSize(52, 42);
+        moreButton.setPrefSize(52, 42);
+        moreButton.setTooltip(new javafx.scene.control.Tooltip("More pages"));
+        moreButton.setStyle("-fx-background-color: transparent; -fx-text-fill: #9fc6dc; -fx-font-size: 20px; -fx-cursor: hand;");
+        javafx.scene.control.ContextMenu moreMenu = new javafx.scene.control.ContextMenu();
+        for (Page page : morePages) {
+            javafx.scene.control.MenuItem item = new javafx.scene.control.MenuItem(navigationText(page).replace("\n", "  "));
+            item.setOnAction(event -> navigate(page));
+            moreMenu.getItems().add(item);
         }
-        VBox moreItems = new VBox(3);
-        moreItems.setAlignment(Pos.TOP_CENTER);
-        for (Page page : morePages) moreItems.getChildren().add(navigationItem(page));
-        moreItems.setVisible(moreNavigationExpanded);
-        moreItems.managedProperty().bind(moreItems.visibleProperty());
-        Button moreToggle = new Button();
-        moreToggle.setMinSize(78, 30);
-        moreToggle.setPrefSize(78, 30);
-        Runnable styleMore = () -> {
-            moreToggle.setText((moreNavigationExpanded ? "▾ " : "▸ ") + "MORE");
-            moreToggle.setStyle("-fx-background-color: transparent; -fx-text-fill: #c4e6f5; -fx-font-size: 11px;"
-                    + " -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0;");
-        };
-        styleMore.run();
-        moreToggle.setOnAction(event -> {
-            moreNavigationExpanded = !moreNavigationExpanded;
-            moreItems.setVisible(moreNavigationExpanded);
-            styleMore.run();
-        });
-        navigation.getChildren().addAll(moreToggle, moreItems);
-        // In a short window the sidebar scrolls instead of pushing the whole layout past the window edges
-        // (the root centres its content, so an over-tall sidebar used to clip the header and the last items).
-        javafx.scene.control.ScrollPane navigationScroll = new javafx.scene.control.ScrollPane(navigation);
-        navigationScroll.setFitToWidth(true);
-        navigationScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        navigationScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        navigationScroll.setMinHeight(0);
-        navigationScroll.setPrefWidth(100);
-        navigationScroll.setMinWidth(100);
-        navigationScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-padding: 0;");
+        moreButton.setOnAction(event -> moreMenu.show(moreButton, javafx.geometry.Side.RIGHT, 0, 0));
+        navigation.getChildren().addAll(navigationSpacer, moreButton, navigationItem(Page.SETTINGS));
         layout.setMinSize(0, 0);
-        layout.setLeft(navigationScroll);
+        layout.setLeft(navigation);
         updateNavigationState();
         root.getChildren().add(layout);
         return root;
@@ -3886,20 +3983,19 @@ public final class LauncherApp extends Application {
     private Button navigationItem(Page page) {
         String[] parts = navigationText(page).split("\n", 2);
         Label glyph = new Label(parts[0]);
-        glyph.setMinSize(32, 24);
-        glyph.setPrefSize(32, 24);
-        glyph.setMaxSize(32, 24);
+        glyph.setMinSize(32, 26);
+        glyph.setPrefSize(32, 26);
+        glyph.setMaxSize(32, 26);
         glyph.setAlignment(Pos.CENTER);
-        Label caption = new Label(parts.length > 1 ? parts[1] : "");
-        caption.setAlignment(Pos.CENTER);
-        VBox stack = new VBox(3, glyph, caption);
+        VBox stack = new VBox(glyph);
         stack.setAlignment(Pos.CENTER);
         Button item = new Button();
         item.setGraphic(stack);
         item.setContentDisplay(javafx.scene.control.ContentDisplay.GRAPHIC_ONLY);
-        item.setMinSize(78, 50);
-        item.setPrefSize(78, 50);
-        item.setMaxSize(78, 50);
+        item.setMinSize(52, 46);
+        item.setPrefSize(52, 46);
+        item.setMaxSize(52, 46);
+        if (parts.length > 1) item.setTooltip(new javafx.scene.control.Tooltip(parts[1]));
         item.setOnAction(event -> navigate(page));
         item.setOnMouseEntered(event -> {
             hoveredPage = page;
@@ -3956,10 +4052,9 @@ public final class LauncherApp extends Application {
                     : hovered ? "rgba(255, 255, 255, 0.07)" : "transparent")
                     + "; -fx-background-radius: 14; -fx-border-radius: 14; -fx-padding: 0; -fx-cursor: hand;"
                     + " -fx-border-color: " + (selected ? Theme.accentRgba(0.55) : "transparent") + "; -fx-border-width: 1;");
-            if (item.getGraphic() instanceof VBox stack && stack.getChildren().size() == 2) {
-                stack.getChildren().get(0).setStyle("-fx-font-size: 17px; -fx-font-family: 'Segoe UI Symbol', 'Segoe UI';"
+            if (item.getGraphic() instanceof VBox stack && !stack.getChildren().isEmpty()) {
+                stack.getChildren().get(0).setStyle("-fx-font-size: 20px; -fx-font-family: 'Segoe UI Symbol', 'Segoe UI';"
                         + " -fx-text-fill: " + color + ";");
-                stack.getChildren().get(1).setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
             }
         });
     }
@@ -4300,7 +4395,7 @@ public final class LauncherApp extends Application {
         boolean offline = settings.offlineMode();
         Button launchingButton = joinSmp ? singleplayerButton : playButton;
         playButton.setDisable(true);
-        playButton.setText(joinSmp ? "▶    PLAY" : "STARTING...");
+        playButton.setText(joinSmp ? "▶    LAUNCH" : "STARTING...");
         if (singleplayerButton != null) singleplayerButton.setDisable(true);
         if (joinSmp && launchingButton != null) {
             launchingButton.setText("CONNECTING...");
@@ -4318,6 +4413,12 @@ public final class LauncherApp extends Application {
         executor.execute(() -> {
             try {
                 Consumer<String> output = line -> Platform.runLater(() -> appendLog(line));
+                // Make sure the game starts with the launcher's own V-Client mod, not a copy left by an older run.
+                try {
+                    VClientModInstaller.ensureInstalled(settings.minecraftDirectory(), output);
+                } catch (IOException e) {
+                    output.accept("Could not refresh the V-Client mod before launching (is the game already open?): " + e.getMessage());
+                }
                 if (settings.replayBufferEnabled()) {
                     try {
                         if (GameOptionsFix.keepRunningWhenUnfocused(settings.minecraftDirectory())) {
@@ -4367,7 +4468,7 @@ public final class LauncherApp extends Application {
                 Platform.runLater(() -> {
                     if (playButton != null) {
                         playButton.setDisable(false);
-                        playButton.setText("▶    PLAY");
+                        playButton.setText("▶    LAUNCH");
                     }
                     if (singleplayerButton != null) {
                         singleplayerButton.setDisable(false);
@@ -5041,6 +5142,80 @@ public final class LauncherApp extends Application {
         return dot;
     }
 
+    /** The home banner artwork: a polar night, aurora, towering glaciers and a large ice crystal. */
+    private static void drawHeroArt(Canvas canvas) {
+        double width = canvas.getWidth();
+        double height = canvas.getHeight();
+        GraphicsContext g = canvas.getGraphicsContext2D();
+        g.setFill(new javafx.scene.paint.LinearGradient(0, 0, 0, height, false, javafx.scene.paint.CycleMethod.NO_CYCLE,
+                new javafx.scene.paint.Stop(0, Color.web("#050f1c")), new javafx.scene.paint.Stop(0.6, Color.web("#0b2540")),
+                new javafx.scene.paint.Stop(1, Color.web("#12395a"))));
+        g.fillRect(0, 0, width, height);
+        int[][] ribbons = {{0, 207, 255}, {92, 255, 200}, {124, 235, 255}};
+        for (int ribbon = 0; ribbon < ribbons.length; ribbon++) {
+            int[] c = ribbons[ribbon];
+            for (double x = 0; x < width; x += 5) {
+                double top = height * (0.08 + ribbon * 0.07) + Math.sin(x * 0.007 + ribbon * 1.8) * 30 + Math.sin(x * 0.019 + ribbon) * 10;
+                double strength = 0.5 + 0.5 * Math.sin(x * 0.003 + ribbon * 2.1);
+                g.setFill(new javafx.scene.paint.LinearGradient(0, top, 0, top + height * 0.5, false,
+                        javafx.scene.paint.CycleMethod.NO_CYCLE,
+                        new javafx.scene.paint.Stop(0, Color.rgb(c[0], c[1], c[2], 0)),
+                        new javafx.scene.paint.Stop(0.25, Color.rgb(c[0], c[1], c[2], 0.20 * (0.4 + strength))),
+                        new javafx.scene.paint.Stop(1, Color.rgb(c[0], c[1], c[2], 0))));
+                g.fillRect(x, top, 5.5, height * 0.5);
+            }
+        }
+        // Glacier ridges with lit faces.
+        g.setFill(Color.rgb(16, 52, 84, 0.95));
+        g.fillPolygon(new double[]{0, 0, width * 0.12, width * 0.22, width * 0.34, width * 0.46, width * 0.6, width * 0.74,
+                        width * 0.86, width * 0.94, width, width},
+                new double[]{height, height * 0.72, height * 0.55, height * 0.70, height * 0.50, height * 0.72,
+                        height * 0.62, height * 0.78, height * 0.56, height * 0.70, height * 0.64, height}, 12);
+        g.setFill(Color.rgb(190, 240, 255, 0.13));
+        g.fillPolygon(new double[]{width * 0.12, width * 0.22, width * 0.16}, new double[]{height * 0.55, height * 0.70, height * 0.72}, 3);
+        g.fillPolygon(new double[]{width * 0.34, width * 0.46, width * 0.38}, new double[]{height * 0.50, height * 0.72, height * 0.74}, 3);
+        g.setFill(Color.rgb(8, 30, 52, 0.96));
+        g.fillPolygon(new double[]{0, width * 0.15, width * 0.3, width * 0.5, width * 0.7, width * 0.88, width, width},
+                new double[]{height, height * 0.86, height * 0.80, height * 0.88, height * 0.78, height * 0.86, height * 0.82, height}, 8);
+        // A large ice crystal on the right, a smaller one on the left.
+        crystal(g, width * 0.82, height * 0.40, Math.min(width, height * 2.6) * 0.11);
+        crystal(g, width * 0.13, height * 0.30, Math.min(width, height * 2.6) * 0.06);
+        // Snow in the air.
+        java.util.Random random = new java.util.Random(11);
+        for (int index = 0; index < 120; index++) {
+            g.setFill(Color.rgb(226, 247, 255, 0.25 + random.nextDouble() * 0.5));
+            double size = 1 + random.nextDouble() * 2.6;
+            g.fillOval(random.nextDouble() * width, random.nextDouble() * height, size, size);
+        }
+        // Darken the centre so the LAUNCH button stays readable.
+        g.setFill(new javafx.scene.paint.RadialGradient(0, 0, width / 2, height / 2, width * 0.28, false,
+                javafx.scene.paint.CycleMethod.NO_CYCLE, new javafx.scene.paint.Stop(0, Color.rgb(5, 15, 28, 0.55)),
+                new javafx.scene.paint.Stop(1, Color.rgb(5, 15, 28, 0))));
+        g.fillRect(0, 0, width, height);
+    }
+
+    private static void crystal(GraphicsContext g, double cx, double cy, double size) {
+        g.setStroke(Color.web("#B8F4FF", 0.9));
+        g.setFill(Color.rgb(124, 235, 255, 0.10));
+        g.setLineWidth(Math.max(2, size * 0.07));
+        g.setLineCap(javafx.scene.shape.StrokeLineCap.ROUND);
+        g.fillOval(cx - size, cy - size, size * 2, size * 2);
+        for (int index = 0; index < 6; index++) {
+            double angle = Math.toRadians(index * 60 - 90);
+            double dx = Math.cos(angle);
+            double dy = Math.sin(angle);
+            g.strokeLine(cx, cy, cx + dx * size, cy + dy * size);
+            double bx = cx + dx * size * 0.62;
+            double by = cy + dy * size * 0.62;
+            for (int side = -1; side <= 1; side += 2) {
+                double branch = angle + side * Math.toRadians(50);
+                g.strokeLine(bx, by, bx + Math.cos(branch) * size * 0.32, by + Math.sin(branch) * size * 0.32);
+            }
+        }
+        g.setFill(Color.web("#00CFFF"));
+        g.fillOval(cx - size * 0.06, cy - size * 0.06, size * 0.12, size * 0.12);
+    }
+
     /** The VSMP mark: a six-armed snowflake crystal on a frosted tile. */
     private static Canvas logo(double size) {
         Canvas canvas = new Canvas(size, size);
@@ -5104,17 +5279,20 @@ public final class LauncherApp extends Application {
         for (int ribbon = 0; ribbon < ribbons.length; ribbon++) {
             int[] colour = ribbons[ribbon];
             double base = height * (0.10 + ribbon * 0.085);
-            for (double x = 0; x < width; x += 12) {
+            for (double x = 0; x < width; x += 6) {
                 double wave = Math.sin(x * 0.0042 + time * 0.35 + ribbon * 1.7) * 38
                         + Math.sin(x * 0.011 - time * 0.22 + ribbon) * 14;
                 double strength = 0.5 + 0.5 * Math.sin(x * 0.0021 + time * 0.18 + ribbon * 2.3);
                 double top = base + wave;
-                for (int layer = 0; layer < 7; layer++) {
-                    double alpha = (0.075 - layer * 0.0095) * (0.45 + strength);
-                    if (alpha <= 0) break;
-                    graphics.setFill(Color.rgb(colour[0], colour[1], colour[2], Math.min(0.2, alpha)));
-                    graphics.fillRect(x, top + layer * height * 0.028, 12, height * 0.034);
-                }
+                double bandHeight = height * 0.24;
+                double peak = Math.min(0.22, 0.10 * (0.45 + strength));
+                // One smooth vertical gradient per strip: clear at the top, brightest near the top third, fading out.
+                graphics.setFill(new javafx.scene.paint.LinearGradient(0, top, 0, top + bandHeight, false,
+                        javafx.scene.paint.CycleMethod.NO_CYCLE,
+                        new javafx.scene.paint.Stop(0, Color.rgb(colour[0], colour[1], colour[2], 0)),
+                        new javafx.scene.paint.Stop(0.28, Color.rgb(colour[0], colour[1], colour[2], peak)),
+                        new javafx.scene.paint.Stop(1, Color.rgb(colour[0], colour[1], colour[2], 0))));
+                graphics.fillRect(x, top, 6.5, bandHeight);
             }
         }
 

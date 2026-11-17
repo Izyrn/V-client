@@ -57,8 +57,8 @@ final class Widgets {
         }
 
         private void render(boolean state, String accent, boolean animate) {
-            track.setStyle("-fx-background-radius: 12; -fx-background-color: " + (state ? accent : "#3a3860")
-                    + "; -fx-border-radius: 12; -fx-border-color: " + (state ? accent : "#5b5885") + ";");
+            track.setStyle("-fx-background-radius: 12; -fx-background-color: " + (state ? accent : "#16324d")
+                    + "; -fx-border-radius: 12; -fx-border-color: " + (state ? accent : "#2a4d6e") + ";");
             double x = state ? 22 : 4;
             if (animate) {
                 slide.setToX(x);
