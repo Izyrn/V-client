@@ -54,7 +54,7 @@ final class BackupService {
     private static final ObjectMapper JSON = new ObjectMapper();
     /** Settings that belong to this PC or this sign-in and are kept as they are when settings are restored. */
     private static final List<String> LOCAL_ONLY_SETTINGS = List.of("minecraftDirectory", "backendTokens",
-            "backendToken", "installId", "lastAccountId", "hackerAccountIds");
+            "backendToken", "installId", "lastAccountId");
 
     private BackupService() {}
 

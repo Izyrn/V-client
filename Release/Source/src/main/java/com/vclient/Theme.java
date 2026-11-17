@@ -5,18 +5,18 @@ import java.util.Locale;
 
 /**
  * Launcher colour themes. A theme is an accent colour plus a very dark background tinted toward it. The default
- * "Night" theme is the original gold-on-indigo look; the others are Blue, Purple, Dark, Red and a Custom RGB accent.
+ * "Frost" theme is the ice-blue default; the others are Glacier, Blizzard, Aurora, Polar Dusk and a Custom RGB accent.
  */
 final class Theme {
     record Preset(String id, String label, String accent, String background) {}
 
     static final String CUSTOM = "custom";
     static final List<Preset> PRESETS = List.of(
-            new Preset("night", "Night (default)", "#e6bd59", "#08091a"),
-            new Preset("blue", "Blue", "#5aa9ff", "#06101f"),
-            new Preset("purple", "Purple", "#b48cff", "#0e0820"),
-            new Preset("dark", "Dark", "#d4d4d8", "#050506"),
-            new Preset("red", "Red", "#ff5a64", "#1a0709"));
+            new Preset("frost", "Frost (default)", "#00cfff", "#071321"),
+            new Preset("glacier", "Glacier", "#7cebff", "#08182a"),
+            new Preset("blizzard", "Blizzard", "#b8f4ff", "#0b1424"),
+            new Preset("aurora", "Aurora", "#5cffc8", "#061a1f"),
+            new Preset("dusk", "Polar Dusk", "#9db8ff", "#0a1030"));
 
     private static String accent = PRESETS.getFirst().accent();
     private static String background = PRESETS.getFirst().background();
@@ -77,7 +77,7 @@ final class Theme {
     }
 
     static int[] glow() {
-        // The default theme keeps its original indigo moon glow; every other theme glows in its own accent.
-        return accent.equals(PRESETS.getFirst().accent()) ? new int[]{115, 99, 190} : rgb(accent);
+        // Every theme glows in its own accent.
+        return rgb(accent);
     }
 }

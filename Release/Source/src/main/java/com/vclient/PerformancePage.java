@@ -134,7 +134,7 @@ final class PerformancePage {
             double y = height - height * i / 4 + 6;
             g.setStroke(Color.web("#ffffff", 0.08));
             g.strokeLine(left, y, canvas.getWidth() - 8, y);
-            g.setFill(Color.web("#a9a9cc"));
+            g.setFill(Color.web("#9fc6dc"));
             g.fillText(String.valueOf(Math.round(value)), 6, y + 3);
         }
     }

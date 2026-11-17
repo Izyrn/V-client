@@ -1,10 +1,10 @@
 {
-    "version":  "1.6.28",
+    "version":  "1.7.0",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "cfde7cec2e626faf4ec0294a6f9fdb7f3b27eae879e45b5d932000fb1a3f561d",
-    "size":  95053824,
-    "notes":  "Fixes the setup saying V-Client is already open when it is not: setup now only checks the installed copy. Also includes the Discord/secure-DNS fix, TLS fix and new home screen.",
+    "sha256":  "3d646229d27cf19ff3a834aa5cef126ffa3a3fcf170b4ecb1935791820debe74",
+    "size":  95138816,
+    "notes":  "VSMP Client 1.7: new ice and snow look with a Lunar-style layout, frozen loading screen, in-game title screen and mod list, FrostBoost benchmarks and per-PC profiles, other players\u0027 Ely.by skins, and hacker mode removed.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-08T10:01:34.3599342Z"
+    "publishedAt":  "2026-11-17T14:35:18.3273445Z"
 }

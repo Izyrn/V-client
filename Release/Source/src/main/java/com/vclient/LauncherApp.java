@@ -67,7 +67,7 @@ import java.util.function.Consumer;
 
 public final class LauncherApp extends Application {
     private enum Page {
-        HOME, BROWSER, SERVERS, LIBRARY, MODS, PACKS, BOOST, PERFORMANCE, WARDROBE, COSMETICS, PROFILE, RECORDINGS,
+        HOME, BROWSER, SERVERS, LIBRARY, MODS, PACKS, BOOST, FPS_TEST, PERFORMANCE, WARDROBE, COSMETICS, PROFILE, RECORDINGS,
         SCREENSHOTS, FRIENDS, NEWS, ASSISTANT, LOGS, CONSOLE, SETTINGS, DISCORD
     }
 
@@ -91,9 +91,9 @@ public final class LauncherApp extends Application {
         }
     }
 
-    private static String BACKGROUND = "#08091a";
-    private static final String MUTED = "#b9b9dc";
-    private static String ACCENT = "#e6bd59";
+    private static String BACKGROUND = "#071321";
+    private static final String MUTED = "#a9d2e8";
+    private static String ACCENT = "#00CFFF";
     private static final HttpClient IMAGE_HTTP = PlatformTls.httpClientBuilder(Duration.ofSeconds(12))
             .followRedirects(HttpClient.Redirect.NORMAL).build();
     private final ExecutorService executor = Executors.newCachedThreadPool(runnable -> {
@@ -167,7 +167,7 @@ public final class LauncherApp extends Application {
     private boolean accountPersistenceInProgress;
     private boolean protectedAccountSavePending;
     private AnimationTimer backgroundAnimation;
-    private final List<BackgroundStar> backgroundStars = createBackgroundStars();
+    private final List<Snowflake> snowflakes = createSnowflakes();
     private long lastBackgroundFrame;
 
     @Override
@@ -186,17 +186,20 @@ public final class LauncherApp extends Application {
             updateReadiness();
         }));
         startFeatureServices();
-        gameLauncher.setCheatPermission(settings::cheatsEnabled);
+        executor.execute(() -> Platform.runLater(this::collectBenchmark));
         gameLauncher.setAdminPermission(settings::isAdmin);
+        // Read the hardware once in the background so the first launch does not wait for it.
+        executor.execute(PcAnalysis::cached);
         gameLauncher.setBoostTuning(() -> settings.boostEnabled()
-                ? settings.boostProfile().tuning(BoostProfile.physicalRamBytes()) : null);
+                ? settings.boostProfile().tuning(PcAnalysis.cached()) : null);
+        gameLauncher.setBenchmarkRequest(this::nextBenchmarkRequest);
         BackendClient.setRequestLog(line -> Platform.runLater(() -> appendLog(line)), settings.debugMode());
         gameLauncher.setBackendUrl(() -> BackendClient.resolveUrl(settings.backendUrl()));
         accounts.addAll(accountStore.load());
         localFriends.addAll(friendsStore.load());
         account = accounts.stream().filter(saved -> saved.id().equals(settings.lastAccountId()))
                 .findFirst().orElse(accounts.isEmpty() ? null : accounts.getFirst());
-        stage.setTitle("V-Client");
+        stage.setTitle("VSMP Client");
         stage.getIcons().add(createIcon());
         stage.setMinWidth(760);
         stage.setMinHeight(640);
@@ -204,7 +207,7 @@ public final class LauncherApp extends Application {
         stage.setHeight(760);
         if (account == null) showLogin();
         else showHome();
-        stage.show();
+        FrostSplash.play(stage::show);
         String startPage = System.getProperty("vclient.startPage", "");
         if (!startPage.isBlank() && account != null) {
             // Debugging aid: -Dvclient.startPage=MODS opens that page straight away.
@@ -213,6 +216,20 @@ public final class LauncherApp extends Application {
             } catch (IllegalArgumentException e) {
                 appendLog("Unknown vclient.startPage value: " + startPage);
             }
+        }
+        if (Boolean.getBoolean("vclient.autoLaunch") && account != null) {
+            // Debugging aid: -Dvclient.autoLaunch=true starts the game a few seconds after the launcher opens,
+            // once the version list has loaded.
+            javafx.animation.PauseTransition wait = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(5));
+            wait.setOnFinished(event -> {
+                if (versionPicker != null && versionPicker.getValue() != null && playButton != null && !playButton.isDisabled()) {
+                    appendLog("Auto launch: starting the game.");
+                    launchGame(null);
+                } else {
+                    appendLog("Auto launch skipped: the launcher was not ready (no version selected yet).");
+                }
+            });
+            wait.play();
         }
         startBackendTasks();
         // Dark combo-box popups, titled panes and progress bars for every scene.
@@ -237,19 +254,19 @@ public final class LauncherApp extends Application {
     }
 
     private static final String LAUNCHER_CSS = """
-            .combo-box-popup > .list-view { -fx-background-color: #14142d; -fx-border-color: #48415f; -fx-border-radius: 8; -fx-background-radius: 8; }
-            .combo-box-popup > .list-view .list-cell { -fx-background-color: #14142d; -fx-text-fill: #f3f0ff; -fx-padding: 8 10 8 10; -fx-font-size: 14px; }
-            .combo-box-popup > .list-view .list-cell:filled:hover { -fx-background-color: #292642; }
-            .combo-box-popup > .list-view .list-cell:filled:selected { -fx-background-color: #34305a; -fx-text-fill: #ffffff; }
-            .combo-box .list-cell { -fx-text-fill: #f3f0ff; -fx-background-color: transparent; }
+            .combo-box-popup > .list-view { -fx-background-color: #0c2036; -fx-border-color: #2a4d6e; -fx-border-radius: 8; -fx-background-radius: 8; }
+            .combo-box-popup > .list-view .list-cell { -fx-background-color: #0c2036; -fx-text-fill: #eaf9ff; -fx-padding: 8 10 8 10; -fx-font-size: 14px; }
+            .combo-box-popup > .list-view .list-cell:filled:hover { -fx-background-color: #11263D; }
+            .combo-box-popup > .list-view .list-cell:filled:selected { -fx-background-color: #1e4260; -fx-text-fill: #ffffff; }
+            .combo-box .list-cell { -fx-text-fill: #eaf9ff; -fx-background-color: transparent; }
             .combo-box .arrow-button { -fx-background-color: transparent; }
-            .combo-box .arrow-button .arrow { -fx-background-color: #c9c6e6; }
-            .combo-box:focused { -fx-background-color: #14142d; -fx-border-color: #8f86c8; }
+            .combo-box .arrow-button .arrow { -fx-background-color: #c4e6f5; }
+            .combo-box:focused { -fx-background-color: #0c2036; -fx-border-color: #7cebff; }
             .titled-pane > .title { -fx-background-color: rgba(255, 255, 255, 0.07); -fx-background-radius: 8; }
-            .titled-pane > .title > .text { -fx-fill: #e4e1f5; }
-            .titled-pane > .title > .arrow-button .arrow { -fx-background-color: #c9c6e6; }
+            .titled-pane > .title > .text { -fx-fill: #d4f3ff; }
+            .titled-pane > .title > .arrow-button .arrow { -fx-background-color: #c4e6f5; }
             .titled-pane > .content { -fx-background-color: transparent; -fx-border-color: transparent; }
-            .progress-bar > .track { -fx-background-color: #262448; -fx-background-radius: 6; }
+            .progress-bar > .track { -fx-background-color: #11263D; -fx-background-radius: 6; }
             .progress-bar > .bar { -fx-background-radius: 6; }
             .scroll-bar { -fx-background-color: transparent; }
             """;
@@ -285,7 +302,10 @@ public final class LauncherApp extends Application {
             public void ended(String versionId, long startedAtMillis, long endedAtMillis) {
                 stats.addPlaytime((endedAtMillis - startedAtMillis) / 1000);
                 activityLog.add("Played " + UiKit.playtime((endedAtMillis - startedAtMillis) / 1000) + " of " + versionId);
-                stats.save();
+                Platform.runLater(() -> {
+                    LauncherApp.this.collectBenchmark();
+                    LauncherApp.this.updateReadiness();
+                });
                 Platform.runLater(() -> LauncherApp.this.updateReadiness());
             }
         });
@@ -319,7 +339,7 @@ public final class LauncherApp extends Application {
         versionPicker = new ComboBox<>();
         versionPicker.setMaxWidth(Double.MAX_VALUE);
         versionPicker.setPrefHeight(48);
-        versionPicker.setStyle("-fx-background-color: #14142d; -fx-text-fill: #f3f0ff; -fx-font-size: 15px; -fx-border-color: #48415f; -fx-border-radius: 8; -fx-background-radius: 8;");
+        versionPicker.setStyle("-fx-background-color: #0c2036; -fx-text-fill: #eaf9ff; -fx-font-size: 15px; -fx-border-color: #2a4d6e; -fx-border-radius: 8; -fx-background-radius: 8;");
         versionPicker.setPromptText("Scanning installed versions...");
         versionPicker.setCellFactory(list -> versionChoiceCell());
         versionPicker.setButtonCell(versionChoiceCell());
@@ -348,7 +368,7 @@ public final class LauncherApp extends Application {
             if (chosen != null && chosen.installed() != null) repairSelectedVersion();
             else installSelectedVersion();
         });
-        refreshVersionsButton = button("REFRESH VERSIONS", "#292642", 11);
+        refreshVersionsButton = button("REFRESH VERSIONS", "#11263D", 11);
         refreshVersionsButton.setOnAction(event -> refreshVersions(selectedVersionId));
         versionActions.getChildren().addAll(installVersionButton, refreshVersionsButton);
         versionStatusLabel = label("Fetching the Mojang version catalog...", 12, MUTED);
@@ -356,7 +376,7 @@ public final class LauncherApp extends Application {
         installProgress = new javafx.scene.control.ProgressBar(0);
         installProgress.setMaxWidth(Double.MAX_VALUE);
         installProgress.setStyle("-fx-accent: " + ACCENT + ";");
-        installProgressLabel = label("", 12, "#d6d3ee");
+        installProgressLabel = label("", 12, "#d4f3ff");
         VBox progressBox = new VBox(6, installProgress, installProgressLabel);
         progressBox.setVisible(false);
         progressBox.managedProperty().bind(progressBox.visibleProperty());
@@ -377,15 +397,15 @@ public final class LauncherApp extends Application {
         versionCard.getChildren().addAll(versionActions, progressBox, versionStatusLabel, offlineRow);
 
         // Short folder label with an Open folder button, plus quick access to crash reports.
-        gameFolderLabel = label("Game folder: " + Widgets.shortPath(settings.minecraftDirectory()), 13, "#d6d3ee");
+        gameFolderLabel = label("Game folder: " + Widgets.shortPath(settings.minecraftDirectory()), 13, "#d4f3ff");
         gameFolderLabel.setTooltip(new javafx.scene.control.Tooltip(settings.minecraftDirectory().toString()));
-        Button openFolder = button("OPEN FOLDER", "#292642", 11);
+        Button openFolder = button("OPEN FOLDER", "#11263D", 11);
         openFolder.setOnAction(event -> {
             if (!Widgets.openFolder(settings.minecraftDirectory())) {
                 versionStatusLabel.setText("Could not open " + settings.minecraftDirectory());
             }
         });
-        Button crashButton = button("CRASH REPORTS", "#292642", 11);
+        Button crashButton = button("CRASH REPORTS", "#11263D", 11);
         crashButton.setOnAction(event -> showCrashReports(null));
         Region folderSpacer = new Region();
         HBox.setHgrow(folderSpacer, Priority.ALWAYS);
@@ -394,7 +414,7 @@ public final class LauncherApp extends Application {
         versionCard.getChildren().add(folderRow);
 
         // Connection checklist (DNS, TLS, Mojang, Backend), run automatically at startup.
-        connectionTestButton = button("TEST AGAIN", "#292642", 11);
+        connectionTestButton = button("TEST AGAIN", "#11263D", 11);
         connectionTestButton.setOnAction(event -> runConnectionTest());
         connectionResultLabel = label("Connection check", 12, MUTED);
         Label checklistTitle = label("CONNECTION CHECK", 11, MUTED);
@@ -407,24 +427,24 @@ public final class LauncherApp extends Application {
 
         HBox launchRow = new HBox(14);
         launchRow.setAlignment(Pos.CENTER_LEFT);
-        playButton = button("▶    PLAY", ACCENT, 17);
+        playButton = button("▶    LAUNCH", ACCENT, 17);
         playButton.setPrefHeight(54);
         HBox.setHgrow(playButton, Priority.ALWAYS);
         playButton.setMaxWidth(Double.MAX_VALUE);
         playButton.setOnAction(event -> launchGame(null));
-        singleplayerButton = button(smpButtonText, "#292642", 14);
+        singleplayerButton = button(smpButtonText, "#11263D", 14);
         singleplayerButton.setPrefHeight(54);
         singleplayerButton.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(singleplayerButton, Priority.ALWAYS);
         singleplayerButton.setOnAction(event -> launchGame(SERVER_LIST.getFirst()));
-        Button settingsButton = button("SETTINGS", "#292642", 12);
+        Button settingsButton = button("SETTINGS", "#11263D", 12);
         settingsButton.setPrefHeight(54);
         settingsButton.setOnAction(event -> showSettings());
         launchRow.getChildren().addAll(playButton, singleplayerButton, settingsButton);
 
         // "Launcher ready" reflects the real state: green ready, yellow working / degraded, red blocked.
         readyDot = dot(Widgets.YELLOW);
-        readyLabel = label("CHECKING…", 12, "#d6d3ee");
+        readyLabel = label("CHECKING…", 12, "#d4f3ff");
         HBox statusRow = new HBox(8, readyDot, readyLabel);
         statusRow.setAlignment(Pos.CENTER_LEFT);
 
@@ -432,17 +452,102 @@ public final class LauncherApp extends Application {
         log.setEditable(false);
         log.setWrapText(true);
         log.setPrefRowCount(10);
-        log.setStyle("-fx-control-inner-background: rgba(9, 10, 28, 0.82); -fx-text-fill: #d5d1ec; -fx-font-family: 'Consolas'; -fx-font-size: 12px; -fx-background-color: rgba(9, 10, 28, 0.82); -fx-border-color: #37334f; -fx-border-radius: 8; -fx-background-radius: 8;");
+        log.setStyle("-fx-control-inner-background: rgba(7, 19, 33, 0.82); -fx-text-fill: #d4f3ff; -fx-font-family: 'Consolas'; -fx-font-size: 12px; -fx-background-color: rgba(7, 19, 33, 0.82); -fx-border-color: #1e4260; -fx-border-radius: 8; -fx-background-radius: 8;");
         log.setText(String.join(System.lineSeparator(), logLines));
-        Button copyLogs = button("COPY LOGS", "#292642", 11);
+        Button copyLogs = button("COPY LOGS", "#11263D", 11);
         copyLogs.setOnAction(event -> {
             copyLogsToClipboard();
             copyLogs.setText("COPIED");
         });
         VBox detailsBody = new VBox(10, log, copyLogs);
         javafx.scene.control.TitledPane launchDetails = Widgets.details("Details — launch output", detailsBody);
-        content.getChildren().addAll(heading, launchEventBanner(), homeAnnouncements, homeStatusRow, problemBox, versionCard,
-                launchRow, statusRow, launchDetails);
+        // Lunar-style home: a big art banner with a centred LAUNCH button, then Latest News beside Friends.
+        versionCard.getChildren().removeAll(versionTitle, versionPicker, versionSkeleton);
+        playButton.setText("▶    LAUNCH");
+        playButton.setPrefHeight(54);
+        playButton.setMinWidth(260);
+        playButton.setMaxWidth(260);
+        HBox.setHgrow(playButton, Priority.NEVER);
+        playButton.setStyle(playButton.getStyle() + " -fx-font-size: 17px; -fx-background-radius: 14;"
+                + " -fx-effect: dropshadow(gaussian, rgba(0,207,255,0.65), 26, 0.2, 0, 0);");
+        singleplayerButton.setPrefHeight(34);
+        singleplayerButton.setMaxWidth(Double.MAX_VALUE);
+        versionPicker.setPrefHeight(40);
+        versionPicker.setMaxWidth(260);
+        versionPicker.setMinWidth(260);
+        Canvas heroArt = new Canvas(900, 300);
+        StackPane hero = new StackPane(heroArt);
+        hero.setMinHeight(300);
+        hero.setPrefHeight(300);
+        // The artwork follows the banner's size and takes no part in layout: a Canvas cannot shrink, so sizing the
+        // banner from it made the centred LAUNCH button drift sideways and out of view.
+        heroArt.setManaged(false);
+        heroArt.widthProperty().bind(hero.widthProperty());
+        heroArt.heightProperty().bind(hero.heightProperty());
+        heroArt.widthProperty().addListener(observable -> drawHeroArt(heroArt));
+        heroArt.heightProperty().addListener(observable -> drawHeroArt(heroArt));
+        hero.setMinWidth(0);
+        javafx.scene.shape.Rectangle heroClip = new javafx.scene.shape.Rectangle();
+        heroClip.setArcWidth(40);
+        heroClip.setArcHeight(40);
+        heroClip.widthProperty().bind(hero.widthProperty());
+        heroClip.heightProperty().bind(hero.heightProperty());
+        hero.setClip(heroClip);
+        VBox launchBox = new VBox(10, playButton, versionPicker, statusRow);
+        launchBox.setAlignment(Pos.CENTER);
+        launchBox.setMaxWidth(280);
+        launchBox.setMaxHeight(Region.USE_PREF_SIZE);
+        statusRow.setAlignment(Pos.CENTER);
+        hero.getChildren().add(launchBox);
+        StackPane.setAlignment(launchBox, Pos.CENTER);
+        hero.setStyle("-fx-background-color: rgba(11, 28, 48, 0.9); -fx-background-radius: 20; -fx-border-color: rgba(124,235,255,0.35);"
+                + " -fx-border-radius: 20; -fx-effect: dropshadow(gaussian, rgba(0,207,255,0.20), 28, 0.1, 0, 0);");
+
+        // Latest news (left) and friends (right).
+        Label newsTitle = label("LATEST NEWS", 12, "#eaf9ff");
+        newsTitle.setStyle(newsTitle.getStyle() + "-fx-font-weight: bold; -fx-letter-spacing: 1.5;");
+        Button allNews = button("View all news", "#11263D", 10);
+        allNews.setOnAction(event -> navigate(Page.NEWS));
+        Region newsSpacer = new Region();
+        HBox.setHgrow(newsSpacer, Priority.ALWAYS);
+        HBox newsHeader = new HBox(10, newsTitle, newsSpacer, allNews);
+        newsHeader.setAlignment(Pos.CENTER_LEFT);
+        VBox newsColumn = new VBox(12, newsHeader, launchEventBanner(), homeAnnouncements);
+        HBox.setHgrow(newsColumn, Priority.ALWAYS);
+
+        Label friendsTitle = label("FRIENDS", 12, "#eaf9ff");
+        friendsTitle.setStyle(friendsTitle.getStyle() + "-fx-font-weight: bold; -fx-letter-spacing: 1.5;");
+        Button allFriends = button("View friends list", "#11263D", 10);
+        allFriends.setOnAction(event -> navigate(Page.FRIENDS));
+        Region friendsSpacer = new Region();
+        HBox.setHgrow(friendsSpacer, Priority.ALWAYS);
+        HBox friendsHeader = new HBox(10, friendsTitle, friendsSpacer, allFriends);
+        friendsHeader.setAlignment(Pos.CENTER_LEFT);
+        VBox friendsBody = new VBox(8);
+        if (localFriends.isEmpty()) {
+            Label none = label("No friends added yet. Open the friends list to add some.", 12, MUTED);
+            none.setWrapText(true);
+            friendsBody.getChildren().add(none);
+        } else {
+            for (String friend : localFriends.stream().limit(6).toList()) {
+                Label friendName = label(friend, 13, "#eaf9ff");
+                HBox friendRow = new HBox(10, dot("#4a6a85"), friendName);
+                friendRow.setAlignment(Pos.CENTER_LEFT);
+                friendRow.setPadding(new Insets(8, 12, 8, 12));
+                friendRow.setStyle("-fx-background-color: rgba(17, 38, 61, 0.75); -fx-background-radius: 10;"
+                        + " -fx-border-color: rgba(124,235,255,0.18); -fx-border-radius: 10;");
+                friendsBody.getChildren().add(friendRow);
+            }
+        }
+        VBox friendsColumn = new VBox(12, friendsHeader, friendsBody);
+        friendsColumn.setMinWidth(280);
+        friendsColumn.setPrefWidth(300);
+        friendsColumn.setMaxWidth(320);
+        HBox lowerRow = new HBox(22, newsColumn, friendsColumn);
+        lowerRow.setAlignment(Pos.TOP_LEFT);
+
+        javafx.scene.control.TitledPane setup = Widgets.details("Game setup, connection check and folder", versionCard);
+        content.getChildren().addAll(hero, lowerRow, homeStatusRow, problemBox, setup, singleplayerButton, launchDetails);
         setPageContent(root, content);
         stage.setScene(new Scene(root, stage.getWidth(), stage.getHeight()));
         updateInstallButton();
@@ -513,11 +618,11 @@ public final class LauncherApp extends Application {
         installVersionButton.managedProperty().bind(installVersionButton.visibleProperty());
         if (installed) {
             installVersionButton.setText("REPAIR");
-            installVersionButton.setStyle("-fx-background-color: transparent; -fx-text-fill: #c9c6e6; -fx-font-size: 11px;"
-                    + " -fx-border-color: #48415f; -fx-border-radius: 7; -fx-background-radius: 7; -fx-padding: 6 12 6 12; -fx-cursor: hand;");
+            installVersionButton.setStyle("-fx-background-color: transparent; -fx-text-fill: #c4e6f5; -fx-font-size: 11px;"
+                    + " -fx-border-color: #2a4d6e; -fx-border-radius: 7; -fx-background-radius: 7; -fx-padding: 6 12 6 12; -fx-cursor: hand;");
         } else {
             installVersionButton.setText("INSTALL");
-            installVersionButton.setStyle("-fx-background-color: " + ACCENT + "; -fx-text-fill: #171326; -fx-font-size: 13px;"
+            installVersionButton.setStyle("-fx-background-color: " + ACCENT + "; -fx-text-fill: #071321; -fx-font-size: 13px;"
                     + " -fx-font-weight: bold; -fx-background-radius: 9; -fx-padding: 12 22 12 22; -fx-cursor: hand;");
         }
         installVersionButton.setDisable(settings.offlineMode() || busy);
@@ -567,21 +672,21 @@ public final class LauncherApp extends Application {
         FriendlyError.Message message = FriendlyError.of(lastError);
         Label heading = label("⚠  " + message.title(), 15, "#ffb4bd");
         heading.setStyle(heading.getStyle() + "-fx-font-weight: bold;");
-        Label text = label(message.message(), 13, "#f3f0ff");
+        Label text = label(message.message(), 13, "#eaf9ff");
         text.setWrapText(true);
         TextArea raw = new TextArea(message.details() + (settings.debugMode() ? System.lineSeparator() + BackendClient.stackTrace(lastError) : ""));
         raw.setEditable(false);
         raw.setWrapText(true);
         raw.setPrefRowCount(6);
-        raw.setStyle("-fx-control-inner-background: rgba(9, 10, 28, 0.9); -fx-text-fill: #d5d1ec; -fx-font-family: 'Consolas'; -fx-font-size: 12px;");
-        Button copy = button("COPY LOGS", "#292642", 11);
+        raw.setStyle("-fx-control-inner-background: rgba(7, 19, 33, 0.9); -fx-text-fill: #d4f3ff; -fx-font-family: 'Consolas'; -fx-font-size: 12px;");
+        Button copy = button("COPY LOGS", "#11263D", 11);
         copy.setOnAction(event -> {
             copyLogsToClipboard();
             copy.setText("COPIED");
         });
-        Button crashes = button("CRASH REPORTS", "#292642", 11);
+        Button crashes = button("CRASH REPORTS", "#11263D", 11);
         crashes.setOnAction(event -> showCrashReports(null));
-        Button dismiss = button("DISMISS", "#292642", 11);
+        Button dismiss = button("DISMISS", "#11263D", 11);
         dismiss.setOnAction(event -> {
             lastError = null;
             lastProblem = "";
@@ -638,7 +743,7 @@ public final class LauncherApp extends Application {
             // The V-Client server is optional: if it cannot be reached the launcher uses saved data, so this is grey, never red.
             boolean optional = check.name().equals("Backend");
             String color = check.passed() ? Widgets.GREEN : optional ? "#8a93a8" : Widgets.RED;
-            Label name = label(check.name(), 13, "#f3f0ff");
+            Label name = label(check.name(), 13, "#eaf9ff");
             name.setStyle(name.getStyle() + "-fx-font-weight: bold;");
             name.setMinWidth(76);
             Label state = label(check.passed() ? "OK" : optional ? "UNAVAILABLE (using saved data)" : "FAILED", 12, color);
@@ -737,13 +842,13 @@ public final class LauncherApp extends Application {
                 viewer.setText("Could not read " + report.file() + ": " + e.getMessage());
             }
         });
-        Button copy = button("COPY REPORT", "#292642", 11);
+        Button copy = button("COPY REPORT", "#11263D", 11);
         copy.setOnAction(event -> {
             ClipboardContent clip = new ClipboardContent();
             clip.putString(viewer.getText());
             Clipboard.getSystemClipboard().setContent(clip);
         });
-        Button openFolder = button("OPEN FOLDER", "#292642", 11);
+        Button openFolder = button("OPEN FOLDER", "#11263D", 11);
         openFolder.setOnAction(event -> Widgets.openFolder(gameDirectory.resolve("crash-reports")));
         HBox actions = new HBox(10, copy, openFolder);
         VBox right = new VBox(10, viewer, actions);
@@ -788,7 +893,7 @@ public final class LauncherApp extends Application {
         HBox online = Widgets.switchRow("Download Minecraft (go online)",
                 "Turns Offline mode off so V-Client can fetch game versions and Java. Recommended.",
                 !settings.offlineMode(), ACCENT, goOnline -> settings.setOfflineMode(!goOnline));
-        Button importProfile = button("IMPORT A PROFILE FILE", "#292642", 11);
+        Button importProfile = button("IMPORT A PROFILE FILE", "#11263D", 11);
         importProfile.setOnAction(event -> importProfileFile());
         Label importHint = new Label("Already set up on another PC? Import the profile you exported there.");
         importHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #555;");
@@ -859,7 +964,7 @@ public final class LauncherApp extends Application {
         directoryField.setMaxWidth(Double.MAX_VALUE);
         directoryField.setStyle(fieldStyle());
         HBox.setHgrow(directoryField, Priority.ALWAYS);
-        Button selectFolderButton = button("SELECT FOLDER", "#292642", 11);
+        Button selectFolderButton = button("SELECT FOLDER", "#11263D", 11);
         selectFolderButton.setOnAction(event -> {
             DirectoryChooser chooser = new DirectoryChooser();
             chooser.setTitle("Choose Minecraft directory");
@@ -919,7 +1024,7 @@ public final class LauncherApp extends Application {
         javaChoice.getItems().setAll(javaNames.values());
         javaChoice.setValue(javaNames.getOrDefault(settings.javaMajorOverride(), automaticJava));
         javaChoice.setMaxWidth(Double.MAX_VALUE);
-        javaChoice.setStyle("-fx-background-color: #14142d; -fx-text-fill: #f3f0ff; -fx-font-size: 15px; -fx-border-color: #48415f; -fx-border-radius: 8; -fx-background-radius: 8;");
+        javaChoice.setStyle("-fx-background-color: #0c2036; -fx-text-fill: #eaf9ff; -fx-font-size: 15px; -fx-border-color: #2a4d6e; -fx-border-radius: 8; -fx-background-radius: 8;");
         Label javaStatus = label("Checking for an installed 64-bit Java 25 runtime...", 11, MUTED);
         javaStatus.setWrapText(true);
         javaChoice.valueProperty().addListener((observable, oldChoice, newChoice) -> {
@@ -963,9 +1068,9 @@ public final class LauncherApp extends Application {
         });
 
         VBox profileCard = card();
-        Button exportProfile = button("EXPORT PROFILE", "#292642", 11);
+        Button exportProfile = button("EXPORT PROFILE", "#11263D", 11);
         exportProfile.setOnAction(event -> exportProfileFile());
-        Button importProfile = button("IMPORT PROFILE", "#292642", 11);
+        Button importProfile = button("IMPORT PROFILE", "#11263D", 11);
         importProfile.setOnAction(event -> importProfileFile());
         Label profileHint = label("Share your memory, Java, JVM, theme and clip settings between PCs. Accounts and sign-ins are never included.", 12, MUTED);
         profileHint.setWrapText(true);
@@ -978,12 +1083,11 @@ public final class LauncherApp extends Application {
                     settings.setAutoUpdate(enabled);
                     saveSettings();
                 });
-        Button checkUpdates = button("CHECK FOR UPDATES NOW", "#292642", 11);
+        Button checkUpdates = button("CHECK FOR UPDATES NOW", "#11263D", 11);
         checkUpdates.setOnAction(event -> checkForUpdates(true));
         updateCard.getChildren().addAll(label("LAUNCHER UPDATES  ·  V-Client " + AppInfo.VERSION, 11, MUTED), autoUpdateRow, checkUpdates);
 
         VBox accountCard = buildAccountCard();
-        VBox playerModeCard = buildPlayerModeCard();
 
         HBox footer = new HBox(12);
         footer.setAlignment(Pos.CENTER_LEFT);
@@ -993,8 +1097,6 @@ public final class LauncherApp extends Application {
         status = label("Settings save automatically.", 12, MUTED);
         footer.getChildren().addAll(backButton, status);
         content.getChildren().addAll(title, subtitle, directoryCard, memoryCard, javaCard, profileCard, updateCard, buildVpnCard(), ThemeCard.build(featureHost()), accountCard);
-        // Hacker / Cheater mode is for the admin account only, so nobody else even sees the option.
-        if (settings.isAdmin(account)) content.getChildren().add(playerModeCard);
         content.getChildren().add(footer);
         setPageContent(root, content);
         stage.setScene(new Scene(root, stage.getWidth(), stage.getHeight()));
@@ -1011,7 +1113,7 @@ public final class LauncherApp extends Application {
                 + "only that server is covered, not the rest of your PC. Have your own VPN? Use IMPORT CONFIG with a "
                 + "WireGuard .conf instead.", 11, MUTED);
         hint.setWrapText(true);
-        Button importConfig = button("IMPORT CONFIG", "#292642", 11);
+        Button importConfig = button("IMPORT CONFIG", "#11263D", 11);
         Button toggle = button("CONNECT", ACCENT, 11);
         HBox row = new HBox(10, importConfig, toggle);
         row.setAlignment(Pos.CENTER_LEFT);
@@ -1063,36 +1165,6 @@ public final class LauncherApp extends Application {
         });
         card.getChildren().addAll(title, state, row, hint);
         refresh.run();
-        return card;
-    }
-
-    /** Normal player / Hacker-Cheater choice for the selected account; cheats also need an admin account. */
-    private VBox buildPlayerModeCard() {
-        VBox card = card();
-        Label title = label("PLAYER MODE", 11, MUTED);
-        ComboBox<String> choice = new ComboBox<>();
-        String normal = "Normal player";
-        String hacker = "Hacker / Cheater";
-        choice.getItems().setAll(normal, hacker);
-        choice.setValue(settings.hackerSelected(account) ? hacker : normal);
-        choice.setMaxWidth(Double.MAX_VALUE);
-        choice.setStyle("-fx-background-color: rgba(20, 20, 45, 0.92); -fx-text-fill: #f3f0ff; -fx-font-size: 14px; -fx-border-color: #48415f; -fx-border-radius: 8; -fx-background-radius: 8;");
-        Label hint = label("", 11, MUTED);
-        hint.setWrapText(true);
-        Runnable refreshHint = () -> hint.setText(account == null
-                ? "Select an account first."
-                : !settings.hackerSelected(account)
-                ? "Normal permissions: the Right Shift menu has the regular V-Client mods."
-                : settings.isAdmin(account)
-                ? "Hacker mode is active for " + account.name() + ": the Right Shift menu also has the hacker modules (X-Ray, Fly, Glow ESP, No Fall, Anti Knockback and more)."
-                : "Only admin Ely.by accounts can use Hacker / Cheater. " + account.name() + " will play with normal permissions.");
-        refreshHint.run();
-        choice.valueProperty().addListener((observable, oldChoice, newChoice) -> {
-            settings.setHackerSelected(account, hacker.equals(newChoice));
-            saveSettings();
-            refreshHint.run();
-        });
-        card.getChildren().addAll(title, choice, hint);
         return card;
     }
 
@@ -1159,12 +1231,12 @@ public final class LauncherApp extends Application {
         Label directory = label(settings.minecraftDirectory().toString(), 11, MUTED);
         directory.setWrapText(true);
         HBox.setHgrow(directory, Priority.ALWAYS);
-        Button refresh = button("REFRESH", "#292642", 10);
+        Button refresh = button("REFRESH", "#11263D", 10);
         Label result = label("Scanning installed profiles...", 11, MUTED);
         toolbar.getChildren().addAll(directory, refresh);
         ListView<MinecraftLauncher.InstalledVersion> profiles = new ListView<>();
         profiles.setPlaceholder(label("No installed profiles found.", 13, MUTED));
-        profiles.setStyle("-fx-control-inner-background: rgba(9, 10, 28, 0.82); -fx-background-color: transparent; -fx-border-color: rgba(170, 151, 207, 0.24);");
+        profiles.setStyle("-fx-control-inner-background: rgba(7, 19, 33, 0.82); -fx-background-color: transparent; -fx-border-color: rgba(124, 235, 255, 0.24);");
         profiles.setPrefHeight(290);
         profiles.setCellFactory(list -> new ListCell<>() {
             @Override
@@ -1234,6 +1306,40 @@ public final class LauncherApp extends Application {
         stage.setScene(new Scene(root, stage.getWidth(), stage.getHeight()));
     }
 
+    /**
+     * Called once per game launch. Returns the benchmark to run in this launch, or null. A manual request wins;
+     * otherwise the very first launch measures a "before" so a profile can be recommended. Players who already have
+     * Boost on skip the automatic test (it could not be a "before").
+     */
+    private BenchmarkStore.Request nextBenchmarkRequest() {
+        String label = settings.benchmarkPending();
+        if (label.isEmpty() && settings.autoBenchmark() && !settings.autoBenchmarkDone()) {
+            settings.setAutoBenchmarkDone(true);
+            if (!settings.boostEnabled()) label = "before";
+        }
+        if (label.isEmpty()) return null;
+        settings.setBenchmarkPending("");
+        settings.setAutoBenchmarkDone(true);
+        saveSettings();
+        return new BenchmarkStore.Request(BenchmarkStore.DEFAULT_SECONDS, label, settings.boostProfile().name());
+    }
+
+    /**
+     * Moves a finished benchmark into the history. After a first-launch "before" it also selects the recommended
+     * profile (it is not switched on: that changes video settings and installs mods, which stays the player's choice).
+     */
+    private void collectBenchmark() {
+        BenchmarkStore.ingest(settings.minecraftDirectory()).ifPresent(result -> {
+            appendLog("FPS benchmark (" + result.label() + "): " + BenchmarkStore.summary(result));
+            if ("before".equals(result.label()) && !settings.boostEnabled()) {
+                BoostAdvisor.Recommendation recommendation = BoostAdvisor.recommend(result, PcAnalysis.cachedOrBasic());
+                settings.setBoostProfile(recommendation.profile());
+                saveSettings();
+                appendLog("FrostBoost recommends " + recommendation.profile().label() + ". " + recommendation.reason());
+            }
+        });
+    }
+
     private FeatureHost featureHost() {
         if (featureHost == null) {
             featureHost = new FeatureHost() {
@@ -1249,6 +1355,8 @@ public final class LauncherApp extends Application {
                 @Override public void saveSettings() { LauncherApp.this.saveSettings(); }
                 @Override public void saveStats() { stats.save(); }
                 @Override public void showSettings() { LauncherApp.this.showSettings(); }
+                @Override public void openBoost() { navigate(Page.BOOST); }
+                @Override public void showFpsComparison() { navigate(Page.FPS_TEST); }
                 @Override public boolean shown(javafx.scene.Node page) {
                     return page.getScene() != null && page.getScene() == stage.getScene();
                 }
@@ -1297,7 +1405,7 @@ public final class LauncherApp extends Application {
         settingsPage = false;
         updateNavigationState();
         StackPane root = baseLayout();
-        VBox content = pageContent("Performance", "VSMP Boost",
+        VBox content = pageContent("Performance", "❄ FrostBoost",
                 "One switch for more FPS and fewer lag spikes: tuned video settings, optimisation mods, the right amount of memory and smoother garbage collection.");
         BoostPage page = new BoostPage(content);
         content.getChildren().addAll(page.masterCard(), page.status, page.profilesCard(), page.detailsCard(), page.manualMemoryCard());
@@ -1315,7 +1423,7 @@ public final class LauncherApp extends Application {
         private final javafx.scene.layout.FlowPane profileFlow = new javafx.scene.layout.FlowPane(12, 12);
         private final List<VBox> profileCards = new ArrayList<>();
         private final Label masterState = ModsUi.text("", 13, ModsUi.MUTED, false);
-        private final Label hardware = ModsUi.text("", 11, "#7f7fa6", false);
+        private final Label hardware = ModsUi.text("", 11, "#6f9bb5", false);
         private javafx.scene.layout.StackPane masterSwitch;
         private boolean working;
 
@@ -1329,7 +1437,7 @@ public final class LauncherApp extends Application {
 
         VBox masterCard() {
             VBox card = ModsUi.glassCard(14, new Insets(20));
-            Label title = ModsUi.text("VSMP BOOST MODE", 16, ModsUi.TEXT, true);
+            Label title = ModsUi.text("❄ FROSTBOOST", 16, ModsUi.TEXT, true);
             masterSwitch = ModsUi.switchPill(settings.boostEnabled(), this::onToggle);
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -1356,7 +1464,7 @@ public final class LauncherApp extends Application {
             VBox card = ModsUi.glassCard(14, new Insets(20));
             Button apply = new Button("APPLY AND INSTALL MODS");
             apply.setMinHeight(42);
-            apply.setStyle("-fx-background-color: " + ACCENT + "; -fx-text-fill: #171326; -fx-font-size: 12px; -fx-font-weight: bold;"
+            apply.setStyle("-fx-background-color: " + ACCENT + "; -fx-text-fill: #071321; -fx-font-size: 12px; -fx-font-weight: bold;"
                     + " -fx-background-radius: 12; -fx-padding: 0 22 0 22; -fx-cursor: hand;");
             apply.setOnAction(event -> apply());
             Button restore = new Button("RESTORE MY SETTINGS");
@@ -1364,11 +1472,15 @@ public final class LauncherApp extends Application {
             restore.setStyle("-fx-background-color: rgba(255,255,255,0.08); -fx-text-fill: #f5f7fd; -fx-font-size: 12px;"
                     + " -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 0 22 0 22; -fx-cursor: hand;");
             restore.setOnAction(event -> disable());
-            HBox buttons = new HBox(10, apply, restore);
+            Button compare = new Button("OPEN FPS COMPARISON");
+            compare.setMinHeight(42);
+            compare.setStyle(restore.getStyle());
+            compare.setOnAction(event -> navigate(Page.FPS_TEST));
+            HBox buttons = new HBox(10, apply, restore, compare);
             buttons.setAlignment(Pos.CENTER_LEFT);
             card.getChildren().addAll(ModsUi.sectionTitle("What this profile changes"), detailsBody, buttons,
-                    ModsUi.text("Your own video settings are saved first and come back with RESTORE MY SETTINGS or when you switch Boost Mode off. "
-                            + "While Boost Mode is on, the profile's video settings are applied at every launch.", 11, ModsUi.MUTED, false));
+                    ModsUi.text("Your own video settings are saved first and come back with RESTORE MY SETTINGS or when you switch FrostBoost off. "
+                            + "While FrostBoost is on, the profile's video settings are applied at every launch.", 11, ModsUi.MUTED, false));
             ((Label) card.getChildren().get(card.getChildren().size() - 1)).setWrapText(true);
             return card;
         }
@@ -1380,7 +1492,7 @@ public final class LauncherApp extends Application {
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
             Label value = ModsUi.text(settings.memoryGb() + " GB", 18, ModsUi.TEXT, true);
-            heading.getChildren().addAll(ModsUi.sectionTitle("Manual game memory (used when Boost Mode is off)"), spacer, value);
+            heading.getChildren().addAll(ModsUi.sectionTitle("Manual game memory (used when FrostBoost is off)"), spacer, value);
             Slider memory = new Slider(1, LauncherSettings.maxMemory(), settings.memoryGb());
             memory.setMajorTickUnit(1);
             memory.setMinorTickCount(0);
@@ -1422,7 +1534,7 @@ public final class LauncherApp extends Application {
             Label gain = ModsUi.chip("≈ " + profile.estimatedFpsGain() + " FPS", ModsUi.GOOD);
             var options = profile.options();
             Label facts = ModsUi.text("Render distance " + options.get("renderDistance") + "  ·  Simulation "
-                    + options.get("simulationDistance") + "\n" + profile.mods().size() + " optimisation mods", 11, "#8f8fb4", false);
+                    + options.get("simulationDistance") + "\n" + profile.mods().size() + " optimisation mods", 11, "#7fb0cc", false);
             facts.setWrapText(true);
             VBox card = new VBox(8, name, tagline, gain, facts);
             card.setPadding(new Insets(16));
@@ -1468,7 +1580,7 @@ public final class LauncherApp extends Application {
             estimateRow.getChildren().setAll(
                     ModsUi.text("Estimated FPS gain", 12, ModsUi.MUTED, false),
                     ModsUi.chip("≈ " + profile.estimatedFpsGain(), ModsUi.GOOD),
-                    ModsUi.text("typical range, not a measurement - it depends on your PC, world and server", 11, "#7f7fa6", false));
+                    ModsUi.text("typical range, not a measurement - it depends on your PC, world and server", 11, "#6f9bb5", false));
             hardware.setText("This PC has about " + (ram / (1024L * 1024 * 1024)) + " GB of RAM, so " + profile.label()
                     + " gives the game " + profile.recommendedMemoryGb(ram) + " GB. Java is chosen automatically: V-Client uses the Azul Zulu version your Minecraft version needs and downloads it when missing.");
             styleProfileCards();
@@ -1480,14 +1592,14 @@ public final class LauncherApp extends Application {
             Path modsDirectory = settings.minecraftDirectory().resolve("mods");
             VBox video = new VBox(4);
             video.getChildren().add(ModsUi.text("Video settings", 12, ModsUi.TEXT, true));
-            profile.options().forEach((key, value) -> video.getChildren().add(
+            profile.options(PcAnalysis.tier(PcAnalysis.cachedOrBasic())).forEach((key, value) -> video.getChildren().add(
                     ModsUi.text(prettyOption(key) + "  →  " + value.replace("\"", ""), 11, ModsUi.MUTED, false)));
             VBox java = new VBox(4);
             int memory = profile.recommendedMemoryGb(ram);
             java.getChildren().addAll(ModsUi.text("Memory and JVM", 12, ModsUi.TEXT, true),
                     ModsUi.text("Heap  -Xmx" + memory + "G  -Xms" + profile.initialHeap(memory), 11, ModsUi.MUTED, false),
                     ModsUi.text(profile.jvmFlags().size() + " garbage-collector flags for short, even pauses", 11, ModsUi.MUTED, false),
-                    ModsUi.text(String.join("  ", profile.jvmFlags()), 10, "#6f6f96", false));
+                    ModsUi.text(String.join("  ", profile.jvmFlags()), 10, "#5f8aa6", false));
             ((Label) java.getChildren().get(3)).setWrapText(true);
             VBox mods = new VBox(4);
             mods.getChildren().add(ModsUi.text("Optimisation mods (Fabric, from Modrinth)", 12, ModsUi.TEXT, true));
@@ -1590,7 +1702,7 @@ public final class LauncherApp extends Application {
                 String modProblem = null;
                 int changed = 0;
                 try {
-                    changed = BoostOptions.apply(minecraftDirectory, profile.options(),
+                    changed = BoostOptions.apply(minecraftDirectory, profile.options(PcAnalysis.tier(PcAnalysis.cached())),
                             line -> Platform.runLater(() -> appendLog(line)));
                 } catch (IOException e) {
                     modProblem = null;
@@ -1650,6 +1762,11 @@ public final class LauncherApp extends Application {
                     all.addAll(notes);
                     showStatus(all.toArray(new javafx.scene.Node[0]));
                     appendLog("Boost: " + profile.label() + " applied.");
+                    if (BenchmarkStore.awaitingAfter(BenchmarkStore.load(minecraftDirectory)) && settings.benchmarkPending().isEmpty()) {
+                        settings.setBenchmarkPending("after");
+                        saveSettings();
+                        appendLog("FrostBoost: the next launch will measure the \"after\" FPS for the comparison.");
+                    }
                 });
             });
         }
@@ -1662,8 +1779,8 @@ public final class LauncherApp extends Application {
             try {
                 int restored = BoostOptions.restore(minecraftDirectory, line -> appendLog(line));
                 refresh();
-                showStatus(success(restored > 0 ? "Boost Mode is off and your own video settings are back (" + restored + " restored)."
-                        : "Boost Mode is off."));
+                showStatus(success(restored > 0 ? "FrostBoost is off and your own video settings are back (" + restored + " restored)."
+                        : "FrostBoost is off."));
             } catch (IOException e) {
                 refresh();
                 showStatus(ModsUi.warningBox("Couldn't restore your settings", e.getMessage(), null));
@@ -1680,7 +1797,7 @@ public final class LauncherApp extends Application {
         HBox preview = new HBox(22);
         preview.setAlignment(Pos.CENTER_LEFT);
         preview.setPadding(new Insets(22));
-        preview.setStyle("-fx-background-color: rgba(15, 16, 39, 0.84); -fx-background-radius: 12; -fx-border-color: rgba(170, 151, 207, 0.24); -fx-border-radius: 12;");
+        preview.setStyle("-fx-background-color: rgba(17, 38, 61, 0.84); -fx-background-radius: 12; -fx-border-color: rgba(124, 235, 255, 0.24); -fx-border-radius: 12;");
         ImageView skin = new ImageView();
         skin.setFitWidth(192);
         skin.setFitHeight(192);
@@ -1694,7 +1811,7 @@ public final class LauncherApp extends Application {
         VBox info = new VBox(12, label(account == null ? "No account selected" : account.name(), 20, "#f3f6fc"),
                 description);
         preview.getChildren().addAll(skin, cape, info);
-        Button reload = button("RELOAD SAVED PREVIEW", "#292642", 10);
+        Button reload = button("RELOAD SAVED PREVIEW", "#11263D", 10);
         reload.setOnAction(event -> loadPreviews(account, skin, cape, description, () -> account));
         Button accountSettings = button("MANAGE ACCOUNTS", ACCENT, 10);
         accountSettings.setOnAction(event -> showSettings());
@@ -1740,7 +1857,7 @@ public final class LauncherApp extends Application {
             Map<String, String> equipped = CosmeticsStore.equipped(configFile);
             tabs.getChildren().clear();
             for (String category : CosmeticsStore.CATEGORIES) {
-                Button tab = button(categoryLabel(category), category.equals(selectedCategory[0]) ? ACCENT : "#292642", 10);
+                Button tab = button(categoryLabel(category), category.equals(selectedCategory[0]) ? ACCENT : "#11263D", 10);
                 tab.setOnAction(event -> {
                     selectedCategory[0] = category;
                     render[0].run();
@@ -1750,7 +1867,7 @@ public final class LauncherApp extends Application {
             tiers.getChildren().clear();
             for (String tier : List.of("", "free", "premium", "event")) {
                 Button chip = button(tier.isEmpty() ? "All" : Character.toUpperCase(tier.charAt(0)) + tier.substring(1),
-                        tier.equals(selectedTier[0]) ? ACCENT : "#292642", 10);
+                        tier.equals(selectedTier[0]) ? ACCENT : "#11263D", 10);
                 chip.setOnAction(event -> {
                     selectedTier[0] = tier;
                     render[0].run();
@@ -1768,7 +1885,7 @@ public final class LauncherApp extends Application {
                 Label name = label(item.name(), 14, unlocked ? "#f3f6fc" : "#8e8eb2");
                 String tierColor = switch (item.tier()) {
                     case "free" -> "#7cf29a";
-                    case "event" -> "#ff8fd8";
+                    case "event" -> "#B8F4FF";
                     default -> ACCENT;
                 };
                 Label tag = label(item.tier().toUpperCase() + "  ·  " + item.slot().charAt(0)
@@ -1797,14 +1914,14 @@ public final class LauncherApp extends Application {
                 HBox row = new HBox(14, text, action);
                 row.setAlignment(Pos.CENTER_LEFT);
                 row.setPadding(new Insets(12, 14, 12, 14));
-                row.setStyle("-fx-background-color: rgba(15, 16, 39, 0.84); -fx-background-radius: 10; -fx-border-radius: 10;"
-                        + " -fx-border-color: " + (isEquipped ? Theme.accentRgba(0.7) : "rgba(170, 151, 207, 0.24)") + ";");
+                row.setStyle("-fx-background-color: rgba(17, 38, 61, 0.84); -fx-background-radius: 10; -fx-border-radius: 10;"
+                        + " -fx-border-color: " + (isEquipped ? Theme.accentRgba(0.7) : "rgba(124, 235, 255, 0.24)") + ";");
                 list.getChildren().add(row);
             }
             if (shown == 0) list.getChildren().add(label("Nothing here yet.", 12, MUTED));
         };
 
-        Button refresh = button("REFRESH", "#292642", 10);
+        Button refresh = button("REFRESH", "#11263D", 10);
         Button clear = button("UNEQUIP ALL", "#482332", 10);
         clear.setOnAction(event -> {
             try {
@@ -1882,7 +1999,7 @@ public final class LauncherApp extends Application {
         };
         refresh.setOnAction(event -> load.run());
 
-        Button diagnose = button("DIAGNOSE", "#292642", 10);
+        Button diagnose = button("DIAGNOSE", "#11263D", 10);
         diagnose.setOnAction(event -> {
             diagnose.setDisable(true);
             diagnostics.getChildren().setAll(label("Checking... (each check gives up after "
@@ -2033,7 +2150,7 @@ public final class LauncherApp extends Application {
                 body.setWrapText(true);
                 Button open = new Button("OPEN THE NEWS PAGE");
                 open.setMinHeight(40);
-                open.setStyle("-fx-background-color: " + ACCENT + "; -fx-text-fill: #171326; -fx-font-size: 12px; -fx-font-weight: bold;"
+                open.setStyle("-fx-background-color: " + ACCENT + "; -fx-text-fill: #071321; -fx-font-size: 12px; -fx-font-weight: bold;"
                         + " -fx-background-radius: 12; -fx-padding: 0 22 0 22; -fx-cursor: hand;");
                 open.setOnAction(event -> showNews());
                 card.getChildren().addAll(title, body, open);
@@ -2042,7 +2159,7 @@ public final class LauncherApp extends Application {
             }
             VBox addCard = ModsUi.glassCard(12, new Insets(20));
             username.setPromptText("Your friend's V-Client username");
-            username.setStyle("-fx-background-color: rgba(8, 9, 26, 0.85); -fx-text-fill: #f5f7fd; -fx-prompt-text-fill: #7f7fa6;"
+            username.setStyle("-fx-background-color: rgba(7, 19, 33, 0.85); -fx-text-fill: #f5f7fd; -fx-prompt-text-fill: #6f9bb5;"
                     + " -fx-font-size: 13px; -fx-border-color: rgba(255,255,255,0.14); -fx-background-radius: 12;"
                     + " -fx-border-radius: 12; -fx-padding: 0 14 0 14;");
             username.setMinHeight(44);
@@ -2050,7 +2167,7 @@ public final class LauncherApp extends Application {
             HBox.setHgrow(username, Priority.ALWAYS);
             add.setMinHeight(44);
             add.setMinWidth(Region.USE_PREF_SIZE);
-            add.setStyle("-fx-background-color: " + ACCENT + "; -fx-text-fill: #171326; -fx-font-size: 12px; -fx-font-weight: bold;"
+            add.setStyle("-fx-background-color: " + ACCENT + "; -fx-text-fill: #071321; -fx-font-size: 12px; -fx-font-weight: bold;"
                     + " -fx-background-radius: 12; -fx-padding: 0 24 0 24; -fx-cursor: hand;");
             add.setOnAction(event -> sendRequest());
             username.setOnAction(event -> sendRequest());
@@ -2130,7 +2247,7 @@ public final class LauncherApp extends Application {
             requestsCard.setVisible(hasRequests);
             List<javafx.scene.Node> requests = new ArrayList<>();
             for (BackendClient.FriendRequest request : overview.incoming()) {
-                Button accept = smallButton("ACCEPT", ACCENT, "#171326");
+                Button accept = smallButton("ACCEPT", ACCENT, "#071321");
                 accept.setOnAction(event -> respond(() -> backend().acceptFriend(settings.backendToken(), request.requestId())));
                 Button decline = smallButton("DECLINE", "rgba(255,255,255,0.08)", "#f5f7fd");
                 decline.setOnAction(event -> respond(() -> backend().dropFriendRequest(settings.backendToken(), request.requestId())));
@@ -2171,12 +2288,12 @@ public final class LauncherApp extends Application {
         }
 
         private HBox friendRow(BackendClient.Friend friend) {
-            Region dot = dot(friend.online() ? ModsUi.GOOD : "#5b5b78");
+            Region dot = dot(friend.online() ? ModsUi.GOOD : "#4a6a85");
             Label name = ModsUi.text(friend.username(), 14, ModsUi.TEXT, true);
             String detail = friend.online()
                     ? (friend.activity().isBlank() ? "Online" : friend.activity()) + (friend.server().isBlank() ? "" : "  ·  " + friend.server())
                     : "Offline";
-            Label state = ModsUi.text(detail, 11, friend.online() ? "#8ff0b8" : "#7f7fa6", false);
+            Label state = ModsUi.text(detail, 11, friend.online() ? "#8ff0b8" : "#6f9bb5", false);
             HBox title = new HBox(8, dot, name);
             if (!friend.minecraftName().isBlank()) title.getChildren().add(ModsUi.chip("MC: " + friend.minecraftName(), ModsUi.MUTED));
             title.setAlignment(Pos.CENTER_LEFT);
@@ -2252,7 +2369,7 @@ public final class LauncherApp extends Application {
             VBox card = ModsUi.glassCard(12, new Insets(20));
             TextField name = new TextField();
             name.setPromptText("Minecraft username");
-            name.setStyle("-fx-background-color: rgba(8, 9, 26, 0.85); -fx-text-fill: #f5f7fd; -fx-prompt-text-fill: #7f7fa6;"
+            name.setStyle("-fx-background-color: rgba(7, 19, 33, 0.85); -fx-text-fill: #f5f7fd; -fx-prompt-text-fill: #6f9bb5;"
                     + " -fx-font-size: 13px; -fx-border-color: rgba(255,255,255,0.14); -fx-background-radius: 12;"
                     + " -fx-border-radius: 12; -fx-padding: 0 14 0 14;");
             name.setMinHeight(40);
@@ -2305,14 +2422,14 @@ public final class LauncherApp extends Application {
         StackPane root = baseLayout();
         VBox content = pageContent("Diagnostics", "Console", "Recent launcher and Minecraft output for this session.");
         HBox actions = new HBox(10);
-        Button copy = button("COPY LOG", "#292642", 10);
+        Button copy = button("COPY LOG", "#11263D", 10);
         Button clear = button("CLEAR LOG", "#482332", 10);
         actions.getChildren().addAll(copy, clear);
         consoleLog = new TextArea(String.join(System.lineSeparator(), logLines));
         consoleLog.setEditable(false);
         consoleLog.setWrapText(true);
         consoleLog.setPrefRowCount(22);
-        consoleLog.setStyle("-fx-control-inner-background: rgba(9, 10, 28, 0.82); -fx-text-fill: #c3bfdc; -fx-font-family: 'Consolas'; -fx-font-size: 11px; -fx-background-color: rgba(9, 10, 28, 0.82); -fx-border-color: #37334f; -fx-border-radius: 8; -fx-background-radius: 8;");
+        consoleLog.setStyle("-fx-control-inner-background: rgba(7, 19, 33, 0.82); -fx-text-fill: #b8dcee; -fx-font-family: 'Consolas'; -fx-font-size: 11px; -fx-background-color: rgba(7, 19, 33, 0.82); -fx-border-color: #1e4260; -fx-border-radius: 8; -fx-background-radius: 8;");
         VBox.setVgrow(consoleLog, Priority.ALWAYS);
         copy.setOnAction(event -> {
             ClipboardContent clipboard = new ClipboardContent();
@@ -2383,7 +2500,7 @@ public final class LauncherApp extends Application {
         search.setPromptText("Search players by name");
         search.setStyle(fieldStyle());
         HBox.setHgrow(search, Priority.ALWAYS);
-        Button refresh = button("REFRESH", "#292642", 10);
+        Button refresh = button("REFRESH", "#11263D", 10);
         HBox searchRow = new HBox(10, search, refresh);
         searchRow.setAlignment(Pos.CENTER_LEFT);
         VBox rows = new VBox(8);
@@ -2421,7 +2538,7 @@ public final class LauncherApp extends Application {
                                     + (player.grants() > 0 ? "  ·  " + player.grants() + " unlocked" : ""), 11, MUTED);
                             Region spacer = new Region();
                             HBox.setHgrow(spacer, Priority.ALWAYS);
-                            Button manage = button("UNLOCK", "#292642", 10);
+                            Button manage = button("UNLOCK", "#11263D", 10);
                             manage.setOnAction(event -> openGrantDialog(client, token, player.name(), player.uuid(), refresh::fire));
                             HBox row = new HBox(10, name, kind, seen, spacer, manage);
                             row.setAlignment(Pos.CENTER_LEFT);
@@ -2509,8 +2626,8 @@ public final class LauncherApp extends Application {
         VBox content = new VBox(10, label("UNLOCKED NOW", 11, MUTED), owned, label("UNLOCK ONE COSMETIC", 11, MUTED), cosmeticRow,
                 label("INVITE REWARD (includes every tier below it)", 11, MUTED), rewardRow, result);
         content.setPadding(new Insets(14));
-        content.setStyle("-fx-background-color: #101321;");
-        dialog.getDialogPane().setStyle("-fx-background-color: #101321;");
+        content.setStyle("-fx-background-color: #0b1c30;");
+        dialog.getDialogPane().setStyle("-fx-background-color: #0b1c30;");
         dialog.getDialogPane().setContent(content);
 
         java.util.concurrent.atomic.AtomicReference<List<String>> uuids = new java.util.concurrent.atomic.AtomicReference<>(List.of());
@@ -2602,7 +2719,7 @@ public final class LauncherApp extends Application {
     private VBox launchEventBanner() {
         long days = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(), LAUNCH_DATE);
         String countdown = days > 1 ? days + " DAYS TO GO" : days == 1 ? "TOMORROW" : days == 0 ? "TODAY" : "LIVE NOW";
-        Label tag = label("NEWS  ·  EVENT  ·  " + countdown, 10, "#ff8fd8");
+        Label tag = label("NEWS  ·  EVENT  ·  " + countdown, 10, "#B8F4FF");
         tag.setStyle(tag.getStyle() + "-fx-font-weight: bold; -fx-letter-spacing: 2;");
         Label headline = label("EVENT! We are launching V-Client on the 10th of November 2026", 16, "#f3f6fc");
         headline.setStyle(headline.getStyle() + "-fx-font-weight: bold;");
@@ -2611,7 +2728,7 @@ public final class LauncherApp extends Application {
         detail.setWrapText(true);
         VBox box = new VBox(6, tag, headline, detail);
         box.setPadding(new Insets(16, 20, 16, 20));
-        box.setStyle("-fx-background-color: linear-gradient(to right, rgba(120, 40, 110, 0.55), rgba(40, 30, 90, 0.7)); -fx-background-radius: 12; -fx-border-color: rgba(255, 143, 216, 0.55); -fx-border-radius: 12;");
+        box.setStyle("-fx-background-color: linear-gradient(to right, rgba(0, 150, 200, 0.40), rgba(17, 38, 61, 0.7)); -fx-background-radius: 12; -fx-border-color: rgba(124, 235, 255, 0.55); -fx-border-radius: 12;");
         return box;
     }
 
@@ -2712,7 +2829,7 @@ public final class LauncherApp extends Application {
         StackPane root = baseLayout();
         VBox content = pageContent("Multiplayer", "Servers", "Live status of our servers, pinged straight from your PC. Press JOIN to launch the selected version and connect.");
         List<Runnable> refreshers = new ArrayList<>();
-        Button refreshAll = button("REFRESH ALL", "#292642", 10);
+        Button refreshAll = button("REFRESH ALL", "#11263D", 10);
         refreshAll.setOnAction(event -> refreshers.forEach(Runnable::run));
         content.getChildren().add(refreshAll);
         for (ServerEntry server : SERVER_LIST) {
@@ -2722,7 +2839,7 @@ public final class LauncherApp extends Application {
             String address = server.port() == 25565 ? server.host() : server.host() + ":" + server.port();
             Label addressLabel = label(address, 11, MUTED);
             Label state = label("Pinging…", 12, "#b3c0d3");
-            Label motd = label("", 11, "#c3bfdc");
+            Label motd = label("", 11, "#b8dcee");
             motd.setWrapText(true);
             motd.managedProperty().bind(motd.visibleProperty());
             motd.setVisible(false);
@@ -2769,9 +2886,9 @@ public final class LauncherApp extends Application {
         VBox statusCard = card();
         Region indicator = dot("#64728a");
         Label statusText = label("", 13, "#e6ebf7");
-        Button refreshStatus = button("REFRESH", "#292642", 10);
+        Button refreshStatus = button("REFRESH", "#11263D", 10);
         refreshStatus.setOnAction(event -> loadServerStatus(statusText, indicator));
-        Button website = button("OPEN WEBSITE", "#292642", 10);
+        Button website = button("OPEN WEBSITE", "#11263D", 10);
         website.setDisable(!client.configured());
         website.setOnAction(event -> openExternalPage(client.baseUrl()));
         HBox statusRow = new HBox(10, indicator, statusText);
@@ -2813,7 +2930,7 @@ public final class LauncherApp extends Application {
         Label meta = label(tag, 10, post.category().equals("server") ? "#6fd39b" : ACCENT);
         Label title = label(post.title(), 17, "#f3f6fc");
         title.setWrapText(true);
-        Label body = label(post.body(), 12, "#c3bfdc");
+        Label body = label(post.body(), 12, "#b8dcee");
         body.setWrapText(true);
         box.getChildren().addAll(meta, title, body);
         return box;
@@ -2886,7 +3003,7 @@ public final class LauncherApp extends Application {
             password.setPromptText("Password (8+ characters)");
             password.setStyle(fieldStyle());
             Button signIn = button("SIGN IN", ACCENT, 10);
-            Button create = button("CREATE ACCOUNT", "#292642", 10);
+            Button create = button("CREATE ACCOUNT", "#11263D", 10);
             if (!client.configured()) {
                 box.getChildren().add(ModsUi.warningBox("The V-Client backend address is not set",
                         "Accounts and friends live on the V-Client backend. Enter its address in the \"Backend & updates\" box below and press SAVE ADDRESS, then come back here.",
@@ -2945,8 +3062,8 @@ public final class LauncherApp extends Application {
                 + (BackendClient.resolveUrl("").equals(System.getenv("VCLIENT_BACKEND_URL")) ? "  ·  backend set by VCLIENT_BACKEND_URL" : ""), 11, MUTED);
         result.setWrapText(true);
         Button save = button("SAVE ADDRESS", ACCENT, 10);
-        Button check = button("CHECK FOR UPDATES", "#292642", 10);
-        Button auto = button("", "#292642", 10);
+        Button check = button("CHECK FOR UPDATES", "#11263D", 10);
+        Button auto = button("", "#11263D", 10);
         Runnable refreshAuto = () -> auto.setText(settings.autoUpdate() ? "AUTO-UPDATE: ON" : "AUTO-UPDATE: OFF");
         refreshAuto.run();
         save.setOnAction(event -> {
@@ -3075,13 +3192,13 @@ public final class LauncherApp extends Application {
         viewer.setEditable(false);
         viewer.setWrapText(false);
         viewer.setPrefRowCount(24);
-        viewer.setStyle("-fx-control-inner-background: rgba(9, 10, 28, 0.82); -fx-text-fill: #c3bfdc; -fx-font-family: 'Consolas'; -fx-font-size: 11px; -fx-background-color: rgba(9, 10, 28, 0.82); -fx-border-color: #37334f; -fx-border-radius: 8; -fx-background-radius: 8;");
+        viewer.setStyle("-fx-control-inner-background: rgba(7, 19, 33, 0.82); -fx-text-fill: #b8dcee; -fx-font-family: 'Consolas'; -fx-font-size: 11px; -fx-background-color: rgba(7, 19, 33, 0.82); -fx-border-color: #1e4260; -fx-border-radius: 8; -fx-background-radius: 8;");
         VBox.setVgrow(viewer, Priority.ALWAYS);
-        Button launchLog = button("LAUNCH LOG", "#292642", 10);
-        Button crash = button("LATEST CRASH REPORT", "#292642", 10);
-        Button session = button("LAUNCHER OUTPUT", "#292642", 10);
-        Button copy = button("COPY", "#292642", 10);
-        Button openFolder = button("OPEN LOGS FOLDER", "#292642", 10);
+        Button launchLog = button("LAUNCH LOG", "#11263D", 10);
+        Button crash = button("LATEST CRASH REPORT", "#11263D", 10);
+        Button session = button("LAUNCHER OUTPUT", "#11263D", 10);
+        Button copy = button("COPY", "#11263D", 10);
+        Button openFolder = button("OPEN LOGS FOLDER", "#11263D", 10);
         launchLog.setOnAction(event -> showLogFile(viewer, logsDirectory.resolve("vclient-launch.log"), "No launch log yet. It is written the first time you press Play."));
         crash.setOnAction(event -> showLogFile(viewer, newestFile(crashDirectory), "No crash reports found. That is good news."));
         session.setOnAction(event -> viewer.setText(logLines.isEmpty() ? "No launcher output in this session yet." : String.join(System.lineSeparator(), logLines)));
@@ -3184,7 +3301,7 @@ public final class LauncherApp extends Application {
         invite.setPromptText("https://discord.gg/your-invite");
         invite.setStyle(fieldStyle());
         Button save = button("SAVE INVITE", ACCENT, 10);
-        Button open = button("OPEN DISCORD INVITE", "#292642", 10);
+        Button open = button("OPEN DISCORD INVITE", "#11263D", 10);
         Label result = label("Invite URL is stored locally in launcher settings.", 11, MUTED);
         save.setOnAction(event -> {
             String address = invite.getText() == null ? "" : invite.getText().strip();
@@ -3276,8 +3393,8 @@ public final class LauncherApp extends Application {
             resultsBody.widthProperty().addListener((observable, oldWidth, newWidth) -> layoutColumns());
         }
 
-        private static final String FIELD = "-fx-background-color: rgba(8, 9, 26, 0.85); -fx-text-fill: #f5f7fd;"
-                + " -fx-prompt-text-fill: #7f7fa6; -fx-font-size: 13px; -fx-border-color: rgba(255,255,255,0.14);"
+        private static final String FIELD = "-fx-background-color: rgba(7, 19, 33, 0.85); -fx-text-fill: #f5f7fd;"
+                + " -fx-prompt-text-fill: #6f9bb5; -fx-font-size: 13px; -fx-border-color: rgba(255,255,255,0.14);"
                 + " -fx-background-radius: 12; -fx-border-radius: 12; -fx-padding: 0 14 0 14;";
 
         VBox controlsCard() {
@@ -3291,7 +3408,7 @@ public final class LauncherApp extends Application {
             profilePicker.setMinWidth(170);
             query.setPromptText("Search Modrinth (leave empty for the most popular)");
             query.setStyle(FIELD);
-            search.setStyle("-fx-background-color: " + ACCENT + "; -fx-text-fill: #171326; -fx-font-size: 12px;"
+            search.setStyle("-fx-background-color: " + ACCENT + "; -fx-text-fill: #071321; -fx-font-size: 12px;"
                     + " -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 0 24 0 24; -fx-cursor: hand;");
             for (javafx.scene.layout.Region control : List.of(profilePicker, query, search)) {
                 control.setMinHeight(44);
@@ -3344,7 +3461,7 @@ public final class LauncherApp extends Application {
             });
             HBox header = new HBox(10, ModsUi.sectionTitle("Installed mods"), installedCount, spacer, refresh, openFolder);
             header.setAlignment(Pos.CENTER_LEFT);
-            Label path = ModsUi.text(modsDirectory.toString(), 10, "#7f7fa6", false);
+            Label path = ModsUi.text(modsDirectory.toString(), 10, "#6f9bb5", false);
             path.setWrapText(true);
             card.getChildren().addAll(header, path, installedBody);
             return card;
@@ -3604,7 +3721,7 @@ public final class LauncherApp extends Application {
                 name.setMinWidth(0);
                 HBox.setHgrow(name, Priority.ALWAYS);
                 name.setMaxWidth(Double.MAX_VALUE);
-                Label state = ModsUi.chip(disabled ? "Disabled" : "Enabled", disabled ? "#7f7fa6" : ModsUi.GOOD);
+                Label state = ModsUi.chip(disabled ? "Disabled" : "Enabled", disabled ? "#6f9bb5" : ModsUi.GOOD);
                 Button remove = new Button("REMOVE");
                 remove.setMinHeight(32);
                 remove.setStyle("-fx-background-color: rgba(255,99,120,0.14); -fx-text-fill: #ff9aa8; -fx-font-size: 10px;"
@@ -3673,8 +3790,8 @@ public final class LauncherApp extends Application {
         Label heading = label("Choose an account", 30, "#f3f6fc");
         Label subtitle = label("Sign in to Minecraft or create an offline profile.", 14, MUTED);
         Button microsoftButton = button("MICROSOFT  ·  PREMIUM", ACCENT, 14);
-        Button elyButton = button("ELY.BY", "#292642", 14);
-        Button offlineButton = button("OFFLINE ACCOUNT", "#292642", 14);
+        Button elyButton = button("ELY.BY", "#11263D", 14);
+        Button offlineButton = button("OFFLINE ACCOUNT", "#11263D", 14);
         for (Button option : List.of(microsoftButton, elyButton, offlineButton)) {
             option.setMaxWidth(Double.MAX_VALUE);
             option.setPrefHeight(48);
@@ -3727,8 +3844,8 @@ public final class LauncherApp extends Application {
         HBox addButtons = new HBox(9);
         addButtons.setAlignment(Pos.CENTER_LEFT);
         Button microsoftButton = button("+ MICROSOFT", ACCENT, 10);
-        Button elyButton = button("+ ELY.BY", "#292642", 10);
-        Button offlineButton = button("+ OFFLINE", "#292642", 10);
+        Button elyButton = button("+ ELY.BY", "#11263D", 10);
+        Button offlineButton = button("+ OFFLINE", "#11263D", 10);
         microsoftButton.setOnAction(event -> signInMicrosoft());
         elyButton.setOnAction(event -> signInElyBy());
         offlineButton.setOnAction(event -> addOfflineAccount());
@@ -3776,81 +3893,79 @@ public final class LauncherApp extends Application {
         backgroundAnimation.start();
         BorderPane layout = new BorderPane();
         layout.setStyle("-fx-background-color: transparent; -fx-font-family: 'Segoe UI';");
-        HBox header = new HBox(12);
+        // Top bar: brand and QUICK PLAY on the left, the account chip on the right.
+        HBox header = new HBox(14);
         header.setAlignment(Pos.CENTER_LEFT);
-        header.setPadding(new Insets(18, 30, 18, 30));
+        header.setPadding(new Insets(10, 22, 10, 18));
         avatar = new ImageView(createIcon());
-        avatar.setFitWidth(38);
-        avatar.setFitHeight(38);
+        avatar.setFitWidth(30);
+        avatar.setFitHeight(30);
         avatar.setPreserveRatio(true);
-        avatar.setClip(new Circle(19, 19, 19));
+        avatar.setClip(new Circle(15, 15, 15));
         if (account != null) loadAvatar(account, avatar);
-        Canvas logo = logo(34);
-        Label brand = label("V-CLIENT", 15, "#eff4ff");
-        brand.setStyle(brand.getStyle() + "-fx-font-weight: bold; -fx-letter-spacing: 1.5;");
+        Canvas logo = logo(32);
+        HBox quickPlay = new HBox(8);
+        quickPlay.setAlignment(Pos.CENTER_LEFT);
+        quickPlay.setPadding(new Insets(5, 10, 5, 12));
+        quickPlay.setStyle("-fx-background-color: rgba(17, 38, 61, 0.85); -fx-background-radius: 12;"
+                + " -fx-border-color: rgba(124, 235, 255, 0.25); -fx-border-radius: 12;");
+        Label quickLabel = label("QUICK PLAY", 10, "#9fc6dc");
+        quickLabel.setStyle(quickLabel.getStyle() + "-fx-font-weight: bold; -fx-letter-spacing: 1.5;");
+        quickPlay.getChildren().add(quickLabel);
+        for (ServerEntry entry : SERVER_LIST) {
+            Button server = new Button(entry.name());
+            server.setStyle("-fx-background-color: rgba(0, 207, 255, 0.14); -fx-text-fill: #eaf9ff; -fx-font-size: 11px;"
+                    + " -fx-font-weight: bold; -fx-background-radius: 9; -fx-padding: 5 11 5 11; -fx-cursor: hand;");
+            server.setTooltip(new javafx.scene.control.Tooltip("Launch and join " + entry.host()));
+            server.setOnAction(event -> launchGame(entry));
+            quickPlay.getChildren().add(server);
+        }
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        headerAccountLabel = label(account == null ? "NO ACCOUNT" : account.name().toUpperCase()
-                + "  ·  " + account.type().label().toUpperCase(), 10,
-                account == null ? MUTED : ACCENT);
-        Button switchAccount = button("ACCOUNT", "#292642", 10);
-        switchAccount.setOnAction(event -> showSettings());
-        header.getChildren().addAll(avatar, logo, brand, spacer,
-                dot(account == null ? "#64728a" : "#39d98a"), headerAccountLabel, switchAccount);
-        header.setStyle("-fx-background-color: rgba(9, 10, 27, 0.78); -fx-border-color: transparent transparent rgba(145, 127, 186, 0.22) transparent;");
+        headerAccountLabel = label(account == null ? "NO ACCOUNT" : account.name(), 12,
+                account == null ? MUTED : "#eaf9ff");
+        headerAccountLabel.setStyle(headerAccountLabel.getStyle() + "-fx-font-weight: bold;");
+        HBox accountChip = new HBox(9, avatar, headerAccountLabel, dot(account == null ? "#64728a" : "#39d98a"));
+        accountChip.setAlignment(Pos.CENTER_LEFT);
+        accountChip.setPadding(new Insets(5, 14, 5, 6));
+        accountChip.setCursor(javafx.scene.Cursor.HAND);
+        accountChip.setStyle("-fx-background-color: rgba(0, 150, 200, 0.30); -fx-background-radius: 14;"
+                + " -fx-border-color: rgba(124, 235, 255, 0.40); -fx-border-radius: 14;");
+        accountChip.setOnMouseClicked(event -> showSettings());
+        header.getChildren().addAll(logo, quickPlay, spacer, accountChip);
+        header.setStyle("-fx-background-color: rgba(7, 19, 33, 0.78); -fx-border-color: transparent transparent rgba(124, 235, 255, 0.18) transparent;");
         layout.setTop(header);
-        VBox navigation = new VBox(3);
+
+        // Slim icon sidebar: main pages, "more" for the rest, Settings at the bottom. Names show as tooltips.
+        VBox navigation = new VBox(6);
         navigation.setAlignment(Pos.TOP_CENTER);
-        navigation.setPadding(new Insets(10, 6, 10, 6));
-        navigation.setSpacing(3);
-        navigation.setPrefWidth(92);
-        navigation.setStyle("-fx-background-color: rgba(9, 10, 27, 0.68); -fx-border-color: transparent rgba(145, 127, 186, 0.18) transparent transparent;");
-        // Sections keep the sidebar readable; rarely used pages are folded under "More".
-        record NavSection(String title, List<Page> pages) {}
-        List<NavSection> sections = List.of(
-                new NavSection("PLAY", List.of(Page.HOME, Page.SERVERS, Page.LIBRARY)),
-                new NavSection("CUSTOMIZE", List.of(Page.MODS, Page.PACKS, Page.COSMETICS, Page.WARDROBE)),
-                new NavSection("SOCIAL", List.of(Page.FRIENDS, Page.NEWS, Page.DISCORD)),
-                new NavSection("YOU", List.of(Page.PROFILE, Page.RECORDINGS, Page.SCREENSHOTS, Page.SETTINGS)));
-        List<Page> morePages = List.of(Page.BOOST, Page.PERFORMANCE, Page.BROWSER, Page.ASSISTANT, Page.LOGS, Page.CONSOLE);
-        if (morePages.contains(activePage)) moreNavigationExpanded = true;
+        navigation.setPadding(new Insets(12, 6, 12, 6));
+        navigation.setPrefWidth(66);
+        navigation.setMinWidth(66);
+        navigation.setStyle("-fx-background-color: rgba(7, 19, 33, 0.72); -fx-border-color: transparent rgba(124, 235, 255, 0.14) transparent transparent;");
+        List<Page> mainPages = List.of(Page.HOME, Page.MODS, Page.COSMETICS, Page.BOOST, Page.RECORDINGS, Page.NEWS);
+        List<Page> morePages = List.of(Page.SERVERS, Page.LIBRARY, Page.PACKS, Page.WARDROBE, Page.FRIENDS, Page.DISCORD,
+                Page.PROFILE, Page.SCREENSHOTS, Page.FPS_TEST, Page.PERFORMANCE, Page.BROWSER, Page.ASSISTANT,
+                Page.LOGS, Page.CONSOLE);
         navigationButtons.clear();
-        for (NavSection section : sections) {
-            navigation.getChildren().add(navigationHeader(section.title()));
-            for (Page page : section.pages()) navigation.getChildren().add(navigationItem(page));
+        for (Page page : mainPages) navigation.getChildren().add(navigationItem(page));
+        Region navigationSpacer = new Region();
+        VBox.setVgrow(navigationSpacer, Priority.ALWAYS);
+        Button moreButton = new Button("⋯");
+        moreButton.setMinSize(52, 42);
+        moreButton.setPrefSize(52, 42);
+        moreButton.setTooltip(new javafx.scene.control.Tooltip("More pages"));
+        moreButton.setStyle("-fx-background-color: transparent; -fx-text-fill: #9fc6dc; -fx-font-size: 20px; -fx-cursor: hand;");
+        javafx.scene.control.ContextMenu moreMenu = new javafx.scene.control.ContextMenu();
+        for (Page page : morePages) {
+            javafx.scene.control.MenuItem item = new javafx.scene.control.MenuItem(navigationText(page).replace("\n", "  "));
+            item.setOnAction(event -> navigate(page));
+            moreMenu.getItems().add(item);
         }
-        VBox moreItems = new VBox(3);
-        moreItems.setAlignment(Pos.TOP_CENTER);
-        for (Page page : morePages) moreItems.getChildren().add(navigationItem(page));
-        moreItems.setVisible(moreNavigationExpanded);
-        moreItems.managedProperty().bind(moreItems.visibleProperty());
-        Button moreToggle = new Button();
-        moreToggle.setMinSize(78, 30);
-        moreToggle.setPrefSize(78, 30);
-        Runnable styleMore = () -> {
-            moreToggle.setText((moreNavigationExpanded ? "▾ " : "▸ ") + "MORE");
-            moreToggle.setStyle("-fx-background-color: transparent; -fx-text-fill: #c9c6e6; -fx-font-size: 11px;"
-                    + " -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0;");
-        };
-        styleMore.run();
-        moreToggle.setOnAction(event -> {
-            moreNavigationExpanded = !moreNavigationExpanded;
-            moreItems.setVisible(moreNavigationExpanded);
-            styleMore.run();
-        });
-        navigation.getChildren().addAll(moreToggle, moreItems);
-        // In a short window the sidebar scrolls instead of pushing the whole layout past the window edges
-        // (the root centres its content, so an over-tall sidebar used to clip the header and the last items).
-        javafx.scene.control.ScrollPane navigationScroll = new javafx.scene.control.ScrollPane(navigation);
-        navigationScroll.setFitToWidth(true);
-        navigationScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        navigationScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        navigationScroll.setMinHeight(0);
-        navigationScroll.setPrefWidth(100);
-        navigationScroll.setMinWidth(100);
-        navigationScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-padding: 0;");
+        moreButton.setOnAction(event -> moreMenu.show(moreButton, javafx.geometry.Side.RIGHT, 0, 0));
+        navigation.getChildren().addAll(navigationSpacer, moreButton, navigationItem(Page.SETTINGS));
         layout.setMinSize(0, 0);
-        layout.setLeft(navigationScroll);
+        layout.setLeft(navigation);
         updateNavigationState();
         root.getChildren().add(layout);
         return root;
@@ -3868,20 +3983,19 @@ public final class LauncherApp extends Application {
     private Button navigationItem(Page page) {
         String[] parts = navigationText(page).split("\n", 2);
         Label glyph = new Label(parts[0]);
-        glyph.setMinSize(32, 24);
-        glyph.setPrefSize(32, 24);
-        glyph.setMaxSize(32, 24);
+        glyph.setMinSize(32, 26);
+        glyph.setPrefSize(32, 26);
+        glyph.setMaxSize(32, 26);
         glyph.setAlignment(Pos.CENTER);
-        Label caption = new Label(parts.length > 1 ? parts[1] : "");
-        caption.setAlignment(Pos.CENTER);
-        VBox stack = new VBox(3, glyph, caption);
+        VBox stack = new VBox(glyph);
         stack.setAlignment(Pos.CENTER);
         Button item = new Button();
         item.setGraphic(stack);
         item.setContentDisplay(javafx.scene.control.ContentDisplay.GRAPHIC_ONLY);
-        item.setMinSize(78, 50);
-        item.setPrefSize(78, 50);
-        item.setMaxSize(78, 50);
+        item.setMinSize(52, 46);
+        item.setPrefSize(52, 46);
+        item.setMaxSize(52, 46);
+        if (parts.length > 1) item.setTooltip(new javafx.scene.control.Tooltip(parts[1]));
         item.setOnAction(event -> navigate(page));
         item.setOnMouseEntered(event -> {
             hoveredPage = page;
@@ -3906,9 +4020,11 @@ public final class LauncherApp extends Application {
                     "Browse the web with DNS lookups sent over HTTPS (Cloudflare DoH).", BrowserPage::build);
             case PACKS -> showFeaturePage(Page.PACKS, "One click", "Mod Packs",
                     "PvP, FPS, SMP and Builder packs, installed in one click.", PacksPage::build);
+            case FPS_TEST -> showFeaturePage(Page.FPS_TEST, "FrostBoost", "❄ FPS Comparison",
+                    "Before and after, diagnostics, and proof that your settings are really applied.", BenchmarkPage::build);
             case PERFORMANCE -> showFeaturePage(Page.PERFORMANCE, "Performance", "FPS & PC analysis",
                     "How the game runs on your PC, and what to change to make it run better.", PerformancePage::build);
-            case RECORDINGS -> showFeaturePage(Page.RECORDINGS, "Capture", "Recordings",
+            case RECORDINGS -> showFeaturePage(Page.RECORDINGS, "Capture", "❄ Frozen Memories",
                     "Videos recorded while Minecraft runs are imported here automatically.", RecordingsPage::build);
             case SCREENSHOTS -> showFeaturePage(Page.SCREENSHOTS, "Capture", "Screenshots",
                     "Your in-game screenshots, picked up automatically.", ScreenshotsPage::build);
@@ -3931,15 +4047,14 @@ public final class LauncherApp extends Application {
         navigationButtons.forEach((page, item) -> {
             boolean selected = page == activePage;
             boolean hovered = page == hoveredPage;
-            String color = selected ? ACCENT : hovered ? "#f5f7fd" : "#a9a9cc";
+            String color = selected ? ACCENT : hovered ? "#f5f7fd" : "#9fc6dc";
             item.setStyle("-fx-background-color: " + (selected ? Theme.accentRgba(0.17)
                     : hovered ? "rgba(255, 255, 255, 0.07)" : "transparent")
                     + "; -fx-background-radius: 14; -fx-border-radius: 14; -fx-padding: 0; -fx-cursor: hand;"
                     + " -fx-border-color: " + (selected ? Theme.accentRgba(0.55) : "transparent") + "; -fx-border-width: 1;");
-            if (item.getGraphic() instanceof VBox stack && stack.getChildren().size() == 2) {
-                stack.getChildren().get(0).setStyle("-fx-font-size: 17px; -fx-font-family: 'Segoe UI Symbol', 'Segoe UI';"
+            if (item.getGraphic() instanceof VBox stack && !stack.getChildren().isEmpty()) {
+                stack.getChildren().get(0).setStyle("-fx-font-size: 20px; -fx-font-family: 'Segoe UI Symbol', 'Segoe UI';"
                         + " -fx-text-fill: " + color + ";");
-                stack.getChildren().get(1).setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
             }
         });
     }
@@ -3950,12 +4065,13 @@ public final class LauncherApp extends Application {
             case SERVERS -> "☰\nServers";
             case LIBRARY -> "▤\nLibrary";
             case MODS -> "✚\nMods";
-            case BOOST -> "ϟ\nBoost";
+            case BOOST -> "❄\nFrost";
             case BROWSER -> "◎\nBrowser";
             case PACKS -> "▦\nPacks";
+            case FPS_TEST -> "⇄\nCompare";
             case PERFORMANCE -> "◔\nFPS";
             case PROFILE -> "☺\nProfile";
-            case RECORDINGS -> "●\nClips";
+            case RECORDINGS -> "❄\nMemories";
             case SCREENSHOTS -> "▣\nShots";
             case ASSISTANT -> "?\nHelp";
             case WARDROBE -> "♧\nWardrobe";
@@ -4279,7 +4395,7 @@ public final class LauncherApp extends Application {
         boolean offline = settings.offlineMode();
         Button launchingButton = joinSmp ? singleplayerButton : playButton;
         playButton.setDisable(true);
-        playButton.setText(joinSmp ? "▶    PLAY" : "STARTING...");
+        playButton.setText(joinSmp ? "▶    LAUNCH" : "STARTING...");
         if (singleplayerButton != null) singleplayerButton.setDisable(true);
         if (joinSmp && launchingButton != null) {
             launchingButton.setText("CONNECTING...");
@@ -4297,6 +4413,12 @@ public final class LauncherApp extends Application {
         executor.execute(() -> {
             try {
                 Consumer<String> output = line -> Platform.runLater(() -> appendLog(line));
+                // Make sure the game starts with the launcher's own V-Client mod, not a copy left by an older run.
+                try {
+                    VClientModInstaller.ensureInstalled(settings.minecraftDirectory(), output);
+                } catch (IOException e) {
+                    output.accept("Could not refresh the V-Client mod before launching (is the game already open?): " + e.getMessage());
+                }
                 if (settings.replayBufferEnabled()) {
                     try {
                         if (GameOptionsFix.keepRunningWhenUnfocused(settings.minecraftDirectory())) {
@@ -4346,7 +4468,7 @@ public final class LauncherApp extends Application {
                 Platform.runLater(() -> {
                     if (playButton != null) {
                         playButton.setDisable(false);
-                        playButton.setText("▶    PLAY");
+                        playButton.setText("▶    LAUNCH");
                     }
                     if (singleplayerButton != null) {
                         singleplayerButton.setDisable(false);
@@ -4975,9 +5097,9 @@ public final class LauncherApp extends Application {
             }
 
             private void updateCellStyle() {
-                String background = isSelected() ? "#34305a" : isHover() ? "#292642" : "#14142d";
+                String background = isSelected() ? "#1e4260" : isHover() ? "#11263D" : "#0c2036";
                 setStyle("-fx-background-color: " + background + "; -fx-padding: 8 10 8 10; -fx-font-size: 14px;");
-                setTextFill(Color.web(isSelected() ? "#ffffff" : "#f3f0ff"));
+                setTextFill(Color.web(isSelected() ? "#ffffff" : "#eaf9ff"));
             }
         };
     }
@@ -4985,7 +5107,7 @@ public final class LauncherApp extends Application {
     private static VBox card() {
         VBox box = new VBox(14);
         box.setPadding(new Insets(20));
-        box.setStyle("-fx-background-color: rgba(15, 16, 39, 0.84); -fx-background-radius: 12; -fx-border-color: rgba(170, 151, 207, 0.24); -fx-border-radius: 12;");
+        box.setStyle("-fx-background-color: rgba(17, 38, 61, 0.84); -fx-background-radius: 12; -fx-border-color: rgba(124, 235, 255, 0.24); -fx-border-radius: 12;");
         return box;
     }
 
@@ -5002,14 +5124,14 @@ public final class LauncherApp extends Application {
 
     private static Button button(String text, String color, int size) {
         Button button = new Button(text);
-        String foreground = color.equalsIgnoreCase(ACCENT) ? "#171326" : "#f3f0ff";
+        String foreground = color.equalsIgnoreCase(ACCENT) ? "#071321" : "#eaf9ff";
         button.setStyle("-fx-background-color: " + color + "; -fx-text-fill: " + foreground + "; -fx-font-size: " + readableSize(size)
                 + "px; -fx-font-weight: bold; -fx-background-radius: 9; -fx-padding: 12 18 12 18; -fx-cursor: hand;");
         return button;
     }
 
     private static String fieldStyle() {
-        return "-fx-background-color: rgba(9, 10, 28, 0.88); -fx-text-fill: #e6e1f4; -fx-border-color: #48415f; -fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 12;";
+        return "-fx-background-color: rgba(7, 19, 33, 0.88); -fx-text-fill: #e6e1f4; -fx-border-color: #2a4d6e; -fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 12;";
     }
 
     private static Region dot(String color) {
@@ -5020,17 +5142,108 @@ public final class LauncherApp extends Application {
         return dot;
     }
 
+    /** The home banner artwork: a polar night, aurora, towering glaciers and a large ice crystal. */
+    private static void drawHeroArt(Canvas canvas) {
+        double width = canvas.getWidth();
+        double height = canvas.getHeight();
+        GraphicsContext g = canvas.getGraphicsContext2D();
+        g.setFill(new javafx.scene.paint.LinearGradient(0, 0, 0, height, false, javafx.scene.paint.CycleMethod.NO_CYCLE,
+                new javafx.scene.paint.Stop(0, Color.web("#050f1c")), new javafx.scene.paint.Stop(0.6, Color.web("#0b2540")),
+                new javafx.scene.paint.Stop(1, Color.web("#12395a"))));
+        g.fillRect(0, 0, width, height);
+        int[][] ribbons = {{0, 207, 255}, {92, 255, 200}, {124, 235, 255}};
+        for (int ribbon = 0; ribbon < ribbons.length; ribbon++) {
+            int[] c = ribbons[ribbon];
+            for (double x = 0; x < width; x += 5) {
+                double top = height * (0.08 + ribbon * 0.07) + Math.sin(x * 0.007 + ribbon * 1.8) * 30 + Math.sin(x * 0.019 + ribbon) * 10;
+                double strength = 0.5 + 0.5 * Math.sin(x * 0.003 + ribbon * 2.1);
+                g.setFill(new javafx.scene.paint.LinearGradient(0, top, 0, top + height * 0.5, false,
+                        javafx.scene.paint.CycleMethod.NO_CYCLE,
+                        new javafx.scene.paint.Stop(0, Color.rgb(c[0], c[1], c[2], 0)),
+                        new javafx.scene.paint.Stop(0.25, Color.rgb(c[0], c[1], c[2], 0.20 * (0.4 + strength))),
+                        new javafx.scene.paint.Stop(1, Color.rgb(c[0], c[1], c[2], 0))));
+                g.fillRect(x, top, 5.5, height * 0.5);
+            }
+        }
+        // Glacier ridges with lit faces.
+        g.setFill(Color.rgb(16, 52, 84, 0.95));
+        g.fillPolygon(new double[]{0, 0, width * 0.12, width * 0.22, width * 0.34, width * 0.46, width * 0.6, width * 0.74,
+                        width * 0.86, width * 0.94, width, width},
+                new double[]{height, height * 0.72, height * 0.55, height * 0.70, height * 0.50, height * 0.72,
+                        height * 0.62, height * 0.78, height * 0.56, height * 0.70, height * 0.64, height}, 12);
+        g.setFill(Color.rgb(190, 240, 255, 0.13));
+        g.fillPolygon(new double[]{width * 0.12, width * 0.22, width * 0.16}, new double[]{height * 0.55, height * 0.70, height * 0.72}, 3);
+        g.fillPolygon(new double[]{width * 0.34, width * 0.46, width * 0.38}, new double[]{height * 0.50, height * 0.72, height * 0.74}, 3);
+        g.setFill(Color.rgb(8, 30, 52, 0.96));
+        g.fillPolygon(new double[]{0, width * 0.15, width * 0.3, width * 0.5, width * 0.7, width * 0.88, width, width},
+                new double[]{height, height * 0.86, height * 0.80, height * 0.88, height * 0.78, height * 0.86, height * 0.82, height}, 8);
+        // A large ice crystal on the right, a smaller one on the left.
+        crystal(g, width * 0.82, height * 0.40, Math.min(width, height * 2.6) * 0.11);
+        crystal(g, width * 0.13, height * 0.30, Math.min(width, height * 2.6) * 0.06);
+        // Snow in the air.
+        java.util.Random random = new java.util.Random(11);
+        for (int index = 0; index < 120; index++) {
+            g.setFill(Color.rgb(226, 247, 255, 0.25 + random.nextDouble() * 0.5));
+            double size = 1 + random.nextDouble() * 2.6;
+            g.fillOval(random.nextDouble() * width, random.nextDouble() * height, size, size);
+        }
+        // Darken the centre so the LAUNCH button stays readable.
+        g.setFill(new javafx.scene.paint.RadialGradient(0, 0, width / 2, height / 2, width * 0.28, false,
+                javafx.scene.paint.CycleMethod.NO_CYCLE, new javafx.scene.paint.Stop(0, Color.rgb(5, 15, 28, 0.55)),
+                new javafx.scene.paint.Stop(1, Color.rgb(5, 15, 28, 0))));
+        g.fillRect(0, 0, width, height);
+    }
+
+    private static void crystal(GraphicsContext g, double cx, double cy, double size) {
+        g.setStroke(Color.web("#B8F4FF", 0.9));
+        g.setFill(Color.rgb(124, 235, 255, 0.10));
+        g.setLineWidth(Math.max(2, size * 0.07));
+        g.setLineCap(javafx.scene.shape.StrokeLineCap.ROUND);
+        g.fillOval(cx - size, cy - size, size * 2, size * 2);
+        for (int index = 0; index < 6; index++) {
+            double angle = Math.toRadians(index * 60 - 90);
+            double dx = Math.cos(angle);
+            double dy = Math.sin(angle);
+            g.strokeLine(cx, cy, cx + dx * size, cy + dy * size);
+            double bx = cx + dx * size * 0.62;
+            double by = cy + dy * size * 0.62;
+            for (int side = -1; side <= 1; side += 2) {
+                double branch = angle + side * Math.toRadians(50);
+                g.strokeLine(bx, by, bx + Math.cos(branch) * size * 0.32, by + Math.sin(branch) * size * 0.32);
+            }
+        }
+        g.setFill(Color.web("#00CFFF"));
+        g.fillOval(cx - size * 0.06, cy - size * 0.06, size * 0.12, size * 0.12);
+    }
+
+    /** The VSMP mark: a six-armed snowflake crystal on a frosted tile. */
     private static Canvas logo(double size) {
         Canvas canvas = new Canvas(size, size);
         GraphicsContext graphics = canvas.getGraphicsContext2D();
-        graphics.setFill(Color.web(ACCENT));
+        graphics.setFill(Color.web("#0c2036"));
         graphics.fillRoundRect(0, 0, size, size, size * 0.27, size * 0.27);
-        graphics.setFill(Color.web("#171326"));
-        graphics.fillPolygon(new double[]{size * .57, size * .35, size * .35, size * .57},
-                new double[]{size * .19, size * .38, size * .57, size * .45}, 4);
-        graphics.setFill(Color.web("#fff0bd"));
-        graphics.fillPolygon(new double[]{size * .57, size * .35, size * .57},
-                new double[]{size * .54, size * .72, size * .68}, 3);
+        graphics.setStroke(Color.web(ACCENT, 0.55));
+        graphics.setLineWidth(Math.max(1, size * 0.03));
+        graphics.strokeRoundRect(size * 0.015, size * 0.015, size * 0.97, size * 0.97, size * 0.27, size * 0.27);
+        double centre = size / 2;
+        double arm = size * 0.34;
+        graphics.setStroke(Color.web("#B8F4FF"));
+        graphics.setLineWidth(Math.max(1.4, size * 0.06));
+        graphics.setLineCap(javafx.scene.shape.StrokeLineCap.ROUND);
+        for (int index = 0; index < 6; index++) {
+            double angle = Math.toRadians(index * 60 - 90);
+            double dx = Math.cos(angle);
+            double dy = Math.sin(angle);
+            graphics.strokeLine(centre, centre, centre + dx * arm, centre + dy * arm);
+            double bx = centre + dx * arm * 0.62;
+            double by = centre + dy * arm * 0.62;
+            for (int side = -1; side <= 1; side += 2) {
+                double branch = angle + side * Math.toRadians(50);
+                graphics.strokeLine(bx, by, bx + Math.cos(branch) * arm * 0.3, by + Math.sin(branch) * arm * 0.3);
+            }
+        }
+        graphics.setFill(Color.web(ACCENT));
+        graphics.fillOval(centre - size * 0.045, centre - size * 0.045, size * 0.09, size * 0.09);
         return canvas;
     }
 
@@ -5039,19 +5252,20 @@ public final class LauncherApp extends Application {
         return canvas.snapshot(null, null);
     }
 
-    private record BackgroundStar(double x, double y, double size, double phase, double drift) {}
+    private record Snowflake(double x, double y, double size, double phase, double speed, double sway) {}
 
-    private static List<BackgroundStar> createBackgroundStars() {
+    private static List<Snowflake> createSnowflakes() {
         Random random = new Random(731921);
-        List<BackgroundStar> stars = new ArrayList<>(180);
-        for (int index = 0; index < 180; index++) {
-            stars.add(new BackgroundStar(random.nextDouble(), random.nextDouble(),
-                    1 + random.nextInt(3), random.nextDouble() * Math.PI * 2,
-                    0.0003 + random.nextDouble() * 0.0011));
+        List<Snowflake> flakes = new ArrayList<>(170);
+        for (int index = 0; index < 170; index++) {
+            double depth = random.nextDouble();
+            flakes.add(new Snowflake(random.nextDouble(), random.nextDouble(), 1.2 + depth * 3.2,
+                    random.nextDouble() * Math.PI * 2, 0.012 + depth * 0.035, 0.4 + random.nextDouble() * 1.1));
         }
-        return List.copyOf(stars);
+        return List.copyOf(flakes);
     }
 
+    /** The launcher backdrop: a dark polar sky with a drifting aurora, falling snow and glacier ridges. */
     private void drawNightSky(Canvas canvas, double time) {
         double width = canvas.getWidth();
         double height = canvas.getHeight();
@@ -5060,61 +5274,61 @@ public final class LauncherApp extends Application {
         graphics.setFill(Color.web(BACKGROUND));
         graphics.fillRect(0, 0, width, height);
 
-        double moonX = width * 0.76;
-        double moonY = height * 0.31;
-        double moonRadius = Math.max(38, Math.min(width * 0.09, height * 0.15));
-        for (int layer = 12; layer >= 1; layer--) {
-            double glowRadius = moonRadius * (1.0 + layer * 0.17);
-            double opacity = 0.008 + (12 - layer) * 0.003;
-            graphics.setFill(Color.rgb(Theme.glow()[0], Theme.glow()[1], Theme.glow()[2], opacity));
-            graphics.fillOval(moonX - glowRadius, moonY - glowRadius,
-                    glowRadius * 2, glowRadius * 2);
-        }
-        graphics.setFill(Color.rgb(230, 218, 168, 0.95));
-        graphics.fillOval(moonX - moonRadius, moonY - moonRadius,
-                moonRadius * 2, moonRadius * 2);
-        graphics.setFill(Color.rgb(15, 15, 40));
-        graphics.fillOval(moonX - moonRadius * 0.18, moonY - moonRadius * 1.10,
-                moonRadius * 1.86, moonRadius * 1.86);
-
-        double dotSpacing = Math.max(7, moonRadius * 0.17);
-        for (double y = moonY - moonRadius * 2.2; y <= moonY + moonRadius * 2.2; y += dotSpacing) {
-            for (double x = moonX - moonRadius * 2.2; x <= moonX + moonRadius * 2.2; x += dotSpacing) {
-                double distance = Math.hypot(x - moonX, y - moonY) / moonRadius;
-                if (distance < 1.18 || distance > 2.15) continue;
-                double opacity = (2.15 - distance) * 0.14;
-                graphics.setFill(Color.rgb(Math.min(255, Theme.glow()[0] + 42), Math.min(255, Theme.glow()[1] + 44), Math.min(255, Theme.glow()[2] + 28), opacity));
-                graphics.fillRect(x, y, Math.max(2, dotSpacing * 0.42), Math.max(2, dotSpacing * 0.42));
+        // Aurora Borealis: three slow ribbons built from soft vertical bands that fade downward.
+        int[][] ribbons = {{0, 207, 255}, {92, 255, 200}, {124, 235, 255}};
+        for (int ribbon = 0; ribbon < ribbons.length; ribbon++) {
+            int[] colour = ribbons[ribbon];
+            double base = height * (0.10 + ribbon * 0.085);
+            for (double x = 0; x < width; x += 6) {
+                double wave = Math.sin(x * 0.0042 + time * 0.35 + ribbon * 1.7) * 38
+                        + Math.sin(x * 0.011 - time * 0.22 + ribbon) * 14;
+                double strength = 0.5 + 0.5 * Math.sin(x * 0.0021 + time * 0.18 + ribbon * 2.3);
+                double top = base + wave;
+                double bandHeight = height * 0.24;
+                double peak = Math.min(0.22, 0.10 * (0.45 + strength));
+                // One smooth vertical gradient per strip: clear at the top, brightest near the top third, fading out.
+                graphics.setFill(new javafx.scene.paint.LinearGradient(0, top, 0, top + bandHeight, false,
+                        javafx.scene.paint.CycleMethod.NO_CYCLE,
+                        new javafx.scene.paint.Stop(0, Color.rgb(colour[0], colour[1], colour[2], 0)),
+                        new javafx.scene.paint.Stop(0.28, Color.rgb(colour[0], colour[1], colour[2], peak)),
+                        new javafx.scene.paint.Stop(1, Color.rgb(colour[0], colour[1], colour[2], 0))));
+                graphics.fillRect(x, top, 6.5, bandHeight);
             }
         }
 
-        for (BackgroundStar star : backgroundStars) {
-            double x = (star.x() + time * star.drift()) % 1.0 * width;
-            double y = star.y() * height;
-            double twinkle = 0.42 + 0.58 * (0.5 + 0.5 * Math.sin(time * 1.8 + star.phase()));
-            graphics.setFill(Color.rgb(234, 225, 190, twinkle));
-            graphics.fillRect(x, y, star.size(), star.size());
+        // A cold glow low on the horizon, in the theme's accent.
+        int[] glow = Theme.glow();
+        for (int layer = 10; layer >= 1; layer--) {
+            graphics.setFill(Color.rgb(glow[0], glow[1], glow[2], 0.006 + (10 - layer) * 0.0016));
+            double radius = width * (0.18 + layer * 0.045);
+            graphics.fillOval(width * 0.5 - radius, height * 1.02 - radius * 0.55, radius * 2, radius * 1.1);
         }
 
-        double cometPhase = (time % 13.0) / 13.0;
-        if (cometPhase < 0.09) {
-            double x = width * (0.23 + cometPhase * 5.2);
-            double y = height * (0.13 + cometPhase * 1.7);
-            graphics.setStroke(Color.rgb(235, 220, 176, (0.09 - cometPhase) * 8));
-            graphics.setLineWidth(2);
-            graphics.strokeLine(x - 42, y - 15, x, y);
-        }
+        // Glacier ridges.
+        graphics.setFill(Color.rgb(14, 40, 66, 0.80));
+        graphics.fillPolygon(new double[]{0, 0, width * 0.10, width * 0.19, width * 0.30, width * 0.43,
+                        width * 0.56, width * 0.69, width * 0.82, width * 0.92, width, width},
+                new double[]{height, height * 0.80, height * 0.70, height * 0.79, height * 0.66, height * 0.80,
+                        height * 0.72, height * 0.83, height * 0.68, height * 0.78, height * 0.74, height}, 12);
+        graphics.setFill(Color.rgb(190, 240, 255, 0.10));
+        graphics.fillPolygon(new double[]{width * 0.27, width * 0.30, width * 0.33, width * 0.30},
+                new double[]{height * 0.70, height * 0.66, height * 0.71, height * 0.73}, 4);
+        graphics.setFill(Color.rgb(8, 26, 46, 0.88));
+        graphics.fillPolygon(new double[]{0, width * 0.14, width * 0.27, width * 0.41, width * 0.54,
+                        width * 0.68, width * 0.80, width * 0.93, width, width},
+                new double[]{height, height * 0.91, height * 0.86, height * 0.93, height * 0.84,
+                        height * 0.92, height * 0.87, height * 0.93, height * 0.90, height}, 10);
 
-        graphics.setFill(Color.rgb(12, 13, 34, 0.72));
-        graphics.fillPolygon(new double[]{0, 0, width * 0.15, width * 0.27, width * 0.42,
-                        width * 0.55, width * 0.68, width * 0.84, width, width},
-                new double[]{height, height * 0.82, height * 0.77, height * 0.86, height * 0.79,
-                        height * 0.88, height * 0.78, height * 0.85, height * 0.76, height}, 10);
-        graphics.setFill(Color.rgb(8, 10, 26, 0.78));
-        graphics.fillPolygon(new double[]{0, width * 0.12, width * 0.24, width * 0.38,
-                        width * 0.5, width * 0.63, width * 0.76, width * 0.9, width, width},
-                new double[]{height, height * 0.9, height * 0.94, height * 0.85,
-                        height * 0.94, height * 0.86, height * 0.93, height * 0.86, height * 0.92, height}, 10);
+        // Snowfall: nearer flakes are bigger and fall faster; everything leans with a gentle wind.
+        for (Snowflake flake : snowflakes) {
+            double fall = (flake.y() + time * flake.speed()) % 1.0;
+            double drift = Math.sin(time * 0.6 * flake.sway() + flake.phase()) * 0.012 + time * 0.0035;
+            double x = ((flake.x() + drift) % 1.0 + 1.0) % 1.0 * width;
+            double y = fall * height;
+            double twinkle = 0.55 + 0.45 * Math.sin(time * 1.4 + flake.phase());
+            graphics.setFill(Color.rgb(226, 247, 255, 0.35 + 0.5 * twinkle * Math.min(1, flake.size() / 3.0)));
+            graphics.fillOval(x, y, flake.size(), flake.size());
+        }
     }
 
     @Override

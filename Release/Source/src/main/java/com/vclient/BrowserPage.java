@@ -57,7 +57,7 @@ final class BrowserPage {
             title.setMaxWidth(Double.MAX_VALUE);
             title.setTextOverrun(javafx.scene.control.OverrunStyle.ELLIPSIS);
             HBox.setHgrow(title, Priority.ALWAYS);
-            close.setStyle("-fx-background-color: transparent; -fx-text-fill: #a9a9cc; -fx-font-size: 10px;"
+            close.setStyle("-fx-background-color: transparent; -fx-text-fill: #9fc6dc; -fx-font-size: 10px;"
                     + " -fx-padding: 2 5 2 5; -fx-cursor: hand; -fx-background-radius: 6;");
             close.setOnAction(event -> closeTab(this));
             header.setAlignment(Pos.CENTER_LEFT);
@@ -280,7 +280,7 @@ final class BrowserPage {
             each.content.setActive(active);
             each.header.setStyle("-fx-background-radius: 10; -fx-cursor: hand; -fx-background-color: "
                     + (active ? Theme.accentRgba(0.28) : "rgba(255,255,255,0.06)") + ";");
-            each.title.setStyle("-fx-text-fill: " + (active ? "#f5f7fd" : "#a9a9cc")
+            each.title.setStyle("-fx-text-fill: " + (active ? "#f5f7fd" : "#9fc6dc")
                     + "; -fx-font-size: 12px; -fx-font-weight: " + (active ? "bold" : "normal") + ";");
         }
         String location = tab.content.locationProperty().get();
