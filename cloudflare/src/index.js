@@ -6,6 +6,28 @@ const PLATFORMS = new Set(['windows', 'android']);
 const LEVELS = new Set(['info', 'success', 'warning', 'danger']);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+
+// The newest published launcher (mirror of website/update.json, served to launchers that cannot read the website).
+const LATEST_RELEASE = {
+  version: '1.7.2',
+  notes: '1.7.2: new VSMP snowflake app icon, on top of the 1.7 ice theme, skin sharing and link fixes.',
+  mandatory: false,
+  size: 95457792,
+  sha256: 'f3fc0ed3bfc445656a0f76538470da23a3fbbc77b993dc3ec9c3e634c490d106',
+  url: 'https://izyrn.github.io/V-client/VSMPClientSetup.exe',
+};
+
+/** Compares dotted version numbers: positive when a is newer than b. */
+function compareVersions(a, b) {
+  const left = String(a).split(/[.\-+]/).map((part) => parseInt(part, 10) || 0);
+  const right = String(b).split(/[.\-+]/).map((part) => parseInt(part, 10) || 0);
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    const l = left[i] || 0;
+    const r = right[i] || 0;
+    if (l !== r) return l > r ? 1 : -1;
+  }
+  return 0;
+}
 const json = (data, status = 200, headers = {}) => new Response(JSON.stringify(data), {
   status,
   headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers },
@@ -154,7 +176,11 @@ async function route(request, env, ctx) {
   // The launcher's news page and update check fall back gracefully; updates are read from the website's update.json.
   if (method === 'GET' && path === '/api/news') return json({ items: [] });
   if (method === 'GET' && path === '/api/launcher/update') {
-    return json({ updateAvailable: false, mandatory: false, current: String(url.searchParams.get('current') || ''), latest: null });
+    // Launchers built before the website moved cannot reach the old update.json address and ask here instead.
+    // Keep LATEST_RELEASE in step with website/update.json whenever a release is published.
+    const current = String(url.searchParams.get('current') || '');
+    const newer = current !== '' && compareVersions(LATEST_RELEASE.version, current) > 0;
+    return json({ updateAvailable: newer, mandatory: false, current, latest: LATEST_RELEASE });
   }
 
   if (method === 'POST' && path === '/api/stats/event') {

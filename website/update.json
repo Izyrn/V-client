@@ -1,10 +1,10 @@
 {
-    "version":  "1.7.1",
+    "version":  "1.7.2",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "6a825dafb5de7b32ab041448e9bafa0ca01ec61777425dc89696e37e1068aec3",
-    "size":  95141888,
-    "notes":  "1.7.1: links such as Discord now open through V-Client\u0027s secure DNS when your network blocks them, and updates and the website moved to the new address.",
+    "sha256":  "f3fc0ed3bfc445656a0f76538470da23a3fbbc77b993dc3ec9c3e634c490d106",
+    "size":  95457792,
+    "notes":  "1.7.2: a new VSMP snowflake app icon.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-17T15:05:25.2199144Z"
+    "publishedAt":  "2026-11-17T16:01:20.0483703Z"
 }
