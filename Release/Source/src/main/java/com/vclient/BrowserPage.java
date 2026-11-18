@@ -379,22 +379,18 @@ final class BrowserPage {
     private void openInRealBrowser(String target) {
         String url = target != null ? target : selected == null ? "" : selected.content.locationProperty().get();
         if (url == null || !url.matches("(?i)https?://.+")) url = HOME;
-        java.nio.file.Path exe = ChromiumHost.findChromium();
-        if (exe == null) {
-            status.setText("Microsoft Edge or Google Chrome was not found on this PC.");
-            return;
-        }
-        try {
-            java.nio.file.Path profile = java.nio.file.Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-                    "V-Client", "browser-real");
-            java.nio.file.Files.createDirectories(profile);
-            new ProcessBuilder(exe.toString(), "--user-data-dir=" + profile,
-                    "--proxy-server=http://127.0.0.1:" + DohProxy.shared().port(), "--no-first-run", "--new-window", url)
-                    .redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD).start();
-            status.setText("Opened in " + exe.getFileName() + ".");
-        } catch (IOException e) {
-            status.setText("Could not open the browser: " + e.getMessage());
-        }
+        String openUrl = url;
+        Thread worker = new Thread(() -> {
+            try {
+                boolean opened = ExternalLinks.openProxied(openUrl);
+                Platform.runLater(() -> status.setText(opened ? "Opened in a real Edge/Chrome window."
+                        : "Microsoft Edge or Google Chrome was not found on this PC."));
+            } catch (IOException e) {
+                Platform.runLater(() -> status.setText("Could not open the browser: " + e.getMessage()));
+            }
+        }, "open-real-browser");
+        worker.setDaemon(true);
+        worker.start();
     }
 
     private void toggleFullscreen() {

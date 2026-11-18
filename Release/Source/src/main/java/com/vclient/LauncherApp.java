@@ -2713,18 +2713,15 @@ public final class LauncherApp extends Application {
         dialog.show();
     }
 
-    private static final java.time.LocalDate LAUNCH_DATE = java.time.LocalDate.of(2026, 11, 10);
 
     /** The built-in launch-event notice: always shown, needs no backend. */
     private VBox launchEventBanner() {
-        long days = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(), LAUNCH_DATE);
-        String countdown = days > 1 ? days + " DAYS TO GO" : days == 1 ? "TOMORROW" : days == 0 ? "TODAY" : "LIVE NOW";
-        Label tag = label("NEWS  ·  EVENT  ·  " + countdown, 10, "#B8F4FF");
+        Label tag = label("NEWS  ·  SHOUTOUT  ·  LIVE NOW", 10, "#B8F4FF");
         tag.setStyle(tag.getStyle() + "-fx-font-weight: bold; -fx-letter-spacing: 2;");
-        Label headline = label("EVENT! We are launching V-Client on the 10th of November 2026", 16, "#f3f6fc");
-        headline.setStyle(headline.getStyle() + "-fx-font-weight: bold;");
+        Label headline = label("Senpai_🔥🥶 The Goat!!!", 16, "#f3f6fc");
+        headline.setStyle(headline.getStyle() + "-fx-font-weight: bold; -fx-font-family: 'Segoe UI Emoji', 'Segoe UI';");
         headline.setWrapText(true);
-        Label detail = label("Exclusive launch-event capes, wings, hats, trails and emotes unlock that day in the Cosmetics menu.", 12, "#c9d3e6");
+        Label detail = label("Anime capes (animated and still), new trails and more are in the Cosmetics menu until 31 December.", 12, "#c9d3e6");
         detail.setWrapText(true);
         VBox box = new VBox(6, tag, headline, detail);
         box.setPadding(new Insets(16, 20, 16, 20));

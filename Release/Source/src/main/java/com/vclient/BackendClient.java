@@ -123,24 +123,76 @@ final class BackendClient {
         return parseStatus(root);
     }
 
-    /** The website on GitHub Pages: its update.json and installer are published by every push to main. */
-    static final String SITE_URL = "https://izyrn.github.io/V-client";
+    /**
+     * Every place a launcher looks for updates. Any one of them being reachable is enough, and the newest release any
+     * of them reports wins, so a moved website, a dead mirror or a backend that was not redeployed can never leave an
+     * installed launcher without updates. NEVER remove an address from this list: launchers already installed only
+     * know the addresses they were built with, so the newest build must keep every older address too.
+     */
+    static final List<String> SITE_URLS = List.of(
+            "https://izyrn.github.io/V-client",
+            "https://eliteprofast.github.io/V-client");
+
+    /** The primary website (kept for links and tests). */
+    static final String SITE_URL = SITE_URLS.getFirst();
 
     /**
-     * Reads the release from the website's update.json (GitHub Pages) first, and only asks the backend when the site
-     * cannot be reached, so updates do not depend on a separately hosted server.
+     * Asks the backend and every website mirror at the same time (a few seconds at most) and returns the newest
+     * release any of them knows. Fails only when none of them could be reached.
      */
     UpdateInfo checkForUpdate(String currentVersion) throws IOException, InterruptedException {
-        try {
-            return checkSiteForUpdate(currentVersion);
-        } catch (IOException | RuntimeException e) {
-            requestLog.accept("Update check via website failed (" + e.getMessage() + "); asking the backend");
+        List<java.util.concurrent.Callable<UpdateInfo>> sources = new ArrayList<>();
+        sources.add(() -> checkBackendForUpdate(currentVersion));
+        for (String site : SITE_URLS) sources.add(() -> checkSiteForUpdate(site, currentVersion));
+
+        List<UpdateInfo> answers = new ArrayList<>();
+        List<String> failures = new ArrayList<>();
+        try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            List<java.util.concurrent.Future<UpdateInfo>> futures = new ArrayList<>();
+            for (var source : sources) futures.add(executor.submit(source));
+            for (int i = 0; i < futures.size(); i++) {
+                try {
+                    answers.add(futures.get(i).get(20, java.util.concurrent.TimeUnit.SECONDS));
+                } catch (java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException e) {
+                    Throwable cause = e.getCause() == null ? e : e.getCause();
+                    failures.add((i == 0 ? "backend" : SITE_URLS.get(i - 1)) + ": " + cause.getMessage());
+                    futures.get(i).cancel(true);
+                }
+            }
         }
-        return checkBackendForUpdate(currentVersion);
+        for (String failure : failures) requestLog.accept("Update source unavailable (" + failure + ")");
+        UpdateInfo best = chooseNewest(answers, currentVersion);
+        if (best == null) throw new IOException("No update source could be reached (" + String.join("; ", failures) + ")");
+        return best;
     }
 
-    private UpdateInfo checkSiteForUpdate(String currentVersion) throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(SITE_URL + "/update.json?t=" + System.currentTimeMillis()))
+    /**
+     * Picks the answer with the highest release version. An answer that names no release (a backend that does not
+     * know the latest one yet) never beats one that does. Availability is recomputed against the running version so
+     * a stale source cannot hide a newer release found elsewhere.
+     */
+    static UpdateInfo chooseNewest(List<UpdateInfo> answers, String currentVersion) {
+        UpdateInfo best = null;
+        for (UpdateInfo answer : answers) {
+            if (answer == null) continue;
+            if (best == null) {
+                best = answer;
+                continue;
+            }
+            boolean bestHasRelease = best.latest() != null && !best.latest().version().isBlank();
+            boolean answerHasRelease = answer.latest() != null && !answer.latest().version().isBlank();
+            if (answerHasRelease && (!bestHasRelease
+                    || UpdateService.isNewer(answer.latest().version(), best.latest().version()))) {
+                best = answer;
+            }
+        }
+        if (best == null || best.latest() == null || best.latest().version().isBlank()) return best;
+        boolean newer = UpdateService.isNewer(best.latest().version(), currentVersion);
+        return new UpdateInfo(newer, best.mandatory(), best.latest());
+    }
+
+    private UpdateInfo checkSiteForUpdate(String siteUrl, String currentVersion) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(siteUrl + "/update.json?t=" + System.currentTimeMillis()))
                 .timeout(Duration.ofSeconds(15)).header("Accept", "application/json")
                 .header("User-Agent", "V-Client/" + AppInfo.VERSION + " (" + AppInfo.PLATFORM + ")").GET().build();
         HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
@@ -149,7 +201,7 @@ final class BackendClient {
         String version = root.path("version").asText("");
         if (version.isBlank()) throw new IOException("update.json has no version");
         String url = root.path("url").asText("");
-        if (!url.isEmpty() && !url.startsWith("http")) url = SITE_URL + (url.startsWith("/") ? "" : "/") + url;
+        if (!url.isEmpty() && !url.startsWith("http")) url = siteUrl + (url.startsWith("/") ? "" : "/") + url;
         boolean mandatory = root.path("mandatory").asBoolean();
         Release release = new Release(version, root.path("notes").asText(""), mandatory, root.path("size").asLong(),
                 root.path("sha256").asText(""), url);

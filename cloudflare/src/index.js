@@ -9,11 +9,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // The newest published launcher (mirror of website/update.json, served to launchers that cannot read the website).
 const LATEST_RELEASE = {
-  version: '1.7.2',
-  notes: '1.7.2: new VSMP snowflake app icon, on top of the 1.7 ice theme, skin sharing and link fixes.',
+  version: '1.7.3',
+  notes: '1.7.3: anime event capes (animated and still), 8 new trails and frost cosmetics, a safer in-app Edge window, and more reliable update checks.',
   mandatory: false,
-  size: 95457792,
-  sha256: 'f3fc0ed3bfc445656a0f76538470da23a3fbbc77b993dc3ec9c3e634c490d106',
+  size: 95481344,
+  sha256: '89176395229d1ad80952671b1b55d95fcb0e4abaa3204a30c50c76ad74a6926f',
   url: 'https://izyrn.github.io/V-client/VSMPClientSetup.exe',
 };
 

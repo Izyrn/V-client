@@ -53,4 +53,22 @@ $update = [ordered]@{
 $updateJson = ($update | ConvertTo-Json) + [Environment]::NewLine
 [System.IO.File]::WriteAllText((Join-Path $repoRoot "website/update.json"), $updateJson, (New-Object System.Text.UTF8Encoding($false)))
 
+# Keep the Cloudflare Worker's built-in "latest release" in step with update.json. Launchers that cannot read the
+# website ask the Worker instead, so a release that skips this would leave them without the update.
+$worker = Join-Path $repoRoot "cloudflare/src/index.js"
+if (Test-Path $worker) {
+    $text = [System.IO.File]::ReadAllText($worker)
+    $block = [regex]::Match($text, "const LATEST_RELEASE = \{.*?\n\};", [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    if (-not $block.Success) { throw "cloudflare/src/index.js has no LATEST_RELEASE block to update." }
+    $safeNotes = $notes.Replace("\", "\\").Replace("'", "\'")
+    $newBlock = $block.Value
+    $newBlock = [regex]::Replace($newBlock, "version: '[^']*'", "version: '$version'")
+    $newBlock = [regex]::Replace($newBlock, "notes: '(?:[^'\\]|\\.)*'", { param($m) "notes: '$safeNotes'" })
+    $newBlock = [regex]::Replace($newBlock, "size: \d+", "size: $($update.size)")
+    $newBlock = [regex]::Replace($newBlock, "sha256: '[^']*'", "sha256: '$($update.sha256)'")
+    $text = $text.Replace($block.Value, $newBlock)
+    [System.IO.File]::WriteAllText($worker, $text, (New-Object System.Text.UTF8Encoding($false)))
+    Write-Host "Updated the Worker's latest release to $version. Deploy it (cd cloudflare; npx wrangler deploy), then run tools/check-update-path.ps1."
+}
+
 Write-Host "Standalone installer ready: $output ($version)"

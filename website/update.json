@@ -1,10 +1,10 @@
 {
-    "version":  "1.7.2",
+    "version":  "1.7.3",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "f3fc0ed3bfc445656a0f76538470da23a3fbbc77b993dc3ec9c3e634c490d106",
-    "size":  95457792,
-    "notes":  "1.7.2: a new VSMP snowflake app icon.",
+    "sha256":  "89176395229d1ad80952671b1b55d95fcb0e4abaa3204a30c50c76ad74a6926f",
+    "size":  95481344,
+    "notes":  "1.7.3: anime event capes (animated and still), 8 new trails and frost cosmetics, a safer in-app Edge window, and more reliable update checks.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-17T16:01:20.0483703Z"
+    "publishedAt":  "2026-11-18T14:41:53.3388567Z"
 }

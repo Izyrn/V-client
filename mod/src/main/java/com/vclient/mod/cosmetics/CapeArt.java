@@ -69,6 +69,8 @@ final class CapeArt {
     static boolean handles(String type) {
         return switch (type) {
             case "ramadan", "ramadan_animated", "aurora", "starfield" -> true;
+            case "goku_gi", "goku_ssj", "kamehameha", "ultra_instinct", "sakura_drift", "sakura_fall", "shonen_flame",
+                 "scout_cloak" -> true;
             default -> false;
         };
     }
@@ -89,7 +91,7 @@ final class CapeArt {
                     u = Math.floorMod((int) Math.floor(u * 4), 40) / 4.0;
                     v = Math.floorMod((int) Math.floor(v * 4), 64) / 4.0;
                 }
-                double[] rgb = switch (type) {
+                double[] rgb = AnimeCapeArt.handles(type) ? AnimeCapeArt.color(type, u, v, time, seed) : switch (type) {
                     case "ramadan" -> ramadan(u, v, 0, false, seed);
                     case "ramadan_animated" -> ramadan(u, v, time, true, seed);
                     case "aurora" -> aurora(u, v, time, seed);

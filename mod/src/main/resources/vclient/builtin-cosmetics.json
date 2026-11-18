@@ -4552,6 +4552,1530 @@
           ]
         }
       }
+    },
+    {
+      "id": "goku_gi_cape",
+      "category": "cape",
+      "tier": "event",
+      "name": "Goku: Orange Gi",
+      "description": "An orange martial-arts gi with a blue sash, blue collar and a white crest. Event: 18 Nov to 31 Dec.",
+      "startsAt": 1794945600,
+      "endsAt": 1798747200,
+      "definition": {
+        "texture": {
+          "width": 256,
+          "height": 128,
+          "generator": {
+            "type": "goku_gi"
+          }
+        }
+      },
+      "sort": 145
+    },
+    {
+      "id": "goku_ssj_cape",
+      "category": "animated",
+      "tier": "event",
+      "name": "Goku: Golden Aura",
+      "description": "A blazing golden aura rising over an orange gi, with sparks drifting up. Animated. Event: 18 Nov to 31 Dec.",
+      "startsAt": 1794945600,
+      "endsAt": 1798747200,
+      "definition": {
+        "slot": "cape",
+        "texture": {
+          "width": 256,
+          "height": 128,
+          "frames": 24,
+          "frameTicks": 2,
+          "generator": {
+            "type": "goku_ssj"
+          }
+        }
+      },
+      "sort": 146
+    },
+    {
+      "id": "kamehameha_cape",
+      "category": "animated",
+      "tier": "event",
+      "name": "Kamehameha",
+      "description": "A crackling blue energy beam with rings of power rolling down your back. Animated. Event: 18 Nov to 31 Dec.",
+      "startsAt": 1794945600,
+      "endsAt": 1798747200,
+      "definition": {
+        "slot": "cape",
+        "texture": {
+          "width": 256,
+          "height": 128,
+          "frames": 24,
+          "frameTicks": 2,
+          "generator": {
+            "type": "kamehameha"
+          }
+        }
+      },
+      "sort": 147
+    },
+    {
+      "id": "ultra_instinct_cape",
+      "category": "animated",
+      "tier": "event",
+      "name": "Ultra Instinct",
+      "description": "A silver aura with a violet glow along the edges. Animated. Event: 18 Nov to 31 Dec.",
+      "startsAt": 1794945600,
+      "endsAt": 1798747200,
+      "definition": {
+        "slot": "cape",
+        "texture": {
+          "width": 256,
+          "height": 128,
+          "frames": 24,
+          "frameTicks": 2,
+          "generator": {
+            "type": "ultra_instinct"
+          }
+        }
+      },
+      "sort": 148
+    },
+    {
+      "id": "sakura_branch_cape",
+      "category": "cape",
+      "tier": "event",
+      "name": "Sakura Branch",
+      "description": "A blossoming cherry branch and scattered pink petals. Event: 18 Nov to 31 Dec.",
+      "startsAt": 1794945600,
+      "endsAt": 1798747200,
+      "definition": {
+        "texture": {
+          "width": 256,
+          "height": 128,
+          "generator": {
+            "type": "sakura_drift"
+          }
+        }
+      },
+      "sort": 149
+    },
+    {
+      "id": "sakura_fall_cape",
+      "category": "animated",
+      "tier": "event",
+      "name": "Falling Sakura",
+      "description": "Cherry-blossom petals drifting down in the breeze. Animated. Event: 18 Nov to 31 Dec.",
+      "startsAt": 1794945600,
+      "endsAt": 1798747200,
+      "definition": {
+        "slot": "cape",
+        "texture": {
+          "width": 256,
+          "height": 128,
+          "frames": 24,
+          "frameTicks": 2,
+          "generator": {
+            "type": "sakura_fall"
+          }
+        }
+      },
+      "sort": 150
+    },
+    {
+      "id": "battle_flames_cape",
+      "category": "animated",
+      "tier": "event",
+      "name": "Battle Flames",
+      "description": "Crimson flames flaring up from the hem. Animated. Event: 18 Nov to 31 Dec.",
+      "startsAt": 1794945600,
+      "endsAt": 1798747200,
+      "definition": {
+        "slot": "cape",
+        "texture": {
+          "width": 256,
+          "height": 128,
+          "frames": 24,
+          "frameTicks": 2,
+          "generator": {
+            "type": "shonen_flame"
+          }
+        }
+      },
+      "sort": 151
+    },
+    {
+      "id": "scout_cloak_cape",
+      "category": "cape",
+      "tier": "event",
+      "name": "Scout Cloak",
+      "description": "A forest-green cloak with a crossed pair of feathered wings. Event: 18 Nov to 31 Dec.",
+      "startsAt": 1794945600,
+      "endsAt": 1798747200,
+      "definition": {
+        "texture": {
+          "width": 256,
+          "height": 128,
+          "generator": {
+            "type": "scout_cloak"
+          }
+        }
+      },
+      "sort": 152
+    },
+    {
+      "id": "checkered_haori_cape",
+      "category": "cape",
+      "tier": "event",
+      "name": "Checkered Haori",
+      "description": "A green and black checkered haori. Event: 18 Nov to 31 Dec.",
+      "startsAt": 1794945600,
+      "endsAt": 1798747200,
+      "definition": {
+        "texture": {
+          "width": 64,
+          "height": 32,
+          "generator": {
+            "type": "checker",
+            "size": 4,
+            "colors": [
+              "#1f7a3d",
+              "#101010"
+            ]
+          }
+        }
+      },
+      "sort": 153
+    },
+    {
+      "id": "golden_spikes_hat",
+      "category": "hat",
+      "tier": "event",
+      "name": "Golden Spikes",
+      "description": "A flare of golden spiky hair. Event: 18 Nov to 31 Dec.",
+      "startsAt": 1794945600,
+      "endsAt": 1798747200,
+      "definition": {
+        "texture": {
+          "width": 64,
+          "height": 64,
+          "generator": {
+            "type": "gradient",
+            "colors": [
+              "#fff3a0",
+              "#f2b705"
+            ]
+          }
+        },
+        "model": {
+          "parts": [
+            {
+              "bone": "head",
+              "pivot": [
+                0,
+                -8,
+                0
+              ],
+              "rotation": [
+                0,
+                0,
+                0
+              ],
+              "cuboids": [
+                {
+                  "origin": [
+                    -1,
+                    -15,
+                    -1
+                  ],
+                  "size": [
+                    2,
+                    7,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "bone": "head",
+              "pivot": [
+                0,
+                -8,
+                0
+              ],
+              "rotation": [
+                20,
+                0,
+                0
+              ],
+              "cuboids": [
+                {
+                  "origin": [
+                    -1,
+                    -15,
+                    -1
+                  ],
+                  "size": [
+                    2,
+                    7,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "bone": "head",
+              "pivot": [
+                0,
+                -8,
+                0
+              ],
+              "rotation": [
+                -20,
+                0,
+                0
+              ],
+              "cuboids": [
+                {
+                  "origin": [
+                    -1,
+                    -15,
+                    -1
+                  ],
+                  "size": [
+                    2,
+                    7,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "bone": "head",
+              "pivot": [
+                0,
+                -8,
+                0
+              ],
+              "rotation": [
+                0,
+                0,
+                20
+              ],
+              "cuboids": [
+                {
+                  "origin": [
+                    -1,
+                    -15,
+                    -1
+                  ],
+                  "size": [
+                    2,
+                    7,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "bone": "head",
+              "pivot": [
+                0,
+                -8,
+                0
+              ],
+              "rotation": [
+                0,
+                0,
+                -20
+              ],
+              "cuboids": [
+                {
+                  "origin": [
+                    -1,
+                    -15,
+                    -1
+                  ],
+                  "size": [
+                    2,
+                    7,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "bone": "head",
+              "pivot": [
+                0,
+                -8,
+                0
+              ],
+              "rotation": [
+                30,
+                0,
+                30
+              ],
+              "cuboids": [
+                {
+                  "origin": [
+                    -1,
+                    -15,
+                    -1
+                  ],
+                  "size": [
+                    2,
+                    7,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "bone": "head",
+              "pivot": [
+                0,
+                -8,
+                0
+              ],
+              "rotation": [
+                -30,
+                0,
+                -30
+              ],
+              "cuboids": [
+                {
+                  "origin": [
+                    -1,
+                    -15,
+                    -1
+                  ],
+                  "size": [
+                    2,
+                    7,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "bone": "head",
+              "pivot": [
+                0,
+                -8,
+                0
+              ],
+              "rotation": [
+                30,
+                0,
+                -30
+              ],
+              "cuboids": [
+                {
+                  "origin": [
+                    -1,
+                    -15,
+                    -1
+                  ],
+                  "size": [
+                    2,
+                    7,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "bone": "head",
+              "pivot": [
+                0,
+                -8,
+                0
+              ],
+              "rotation": [
+                -30,
+                0,
+                30
+              ],
+              "cuboids": [
+                {
+                  "origin": [
+                    -1,
+                    -15,
+                    -1
+                  ],
+                  "size": [
+                    2,
+                    7,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "sort": 154
+    },
+    {
+      "id": "power_up_emote",
+      "category": "emote",
+      "tier": "event",
+      "name": "Power Up",
+      "description": "Brace, tremble, and power up. Event: 18 Nov to 31 Dec.",
+      "startsAt": 1794945600,
+      "endsAt": 1798747200,
+      "definition": {
+        "emote": {
+          "duration": 60,
+          "loop": false,
+          "cancelOnMove": true,
+          "tracks": [
+            {
+              "part": "rightArm",
+              "axis": "z",
+              "ease": "smooth",
+              "keys": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  8,
+                  18
+                ],
+                [
+                  52,
+                  18
+                ],
+                [
+                  60,
+                  0
+                ]
+              ]
+            },
+            {
+              "part": "leftArm",
+              "axis": "z",
+              "ease": "smooth",
+              "keys": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  8,
+                  -18
+                ],
+                [
+                  52,
+                  -18
+                ],
+                [
+                  60,
+                  0
+                ]
+              ]
+            },
+            {
+              "part": "body",
+              "axis": "z",
+              "ease": "linear",
+              "keys": [
+                [
+                  8,
+                  0
+                ],
+                [
+                  12,
+                  3
+                ],
+                [
+                  16,
+                  -3
+                ],
+                [
+                  20,
+                  3
+                ],
+                [
+                  24,
+                  -3
+                ],
+                [
+                  28,
+                  3
+                ],
+                [
+                  32,
+                  -3
+                ],
+                [
+                  36,
+                  3
+                ],
+                [
+                  40,
+                  -3
+                ],
+                [
+                  44,
+                  3
+                ],
+                [
+                  48,
+                  -3
+                ],
+                [
+                  52,
+                  0
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "sort": 155
+    },
+    {
+      "id": "beam_pose_emote",
+      "category": "emote",
+      "tier": "event",
+      "name": "Beam Pose",
+      "description": "Charge it up, then thrust both arms forward. Event: 18 Nov to 31 Dec.",
+      "startsAt": 1794945600,
+      "endsAt": 1798747200,
+      "definition": {
+        "emote": {
+          "duration": 80,
+          "loop": false,
+          "cancelOnMove": true,
+          "tracks": [
+            {
+              "part": "rightArm",
+              "axis": "x",
+              "ease": "smooth",
+              "keys": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  10,
+                  -85
+                ],
+                [
+                  50,
+                  -85
+                ],
+                [
+                  62,
+                  -100
+                ],
+                [
+                  72,
+                  -100
+                ],
+                [
+                  80,
+                  0
+                ]
+              ]
+            },
+            {
+              "part": "leftArm",
+              "axis": "x",
+              "ease": "smooth",
+              "keys": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  10,
+                  -85
+                ],
+                [
+                  50,
+                  -85
+                ],
+                [
+                  62,
+                  -100
+                ],
+                [
+                  72,
+                  -100
+                ],
+                [
+                  80,
+                  0
+                ]
+              ]
+            },
+            {
+              "part": "body",
+              "axis": "x",
+              "ease": "smooth",
+              "keys": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  20,
+                  -6
+                ],
+                [
+                  46,
+                  9
+                ],
+                [
+                  72,
+                  9
+                ],
+                [
+                  80,
+                  0
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "sort": 156
+    },
+    {
+      "id": "frostfall_trail",
+      "category": "trail",
+      "tier": "premium",
+      "name": "Frostfall",
+      "description": "Snowflakes drifting off you as you move.",
+      "definition": {
+        "trail": {
+          "particle": "minecraft:snowflake",
+          "velocity": [
+            0,
+            -0.02,
+            0
+          ],
+          "rate": 2,
+          "count": 1,
+          "spread": [
+            0.4,
+            1.4,
+            0.4
+          ],
+          "offset": [
+            0,
+            0.1,
+            0
+          ]
+        }
+      },
+      "sort": 157
+    },
+    {
+      "id": "cherry_blossom_trail",
+      "category": "trail",
+      "tier": "premium",
+      "name": "Cherry Blossom",
+      "description": "Pink petals in your wake.",
+      "definition": {
+        "trail": {
+          "particle": "minecraft:cherry_leaves",
+          "velocity": [
+            0,
+            -0.01,
+            0
+          ],
+          "rate": 2,
+          "count": 1,
+          "spread": [
+            0.4,
+            1.3,
+            0.4
+          ],
+          "offset": [
+            0,
+            0.1,
+            0
+          ]
+        }
+      },
+      "sort": 158
+    },
+    {
+      "id": "golden_ki_trail",
+      "category": "trail",
+      "tier": "premium",
+      "name": "Golden Ki",
+      "description": "A shimmer of golden energy around you.",
+      "definition": {
+        "trail": {
+          "particle": "minecraft:dust",
+          "color": "#FFC21A",
+          "scale": 1.1,
+          "rate": 1,
+          "count": 1,
+          "spread": [
+            0.4,
+            1.8,
+            0.4
+          ],
+          "offset": [
+            0,
+            0.1,
+            0
+          ]
+        }
+      },
+      "sort": 159
+    },
+    {
+      "id": "energy_wave_trail",
+      "category": "trail",
+      "tier": "premium",
+      "name": "Energy Wave",
+      "description": "Bright blue energy crackling around you.",
+      "definition": {
+        "trail": {
+          "particle": "minecraft:dust",
+          "color": "#46B4FF",
+          "scale": 1,
+          "rate": 1,
+          "count": 1,
+          "spread": [
+            0.4,
+            1.8,
+            0.4
+          ],
+          "offset": [
+            0,
+            0.1,
+            0
+          ]
+        }
+      },
+      "sort": 160
+    },
+    {
+      "id": "aurora_veil_trail",
+      "category": "trail",
+      "tier": "premium",
+      "name": "Aurora Veil",
+      "description": "Soft green-teal light, like the northern sky.",
+      "definition": {
+        "trail": {
+          "particle": "minecraft:dust",
+          "color": "#5CFFC8",
+          "scale": 1,
+          "rate": 1,
+          "count": 1,
+          "spread": [
+            0.4,
+            1.8,
+            0.4
+          ],
+          "offset": [
+            0,
+            0.1,
+            0
+          ]
+        }
+      },
+      "sort": 161
+    },
+    {
+      "id": "crimson_mist_trail",
+      "category": "trail",
+      "tier": "premium",
+      "name": "Crimson Mist",
+      "description": "A low red mist behind you.",
+      "definition": {
+        "trail": {
+          "particle": "minecraft:dust",
+          "color": "#E0182D",
+          "scale": 1.1,
+          "rate": 1,
+          "count": 1,
+          "spread": [
+            0.4,
+            1.4,
+            0.4
+          ],
+          "offset": [
+            0,
+            0.1,
+            0
+          ]
+        }
+      },
+      "sort": 162
+    },
+    {
+      "id": "static_trail",
+      "category": "trail",
+      "tier": "premium",
+      "name": "Static",
+      "description": "Little sparks of electricity.",
+      "definition": {
+        "trail": {
+          "particle": "minecraft:electric_spark",
+          "rate": 3,
+          "count": 1,
+          "spread": [
+            0.4,
+            1.6,
+            0.4
+          ],
+          "offset": [
+            0,
+            0.1,
+            0
+          ]
+        }
+      },
+      "sort": 163
+    },
+    {
+      "id": "blizzard_ash_trail",
+      "category": "trail",
+      "tier": "premium",
+      "name": "Blizzard Dust",
+      "description": "Fine white dust, like wind-blown snow.",
+      "definition": {
+        "trail": {
+          "particle": "minecraft:white_ash",
+          "rate": 1,
+          "count": 1,
+          "spread": [
+            0.5,
+            1.6,
+            0.5
+          ],
+          "offset": [
+            0,
+            0.1,
+            0
+          ]
+        }
+      },
+      "sort": 164
+    },
+    {
+      "id": "frost_wings",
+      "category": "wings",
+      "tier": "premium",
+      "name": "Frost Wings",
+      "sort": 165,
+      "description": "Wings of pale ice.",
+      "definition": {
+        "texture": {
+          "width": 64,
+          "height": 64,
+          "generator": {
+            "type": "gradient",
+            "colors": [
+              "#f4feff",
+              "#7cebff"
+            ]
+          }
+        },
+        "model": {
+          "parts": [
+            {
+              "bone": "body",
+              "pivot": [
+                2.5,
+                1,
+                2.4
+              ],
+              "rotation": [
+                0,
+                -25,
+                0
+              ],
+              "mirror": true,
+              "cuboids": [
+                {
+                  "origin": [
+                    0,
+                    -1,
+                    0
+                  ],
+                  "size": [
+                    12,
+                    3,
+                    1
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    0,
+                    2,
+                    0
+                  ],
+                  "size": [
+                    14,
+                    3,
+                    1
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    0,
+                    5,
+                    0
+                  ],
+                  "size": [
+                    12,
+                    3,
+                    1
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    0,
+                    8,
+                    0
+                  ],
+                  "size": [
+                    9,
+                    3,
+                    1
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    0,
+                    11,
+                    0
+                  ],
+                  "size": [
+                    6,
+                    3,
+                    1
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ],
+              "anim": {
+                "axis": "y",
+                "target": "rotation",
+                "mode": "sine",
+                "speed": 0.6,
+                "amplitude": 18
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "frost_crown",
+      "category": "hat",
+      "tier": "premium",
+      "name": "Frost Crown",
+      "sort": 166,
+      "description": "A crown of ice.",
+      "definition": {
+        "texture": {
+          "width": 64,
+          "height": 64,
+          "generator": {
+            "type": "gradient",
+            "colors": [
+              "#f4feff",
+              "#5cc8ff"
+            ]
+          }
+        },
+        "model": {
+          "parts": [
+            {
+              "bone": "head",
+              "pivot": [
+                0,
+                0,
+                0
+              ],
+              "cuboids": [
+                {
+                  "origin": [
+                    -5,
+                    -10,
+                    -5
+                  ],
+                  "size": [
+                    10,
+                    2,
+                    10
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -5,
+                    -13,
+                    -5
+                  ],
+                  "size": [
+                    2,
+                    3,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    3,
+                    -13,
+                    -5
+                  ],
+                  "size": [
+                    2,
+                    3,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -5,
+                    -13,
+                    3
+                  ],
+                  "size": [
+                    2,
+                    3,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    3,
+                    -13,
+                    3
+                  ],
+                  "size": [
+                    2,
+                    3,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -1,
+                    -13,
+                    -5
+                  ],
+                  "size": [
+                    2,
+                    3,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -1,
+                    -13,
+                    3
+                  ],
+                  "size": [
+                    2,
+                    3,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -5,
+                    -13,
+                    -1
+                  ],
+                  "size": [
+                    2,
+                    3,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    3,
+                    -13,
+                    -1
+                  ],
+                  "size": [
+                    2,
+                    3,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "blizzard_hat",
+      "category": "hat",
+      "tier": "premium",
+      "name": "Blizzard Hat",
+      "sort": 167,
+      "description": "A pointed hat for a storm caller.",
+      "definition": {
+        "texture": {
+          "width": 64,
+          "height": 64,
+          "generator": {
+            "type": "gradient",
+            "colors": [
+              "#eaf9ff",
+              "#2a6fb0"
+            ]
+          }
+        },
+        "model": {
+          "parts": [
+            {
+              "bone": "head",
+              "pivot": [
+                0,
+                0,
+                0
+              ],
+              "cuboids": [
+                {
+                  "origin": [
+                    -6,
+                    -9,
+                    -6
+                  ],
+                  "size": [
+                    12,
+                    1,
+                    12
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -4,
+                    -13,
+                    -4
+                  ],
+                  "size": [
+                    8,
+                    4,
+                    8
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -3,
+                    -17,
+                    -3
+                  ],
+                  "size": [
+                    6,
+                    4,
+                    6
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -2,
+                    -21,
+                    -2
+                  ],
+                  "size": [
+                    4,
+                    4,
+                    4
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "snowflake_halo",
+      "category": "animated",
+      "tier": "premium",
+      "name": "Snowflake Halo",
+      "sort": 168,
+      "description": "A pale blue halo that slowly turns.",
+      "definition": {
+        "slot": "hat",
+        "texture": {
+          "width": 64,
+          "height": 64,
+          "generator": {
+            "type": "gradient",
+            "colors": [
+              "#f4feff",
+              "#7cebff"
+            ]
+          }
+        },
+        "model": {
+          "parts": [
+            {
+              "bone": "head",
+              "pivot": [
+                0,
+                0,
+                0
+              ],
+              "cuboids": [
+                {
+                  "origin": [
+                    -4,
+                    -12,
+                    -4
+                  ],
+                  "size": [
+                    8,
+                    1,
+                    1
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -4,
+                    -12,
+                    3
+                  ],
+                  "size": [
+                    8,
+                    1,
+                    1
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -4,
+                    -12,
+                    -3
+                  ],
+                  "size": [
+                    1,
+                    1,
+                    6
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    3,
+                    -12,
+                    -3
+                  ],
+                  "size": [
+                    1,
+                    1,
+                    6
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ],
+              "anim": {
+                "axis": "y",
+                "target": "rotation",
+                "mode": "spin",
+                "speed": 0.4
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "glacier_cape",
+      "category": "cape",
+      "tier": "premium",
+      "name": "Glacier",
+      "description": "Deep glacier blue fading to bright ice.",
+      "definition": {
+        "texture": {
+          "width": 64,
+          "height": 32,
+          "generator": {
+            "type": "gradient",
+            "colors": [
+              "#06203d",
+              "#2a7fc0",
+              "#e9fbff"
+            ]
+          }
+        }
+      },
+      "sort": 169
+    },
+    {
+      "id": "polar_night_cape",
+      "category": "cape",
+      "tier": "premium",
+      "name": "Polar Night",
+      "description": "A deep midnight blue with an icy edge.",
+      "definition": {
+        "texture": {
+          "width": 64,
+          "height": 32,
+          "generator": {
+            "type": "gradient",
+            "colors": [
+              "#050f1c",
+              "#0d2a4a",
+              "#7cebff"
+            ]
+          }
+        }
+      },
+      "sort": 170
+    },
+    {
+      "id": "frostbite_flow_cape",
+      "category": "animated",
+      "tier": "premium",
+      "name": "Frostbite",
+      "description": "Cold light rolling over deep blue ice. Animated.",
+      "definition": {
+        "slot": "cape",
+        "texture": {
+          "width": 64,
+          "height": 32,
+          "frames": 24,
+          "frameTicks": 3,
+          "generator": {
+            "type": "shimmer",
+            "colors": [
+              "#06203d",
+              "#7cebff"
+            ],
+            "direction": "vertical"
+          }
+        }
+      },
+      "sort": 171
     }
   ]
 }

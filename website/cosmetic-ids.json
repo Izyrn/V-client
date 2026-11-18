@@ -1,422 +1,584 @@
 [
- {
-  "id": "ramadan_cape",
-  "name": "Ramadan Kareem",
-  "category": "cape",
-  "tier": "premium"
- },
- {
-  "id": "ramadan_lanterns",
-  "name": "Ramadan Lanterns",
-  "category": "animated",
-  "tier": "premium"
- },
- {
-  "id": "night_sky",
-  "name": "Night Sky",
-  "category": "cape",
-  "tier": "free"
- },
- {
-  "id": "gold_stripes",
-  "name": "Gold Stripes",
-  "category": "cape",
-  "tier": "premium"
- },
- {
-  "id": "emerald",
-  "name": "Emerald",
-  "category": "cape",
-  "tier": "premium"
- },
- {
-  "id": "royal_cape",
-  "name": "Royal Cape",
-  "category": "cape",
-  "tier": "premium"
- },
- {
-  "id": "aurora_cape",
-  "name": "Aurora",
-  "category": "animated",
-  "tier": "free"
- },
- {
-  "id": "starfield_cape",
-  "name": "Starfield",
-  "category": "animated",
-  "tier": "premium"
- },
- {
-  "id": "halo_spin",
-  "name": "Spinning Halo",
-  "category": "animated",
-  "tier": "premium"
- },
- {
-  "id": "angel_wings",
-  "name": "Angel Wings",
-  "category": "wings",
-  "tier": "free"
- },
- {
-  "id": "dragon_wings",
-  "name": "Dragon Wings",
-  "category": "wings",
-  "tier": "premium"
- },
- {
-  "id": "crown",
-  "name": "Gold Crown",
-  "category": "hat",
-  "tier": "free"
- },
- {
-  "id": "top_hat",
-  "name": "Top Hat",
-  "category": "hat",
-  "tier": "premium"
- },
- {
-  "id": "cat_ears",
-  "name": "Cat Ears",
-  "category": "hat",
-  "tier": "premium"
- },
- {
-  "id": "wizard_hat",
-  "name": "Wizard Hat",
-  "category": "hat",
-  "tier": "premium"
- },
- {
-  "id": "sparkle_trail",
-  "name": "Sparkles",
-  "category": "trail",
-  "tier": "free"
- },
- {
-  "id": "hearts_trail",
-  "name": "Hearts",
-  "category": "trail",
-  "tier": "premium"
- },
- {
-  "id": "ember_trail",
-  "name": "Embers",
-  "category": "trail",
-  "tier": "premium"
- },
- {
-  "id": "gold_dust_trail",
-  "name": "Gold Dust",
-  "category": "trail",
-  "tier": "premium"
- },
- {
-  "id": "soul_trail",
-  "name": "Soul Fire",
-  "category": "trail",
-  "tier": "premium"
- },
- {
-  "id": "spooky_trail",
-  "name": "Spooky Season",
-  "category": "trail",
-  "tier": "event"
- },
- {
-  "id": "wave",
-  "name": "Wave",
-  "category": "emote",
-  "tier": "free"
- },
- {
-  "id": "dance",
-  "name": "Dance",
-  "category": "emote",
-  "tier": "premium"
- },
- {
-  "id": "clap",
-  "name": "Clap",
-  "category": "emote",
-  "tier": "premium"
- },
- {
-  "id": "salute",
-  "name": "Salute",
-  "category": "emote",
-  "tier": "premium"
- },
- {
-  "id": "launch_cape",
-  "name": "Launch Day",
-  "category": "cape",
-  "tier": "event"
- },
- {
-  "id": "launch_gold",
-  "name": "Launch Gold",
-  "category": "cape",
-  "tier": "event"
- },
- {
-  "id": "sunset_cape",
-  "name": "Sunset",
-  "category": "cape",
-  "tier": "premium"
- },
- {
-  "id": "ocean_cape",
-  "name": "Ocean",
-  "category": "cape",
-  "tier": "premium"
- },
- {
-  "id": "lava_cape",
-  "name": "Lava",
-  "category": "cape",
-  "tier": "premium"
- },
- {
-  "id": "ice_cape",
-  "name": "Frost",
-  "category": "cape",
-  "tier": "premium"
- },
- {
-  "id": "rose_cape",
-  "name": "Rose",
-  "category": "cape",
-  "tier": "premium"
- },
- {
-  "id": "checker_cape",
-  "name": "Checkerboard",
-  "category": "cape",
-  "tier": "premium"
- },
- {
-  "id": "neon_cape",
-  "name": "Neon Grid",
-  "category": "cape",
-  "tier": "premium"
- },
- {
-  "id": "void_cape",
-  "name": "Void",
-  "category": "cape",
-  "tier": "event"
- },
- {
-  "id": "launch_shimmer",
-  "name": "Launch Shimmer",
-  "category": "animated",
-  "tier": "event"
- },
- {
-  "id": "lava_flow",
-  "name": "Lava Flow",
-  "category": "animated",
-  "tier": "premium"
- },
- {
-  "id": "ice_flow",
-  "name": "Frost Wave",
-  "category": "animated",
-  "tier": "premium"
- },
- {
-  "id": "neon_pulse",
-  "name": "Neon Pulse",
-  "category": "animated",
-  "tier": "premium"
- },
- {
-  "id": "emerald_wave",
-  "name": "Emerald Wave",
-  "category": "animated",
-  "tier": "premium"
- },
- {
-  "id": "royal_wave",
-  "name": "Royal Wave",
-  "category": "animated",
-  "tier": "event"
- },
- {
-  "id": "phoenix_wings",
-  "name": "Phoenix Wings",
-  "category": "wings",
-  "tier": "premium"
- },
- {
-  "id": "crystal_wings",
-  "name": "Crystal Wings",
-  "category": "wings",
-  "tier": "premium"
- },
- {
-  "id": "bat_wings",
-  "name": "Bat Wings",
-  "category": "wings",
-  "tier": "premium"
- },
- {
-  "id": "butterfly_wings",
-  "name": "Butterfly Wings",
-  "category": "wings",
-  "tier": "premium"
- },
- {
-  "id": "launch_wings",
-  "name": "Launch Wings",
-  "category": "wings",
-  "tier": "event"
- },
- {
-  "id": "void_wings",
-  "name": "Void Wings",
-  "category": "wings",
-  "tier": "event"
- },
- {
-  "id": "robot_wings",
-  "name": "Robo Wings",
-  "category": "wings",
-  "tier": "premium"
- },
- {
-  "id": "rainbow_wings",
-  "name": "Rainbow Wings",
-  "category": "wings",
-  "tier": "premium"
- },
- {
-  "id": "party_hat",
-  "name": "Party Hat",
-  "category": "hat",
-  "tier": "premium"
- },
- {
-  "id": "launch_hat",
-  "name": "Launch Crown",
-  "category": "hat",
-  "tier": "event"
- },
- {
-  "id": "horns",
-  "name": "Devil Horns",
-  "category": "hat",
-  "tier": "premium"
- },
- {
-  "id": "bunny_ears",
-  "name": "Bunny Ears",
-  "category": "hat",
-  "tier": "premium"
- },
- {
-  "id": "fez",
-  "name": "Fez",
-  "category": "hat",
-  "tier": "premium"
- },
- {
-  "id": "star_topper",
-  "name": "Star Topper",
-  "category": "hat",
-  "tier": "premium"
- },
- {
-  "id": "lantern_hat",
-  "name": "Lantern",
-  "category": "hat",
-  "tier": "event"
- },
- {
-  "id": "archmage_hat",
-  "name": "Archmage Hat",
-  "category": "hat",
-  "tier": "premium"
- },
- {
-  "id": "firework_trail",
-  "name": "Fireworks",
-  "category": "trail",
-  "tier": "event"
- },
- {
-  "id": "flame_trail",
-  "name": "Flames",
-  "category": "trail",
-  "tier": "premium"
- },
- {
-  "id": "music_trail",
-  "name": "Music Notes",
-  "category": "trail",
-  "tier": "premium"
- },
- {
-  "id": "enchant_trail",
-  "name": "Enchanted",
-  "category": "trail",
-  "tier": "premium"
- },
- {
-  "id": "cloud_trail",
-  "name": "Clouds",
-  "category": "trail",
-  "tier": "premium"
- },
- {
-  "id": "totem_trail",
-  "name": "Totem Burst",
-  "category": "trail",
-  "tier": "premium"
- },
- {
-  "id": "dragon_trail",
-  "name": "Portal Swirl",
-  "category": "trail",
-  "tier": "event"
- },
- {
-  "id": "cheer",
-  "name": "Cheer",
-  "category": "emote",
-  "tier": "premium"
- },
- {
-  "id": "bow",
-  "name": "Bow",
-  "category": "emote",
-  "tier": "premium"
- },
- {
-  "id": "flex",
-  "name": "Flex",
-  "category": "emote",
-  "tier": "premium"
- },
- {
-  "id": "spin_emote",
-  "name": "Spin",
-  "category": "emote",
-  "tier": "premium"
- },
- {
-  "id": "launch_celebrate",
-  "name": "Launch Celebration",
-  "category": "emote",
-  "tier": "event"
- },
- {
-  "id": "sit_emote",
-  "name": "Sit",
-  "category": "emote",
-  "tier": "premium"
- }
+  {
+    "id": "ramadan_cape",
+    "name": "Ramadan Kareem",
+    "category": "cape",
+    "tier": "premium"
+  },
+  {
+    "id": "ramadan_lanterns",
+    "name": "Ramadan Lanterns",
+    "category": "animated",
+    "tier": "premium"
+  },
+  {
+    "id": "night_sky",
+    "name": "Night Sky",
+    "category": "cape",
+    "tier": "free"
+  },
+  {
+    "id": "gold_stripes",
+    "name": "Gold Stripes",
+    "category": "cape",
+    "tier": "premium"
+  },
+  {
+    "id": "emerald",
+    "name": "Emerald",
+    "category": "cape",
+    "tier": "premium"
+  },
+  {
+    "id": "royal_cape",
+    "name": "Royal Cape",
+    "category": "cape",
+    "tier": "premium"
+  },
+  {
+    "id": "aurora_cape",
+    "name": "Aurora",
+    "category": "animated",
+    "tier": "free"
+  },
+  {
+    "id": "starfield_cape",
+    "name": "Starfield",
+    "category": "animated",
+    "tier": "premium"
+  },
+  {
+    "id": "halo_spin",
+    "name": "Spinning Halo",
+    "category": "animated",
+    "tier": "premium"
+  },
+  {
+    "id": "angel_wings",
+    "name": "Angel Wings",
+    "category": "wings",
+    "tier": "free"
+  },
+  {
+    "id": "dragon_wings",
+    "name": "Dragon Wings",
+    "category": "wings",
+    "tier": "premium"
+  },
+  {
+    "id": "crown",
+    "name": "Gold Crown",
+    "category": "hat",
+    "tier": "free"
+  },
+  {
+    "id": "top_hat",
+    "name": "Top Hat",
+    "category": "hat",
+    "tier": "premium"
+  },
+  {
+    "id": "cat_ears",
+    "name": "Cat Ears",
+    "category": "hat",
+    "tier": "premium"
+  },
+  {
+    "id": "wizard_hat",
+    "name": "Wizard Hat",
+    "category": "hat",
+    "tier": "premium"
+  },
+  {
+    "id": "sparkle_trail",
+    "name": "Sparkles",
+    "category": "trail",
+    "tier": "free"
+  },
+  {
+    "id": "hearts_trail",
+    "name": "Hearts",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "ember_trail",
+    "name": "Embers",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "gold_dust_trail",
+    "name": "Gold Dust",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "soul_trail",
+    "name": "Soul Fire",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "spooky_trail",
+    "name": "Spooky Season",
+    "category": "trail",
+    "tier": "event"
+  },
+  {
+    "id": "wave",
+    "name": "Wave",
+    "category": "emote",
+    "tier": "free"
+  },
+  {
+    "id": "dance",
+    "name": "Dance",
+    "category": "emote",
+    "tier": "premium"
+  },
+  {
+    "id": "clap",
+    "name": "Clap",
+    "category": "emote",
+    "tier": "premium"
+  },
+  {
+    "id": "salute",
+    "name": "Salute",
+    "category": "emote",
+    "tier": "premium"
+  },
+  {
+    "id": "launch_cape",
+    "name": "Launch Day",
+    "category": "cape",
+    "tier": "event"
+  },
+  {
+    "id": "launch_gold",
+    "name": "Launch Gold",
+    "category": "cape",
+    "tier": "event"
+  },
+  {
+    "id": "sunset_cape",
+    "name": "Sunset",
+    "category": "cape",
+    "tier": "premium"
+  },
+  {
+    "id": "ocean_cape",
+    "name": "Ocean",
+    "category": "cape",
+    "tier": "premium"
+  },
+  {
+    "id": "lava_cape",
+    "name": "Lava",
+    "category": "cape",
+    "tier": "premium"
+  },
+  {
+    "id": "ice_cape",
+    "name": "Frost",
+    "category": "cape",
+    "tier": "premium"
+  },
+  {
+    "id": "rose_cape",
+    "name": "Rose",
+    "category": "cape",
+    "tier": "premium"
+  },
+  {
+    "id": "checker_cape",
+    "name": "Checkerboard",
+    "category": "cape",
+    "tier": "premium"
+  },
+  {
+    "id": "neon_cape",
+    "name": "Neon Grid",
+    "category": "cape",
+    "tier": "premium"
+  },
+  {
+    "id": "void_cape",
+    "name": "Void",
+    "category": "cape",
+    "tier": "event"
+  },
+  {
+    "id": "launch_shimmer",
+    "name": "Launch Shimmer",
+    "category": "animated",
+    "tier": "event"
+  },
+  {
+    "id": "lava_flow",
+    "name": "Lava Flow",
+    "category": "animated",
+    "tier": "premium"
+  },
+  {
+    "id": "ice_flow",
+    "name": "Frost Wave",
+    "category": "animated",
+    "tier": "premium"
+  },
+  {
+    "id": "neon_pulse",
+    "name": "Neon Pulse",
+    "category": "animated",
+    "tier": "premium"
+  },
+  {
+    "id": "emerald_wave",
+    "name": "Emerald Wave",
+    "category": "animated",
+    "tier": "premium"
+  },
+  {
+    "id": "royal_wave",
+    "name": "Royal Wave",
+    "category": "animated",
+    "tier": "event"
+  },
+  {
+    "id": "phoenix_wings",
+    "name": "Phoenix Wings",
+    "category": "wings",
+    "tier": "premium"
+  },
+  {
+    "id": "crystal_wings",
+    "name": "Crystal Wings",
+    "category": "wings",
+    "tier": "premium"
+  },
+  {
+    "id": "bat_wings",
+    "name": "Bat Wings",
+    "category": "wings",
+    "tier": "premium"
+  },
+  {
+    "id": "butterfly_wings",
+    "name": "Butterfly Wings",
+    "category": "wings",
+    "tier": "premium"
+  },
+  {
+    "id": "launch_wings",
+    "name": "Launch Wings",
+    "category": "wings",
+    "tier": "event"
+  },
+  {
+    "id": "void_wings",
+    "name": "Void Wings",
+    "category": "wings",
+    "tier": "event"
+  },
+  {
+    "id": "robot_wings",
+    "name": "Robo Wings",
+    "category": "wings",
+    "tier": "premium"
+  },
+  {
+    "id": "rainbow_wings",
+    "name": "Rainbow Wings",
+    "category": "wings",
+    "tier": "premium"
+  },
+  {
+    "id": "party_hat",
+    "name": "Party Hat",
+    "category": "hat",
+    "tier": "premium"
+  },
+  {
+    "id": "launch_hat",
+    "name": "Launch Crown",
+    "category": "hat",
+    "tier": "event"
+  },
+  {
+    "id": "horns",
+    "name": "Devil Horns",
+    "category": "hat",
+    "tier": "premium"
+  },
+  {
+    "id": "bunny_ears",
+    "name": "Bunny Ears",
+    "category": "hat",
+    "tier": "premium"
+  },
+  {
+    "id": "fez",
+    "name": "Fez",
+    "category": "hat",
+    "tier": "premium"
+  },
+  {
+    "id": "star_topper",
+    "name": "Star Topper",
+    "category": "hat",
+    "tier": "premium"
+  },
+  {
+    "id": "lantern_hat",
+    "name": "Lantern",
+    "category": "hat",
+    "tier": "event"
+  },
+  {
+    "id": "archmage_hat",
+    "name": "Archmage Hat",
+    "category": "hat",
+    "tier": "premium"
+  },
+  {
+    "id": "firework_trail",
+    "name": "Fireworks",
+    "category": "trail",
+    "tier": "event"
+  },
+  {
+    "id": "flame_trail",
+    "name": "Flames",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "music_trail",
+    "name": "Music Notes",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "enchant_trail",
+    "name": "Enchanted",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "cloud_trail",
+    "name": "Clouds",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "totem_trail",
+    "name": "Totem Burst",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "dragon_trail",
+    "name": "Portal Swirl",
+    "category": "trail",
+    "tier": "event"
+  },
+  {
+    "id": "cheer",
+    "name": "Cheer",
+    "category": "emote",
+    "tier": "premium"
+  },
+  {
+    "id": "bow",
+    "name": "Bow",
+    "category": "emote",
+    "tier": "premium"
+  },
+  {
+    "id": "flex",
+    "name": "Flex",
+    "category": "emote",
+    "tier": "premium"
+  },
+  {
+    "id": "spin_emote",
+    "name": "Spin",
+    "category": "emote",
+    "tier": "premium"
+  },
+  {
+    "id": "launch_celebrate",
+    "name": "Launch Celebration",
+    "category": "emote",
+    "tier": "event"
+  },
+  {
+    "id": "sit_emote",
+    "name": "Sit",
+    "category": "emote",
+    "tier": "premium"
+  },
+  {
+    "id": "goku_gi_cape",
+    "name": "Goku: Orange Gi",
+    "category": "cape",
+    "tier": "event"
+  },
+  {
+    "id": "goku_ssj_cape",
+    "name": "Goku: Golden Aura",
+    "category": "animated",
+    "tier": "event"
+  },
+  {
+    "id": "kamehameha_cape",
+    "name": "Kamehameha",
+    "category": "animated",
+    "tier": "event"
+  },
+  {
+    "id": "ultra_instinct_cape",
+    "name": "Ultra Instinct",
+    "category": "animated",
+    "tier": "event"
+  },
+  {
+    "id": "sakura_branch_cape",
+    "name": "Sakura Branch",
+    "category": "cape",
+    "tier": "event"
+  },
+  {
+    "id": "sakura_fall_cape",
+    "name": "Falling Sakura",
+    "category": "animated",
+    "tier": "event"
+  },
+  {
+    "id": "battle_flames_cape",
+    "name": "Battle Flames",
+    "category": "animated",
+    "tier": "event"
+  },
+  {
+    "id": "scout_cloak_cape",
+    "name": "Scout Cloak",
+    "category": "cape",
+    "tier": "event"
+  },
+  {
+    "id": "checkered_haori_cape",
+    "name": "Checkered Haori",
+    "category": "cape",
+    "tier": "event"
+  },
+  {
+    "id": "golden_spikes_hat",
+    "name": "Golden Spikes",
+    "category": "hat",
+    "tier": "event"
+  },
+  {
+    "id": "power_up_emote",
+    "name": "Power Up",
+    "category": "emote",
+    "tier": "event"
+  },
+  {
+    "id": "beam_pose_emote",
+    "name": "Beam Pose",
+    "category": "emote",
+    "tier": "event"
+  },
+  {
+    "id": "frostfall_trail",
+    "name": "Frostfall",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "cherry_blossom_trail",
+    "name": "Cherry Blossom",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "golden_ki_trail",
+    "name": "Golden Ki",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "energy_wave_trail",
+    "name": "Energy Wave",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "aurora_veil_trail",
+    "name": "Aurora Veil",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "crimson_mist_trail",
+    "name": "Crimson Mist",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "static_trail",
+    "name": "Static",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "blizzard_ash_trail",
+    "name": "Blizzard Dust",
+    "category": "trail",
+    "tier": "premium"
+  },
+  {
+    "id": "frost_wings",
+    "name": "Frost Wings",
+    "category": "wings",
+    "tier": "premium"
+  },
+  {
+    "id": "frost_crown",
+    "name": "Frost Crown",
+    "category": "hat",
+    "tier": "premium"
+  },
+  {
+    "id": "blizzard_hat",
+    "name": "Blizzard Hat",
+    "category": "hat",
+    "tier": "premium"
+  },
+  {
+    "id": "snowflake_halo",
+    "name": "Snowflake Halo",
+    "category": "animated",
+    "tier": "premium"
+  },
+  {
+    "id": "glacier_cape",
+    "name": "Glacier",
+    "category": "cape",
+    "tier": "premium"
+  },
+  {
+    "id": "polar_night_cape",
+    "name": "Polar Night",
+    "category": "cape",
+    "tier": "premium"
+  },
+  {
+    "id": "frostbite_flow_cape",
+    "name": "Frostbite",
+    "category": "animated",
+    "tier": "premium"
+  }
 ]
