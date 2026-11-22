@@ -144,7 +144,7 @@ public final class Minimap {
             arrow(context, center, center, client.player.getYaw());
         }
         context.drawText(client.textRenderer, "N", center - 2, 2, 0xFFFF6B6B, true);
-        String coords = client.player == null ? "0 0 0"
+        String coords = client.player == null || Extras.streamer() ? (Extras.streamer() ? "" : "0 0 0")
                 : client.player.getBlockX() + " " + client.player.getBlockY() + " " + client.player.getBlockZ();
         context.drawText(client.textRenderer, coords, (size - client.textRenderer.getWidth(coords)) / 2, size + 2, Hud.TEXT, true);
     }

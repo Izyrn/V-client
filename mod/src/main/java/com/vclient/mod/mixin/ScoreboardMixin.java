@@ -24,5 +24,6 @@ public abstract class ScoreboardMixin {
     @Inject(method = "setTitle(Lnet/minecraft/text/Text;)V", at = @At("TAIL"), require = 0)
     private void vclient$title(Text title, CallbackInfo info) {
         com.vclient.mod.Safe.run("Victory effects", () -> com.vclient.mod.cosmetics.Effects.onTitle(title == null ? "" : title.getString()));
+        com.vclient.mod.Safe.run("Island", () -> com.vclient.mod.Island.serverTitle(title == null ? "" : title.getString()));
     }
 }

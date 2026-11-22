@@ -82,6 +82,8 @@ public final class VClientMod implements ClientModInitializer {
         Safe.run("Visual effects", () -> Visuals.tick(client));
         Safe.run("Minimap", () -> Minimap.tick(client));
         Safe.run("Presence", () -> Presence.tick(client));
+        Safe.run("Island", () -> Island.tick(client));
+        Safe.run("Combat notifier", () -> Extras.tick(client));
         FpsRecorder.tick(client);
         PerfProbe.tick(client);
         SkinSync.tick(client);

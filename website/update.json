@@ -1,10 +1,10 @@
 {
-    "version":  "1.8.4",
+    "version":  "1.8.5",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "f5ca9517ebd2c9f5bc39a55a0d61ce34ee0fcc944498ef9a9f054bbc4d6806ec",
-    "size":  95669760,
-    "notes":  "1.8.4: waypoint messages now show in chat (servers were hiding them), and Shift+N no longer stacks copies on the same spot.",
+    "sha256":  "d55ac52a43d356ae6c14c65f6768449924398732e52767476c8f20643fde1c13",
+    "size":  95697920,
+    "notes":  "1.8.5: the Island (Spotify song, boss bars, kills, totem pops and server events at the top of the screen), Cooldown Timer, Custom Crosshair and Streamer Mode.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-22T10:53:23.3832954Z"
+    "publishedAt":  "2026-11-22T11:13:21.0560415Z"
 }

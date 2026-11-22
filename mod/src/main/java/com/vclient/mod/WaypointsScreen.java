@@ -78,7 +78,7 @@ public final class WaypointsScreen extends Screen {
             String distance = client.player == null ? "" : String.format(Locale.ROOT, "%dm",
                     Math.round(Math.sqrt(client.player.squaredDistanceTo(point.x() + 0.5, point.y(), point.z() + 0.5))));
             context.drawText(textRenderer, point.name(), left + 8, y + 5, Hud.TEXT, true);
-            String where = point.x() + " " + point.y() + " " + point.z() + "  " + distance;
+            String where = (Extras.streamer() ? "" : point.x() + " " + point.y() + " " + point.z() + "  ") + distance;
             context.drawText(textRenderer, where, left + panelWidth - 66 - textRenderer.getWidth(where), y + 5, Hud.MUTED, false);
         }
     }

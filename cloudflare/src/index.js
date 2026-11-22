@@ -9,11 +9,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // The newest published launcher (mirror of website/update.json, served to launchers that cannot read the website).
 const LATEST_RELEASE = {
-  version: '1.8.4',
-  notes: '1.8.4: waypoint messages now show in chat (servers were hiding them), and Shift+N no longer stacks copies on the same spot.',
+  version: '1.8.5',
+  notes: '1.8.5: the Island (Spotify song, boss bars, kills, totem pops and server events at the top of the screen), Cooldown Timer, Custom Crosshair and Streamer Mode.',
   mandatory: false,
-  size: 95669760,
-  sha256: 'f5ca9517ebd2c9f5bc39a55a0d61ce34ee0fcc944498ef9a9f054bbc4d6806ec',
+  size: 95697920,
+  sha256: 'd55ac52a43d356ae6c14c65f6768449924398732e52767476c8f20643fde1c13',
   url: 'https://izyrn.github.io/V-client/VSMPClientSetup.exe',
 };
 

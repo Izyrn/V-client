@@ -5,8 +5,10 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "AttackMixin",
+    "BossBarMixin",
     "GameRendererMixin",
     "HandMixin",
+    "HudExtrasMixin",
     "InGameHudMixin",
     "LivingEntityRendererAccess",
     "LightmapTextureManagerMixin",

@@ -43,7 +43,7 @@ public final class ModMenuScreen extends Screen {
     }
 
     private enum Category {
-        COMBAT("Combat", Module.TARGET_HUD, Module.COMBO, Module.REACH, Module.ATTACK_COOLDOWN, Module.DAMAGE_FEED,
+        COMBAT("Combat", Module.COOLDOWNS, Module.CROSSHAIR, Module.TARGET_HUD, Module.COMBO, Module.REACH, Module.ATTACK_COOLDOWN, Module.DAMAGE_FEED,
                 Module.CPS),
         RENDER("Render", Module.CUSTOM_SKY, Module.SNOW, Module.FIREFLIES, Module.GROUND_FOG, Module.BETTER_PARTICLES,
                 Module.BETTER_HAND, Module.FULLBRIGHT, Module.NO_HURT_CAM, Module.MENU_BACKGROUND),
@@ -52,7 +52,7 @@ public final class ModMenuScreen extends Screen {
                 Module.SESSION_STATS, Module.HEAL_HELPER),
         MOVEMENT("Movement", Module.TOGGLE_SPRINT, Module.TOGGLE_SNEAK, Module.ZOOM, Module.SPEED, Module.WAYPOINTS, Module.MINIMAP),
         HUD("HUD", Module.FPS, Module.KEYSTROKES, Module.CPS, Module.PING, Module.CLOCK, Module.SERVER_ADDRESS,
-                Module.MINIMAP, Module.CUSTOM_SCOREBOARD, Module.CUSTOM_TAB),
+                Module.ISLAND, Module.MINIMAP, Module.CUSTOM_SCOREBOARD, Module.CUSTOM_TAB, Module.STREAMER_MODE),
         PERFORMANCE("Performance", Module.MEMORY, Module.FPS),
         FUN("Fun", Module.COSMETICS, Module.CLIENT);
 

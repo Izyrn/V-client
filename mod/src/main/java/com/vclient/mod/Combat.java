@@ -143,6 +143,7 @@ public final class Combat {
             boolean kill = health <= 0 && KILLED.add(target.getId());
             if (kill) {
                 kills++;
+                if (VConfig.bool(Module.ISLAND, "combat")) Island.notify("\u2694", "You killed " + name(target), 0xFFFF6B6B);
                 com.vclient.mod.cosmetics.Effects.onKill(MinecraftClient.getInstance(), target.getX(), target.getY() + 1, target.getZ());
             }
             FEED.addLast(new Damage(String.format(Locale.ROOT, "-%.1f ❤ %s", dealt / 2f, name(target)), now, kill));

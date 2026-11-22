@@ -54,6 +54,7 @@ public final class Hud {
         Safe.run("Custom Sky", () -> Visuals.renderSky(context, client));
         Safe.run("Waypoint markers", () -> Waypoints.render(context, client));
         Safe.run("Heal Helper", () -> Interface.renderHealWarning(context, client));
+        Safe.run("Island", () -> Island.render(context, client));
         for (Module module : Module.values()) {
             if (!module.hudElement() || !VConfig.enabled(module) || !visible(client, module)) continue;
             Safe.run(module.title(), () -> {
@@ -117,6 +118,7 @@ public final class Hud {
             case TARGET_HUD -> Combat.targetActive();
             case DAMAGE_FEED -> Combat.feedActive();
             case ATTACK_COOLDOWN -> Combat.cooldownCharging(client);
+            case COOLDOWNS -> Extras.cooldownsActive(client);
             default -> true;
         };
     }
@@ -143,6 +145,7 @@ public final class Hud {
             }
             case TARGET_HUD -> Combat.TARGET_WIDTH;
             case MINIMAP -> Minimap.size();
+            case COOLDOWNS -> 140;
             case ATTACK_COOLDOWN -> Combat.COOLDOWN_WIDTH;
             case DAMAGE_FEED -> {
                 int widest = 40;
@@ -175,6 +178,7 @@ public final class Hud {
             case POTION_EFFECTS -> Math.max(1, effectLines(client, editing).size()) * LINE + 2;
             case TARGET_HUD -> Combat.TARGET_HEIGHT;
             case MINIMAP -> Minimap.size() + 12;
+            case COOLDOWNS -> Math.max(1, Extras.cooldownLines(client, editing).size()) * LINE + 2;
             case ATTACK_COOLDOWN -> Combat.COOLDOWN_HEIGHT;
             case DAMAGE_FEED -> Math.max(1, Combat.feedLines(editing).size()) * LINE + 2;
             case SESSION_STATS -> Combat.sessionLines().size() * LINE + 2;
@@ -268,6 +272,7 @@ public final class Hud {
             }
             case TARGET_HUD -> Combat.drawTarget(context, client, background, label, editing);
             case MINIMAP -> Minimap.draw(context, client, background, editing);
+            case COOLDOWNS -> Extras.drawCooldowns(context, client, background, label, editing, width, height);
             case ATTACK_COOLDOWN -> Combat.drawCooldown(context, client, background, editing);
             case DAMAGE_FEED -> {
                 if (background) frostPanel(context, module, width, height);
@@ -312,12 +317,12 @@ public final class Hud {
             case MEMORY -> new String[]{"Memory: ", memory()};
             case DAY_COUNTER -> new String[]{"Day: ", client.world == null ? "0"
                     : Long.toString(client.world.getTimeOfDay() / 24000L)};
-            case SERVER_ADDRESS -> new String[]{"Server: ", server(client)};
+            case SERVER_ADDRESS -> new String[]{"Server: ", Extras.hidden(server(client))};
             case ITEM_COUNT -> {
                 String[] item = ITEM_CHOICES[Math.clamp(VConfig.integer(module, "item"), 0, ITEM_CHOICES.length - 1)];
                 yield new String[]{item[0] + ": ", Integer.toString(VClientMod.countItem(client, item[1]))};
             }
-            case LAST_DEATH -> new String[]{"Died: ", VClientMod.lastDeath()};
+            case LAST_DEATH -> new String[]{"Died: ", Extras.hidden(VClientMod.lastDeath())};
             case DURABILITY -> new String[]{"Durability: ", durability(client)};
             case LIGHT_LEVEL -> new String[]{"Light: ", client.world == null || client.player == null ? "-"
                     : Integer.toString(client.world.getLightLevel(client.player.getBlockPos()))};
@@ -401,6 +406,7 @@ public final class Hud {
 
     private static String coordinateText(ClientPlayerEntity player) {
         if (player == null) return "0 / 0 / 0";
+        if (Extras.streamer()) return "hidden";
         return player.getBlockPos().getX() + " / " + player.getBlockPos().getY() + " / " + player.getBlockPos().getZ();
     }
 

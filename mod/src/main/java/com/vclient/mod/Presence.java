@@ -28,7 +28,7 @@ public final class Presence {
             activity = "Singleplayer";
         } else {
             ServerInfo server = client.getCurrentServerEntry();
-            json.addProperty("server", server == null ? "" : server.address);
+            json.addProperty("server", server == null || Extras.streamer() ? "" : server.address);
             activity = "Multiplayer";
         }
         json.addProperty("activity", activity);
