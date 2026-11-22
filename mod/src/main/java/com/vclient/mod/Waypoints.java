@@ -72,8 +72,8 @@ public final class Waypoints {
             long window = client.getWindow().getHandle();
             boolean shift = org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS
                     || org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
-            if (shift) removeNearest(client);
-            else addHere(client);
+            if (shift) addHere(client);
+            else client.setScreen(new WaypointsScreen());
         }
         keyWasDown = down;
     }
@@ -101,7 +101,7 @@ public final class Waypoints {
         return ALL.computeIfAbsent(key(client), ignored -> new ArrayList<>());
     }
 
-    private static void addHere(MinecraftClient client) {
+    static void addHere(MinecraftClient client) {
         List<Waypoint> list = here(client);
         int number = (int) list.stream().filter(point -> !point.death()).count() + 1;
         var pos = client.player.getBlockPos();
@@ -110,7 +110,7 @@ public final class Waypoints {
         list.add(point);
         save();
         client.inGameHud.setOverlayMessage(Text.literal(point.name() + " set at " + pos.getX() + " " + pos.getY() + " "
-                + pos.getZ() + "  (Shift + " + KeyNames.name(VConfig.integer(Module.WAYPOINTS, "addKey")) + " removes the nearest)"), false);
+                + pos.getZ() + "  (" + KeyNames.name(VConfig.integer(Module.WAYPOINTS, "addKey")) + " opens the waypoint list)"), false);
     }
 
     private static void addDeath(MinecraftClient client) {
@@ -120,6 +120,11 @@ public final class Waypoints {
         list.add(new Waypoint("Death " + time, pos.getX(), pos.getY(), pos.getZ(), DEATH_COLOR, true));
         List<Waypoint> deaths = list.stream().filter(Waypoint::death).toList();
         for (int i = 0; i < deaths.size() - MAX_DEATHS; i++) list.remove(deaths.get(i));
+        save();
+    }
+
+    static void remove(MinecraftClient client, Waypoint point) {
+        here(client).remove(point);
         save();
     }
 

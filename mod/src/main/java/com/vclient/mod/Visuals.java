@@ -20,7 +20,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class Visuals {
     private static final Map<String, ParticleEffect> PARTICLES = new ConcurrentHashMap<>();
-    private static final double[][] STARS = new double[180][3];
+    private static final double[][] STARS = new double[70][3];
 
     static {
         java.util.Random random = new java.util.Random(7);
@@ -164,11 +164,11 @@ public final class Visuals {
         int horizon = screenY(height, 0, pitchUp, focal);
         double aspect = width / (double) height;
         int[] colors = {0x7CF29A, 0x55FFD0, 0x9A7CFF};
-        for (int band = 0; band < 3; band++) {
+        for (int band = 0; band < 2; band++) {
             double elevation = Math.toRadians(28 + band * 9);
             int base = screenY(height, elevation, pitchUp, focal);
             if (base == Integer.MIN_VALUE) continue;
-            for (int x = 0; x < width; x += 2) {
+            for (int x = 0; x < width; x += 8) {
                 // Angle of this screen column, so the aurora stays put in the sky as you turn.
                 double azimuth = yaw + Math.atan((x - width / 2.0) / (width / 2.0) * aspect / focal);
                 double wave = Math.sin(azimuth * 3 + seconds * 0.35 + band) * 0.5 + Math.sin(azimuth * 7.3 - seconds * 0.2) * 0.3;
@@ -179,7 +179,7 @@ public final class Visuals {
                 if (bottom <= top || bottom < 0 || top > height) continue;
                 int alpha = (int) (70 * strength * glow);
                 if (alpha < 3) continue;
-                context.fillGradient(x, top, x + 2, bottom, (alpha / 4) << 24 | colors[band], alpha << 24 | colors[band]);
+                context.fillGradient(x, top, x + 8, bottom, (alpha / 4) << 24 | colors[band], alpha << 24 | colors[band]);
             }
         }
     }

@@ -78,7 +78,7 @@ public enum Module {
             Setting.number("scale", "Size", 100, 50, 150, 10, "%")),
     CUSTOM_TAB("Custom Tab List", "Ping shown in milliseconds, coloured", true, Kind.FEATURE),
     WAYPOINTS("Waypoints", "On-screen markers; your deaths are marked automatically", true, Kind.FEATURE,
-            Setting.key("addKey", "Add waypoint (Shift: remove nearest)", GLFW.GLFW_KEY_N),
+            Setting.key("addKey", "Waypoints menu (Shift: add here)", GLFW.GLFW_KEY_N),
             Setting.toggle("death", "Death waypoints", true),
             Setting.toggle("distance", "Show distance", true),
             Setting.number("maxDistance", "Hide beyond (0 = never)", 0, 0, 5000, 250, " m")),

@@ -1,4 +1,4 @@
-﻿package com.vclient;
+package com.vclient;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,7 +10,7 @@ final class AppInfo {
     static final String NAME = "VYRN";
 
     /** Launcher version reported to the update service. Bump together with the pom version and the published release. */
-    static final String VERSION = "1.8.2";
+    static final String VERSION = "1.8.3";
 
     /**
      * The one place the API address lives (a Cloudflare Worker, see {@code cloudflare/}). Players can override it

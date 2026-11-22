@@ -9,11 +9,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // The newest published launcher (mirror of website/update.json, served to launchers that cannot read the website).
 const LATEST_RELEASE = {
-  version: '1.8.2',
-  notes: '1.8.2: Minimap, Heal Helper, Custom Sky (aurora and starlight), snow, fireflies, ground fog, better hit particles, Better Hand, custom scoreboard and tab list, ice hotbar/hearts/boss bars (VYRN UI pack), pets, auras, kill/death/victory effects, a Music page with radio and Spotify extras, mod health checks with one-click repair and auto dependencies, Shaders (Iris) and Visuals packs, 60-second instant replay.',
+  version: '1.8.3',
+  notes: '1.8.3: fixes the big FPS drop from 1.8.2 (the minimap and sky are now almost free), and N now opens a Waypoints menu (Shift+N adds one where you stand).',
   mandatory: false,
-  size: 95662080,
-  sha256: 'a24b4cf928f4210287bda6cdb6e80696aedcb40618e1ecf0e49e083ca2e6af19',
+  size: 95669248,
+  sha256: 'a21f8294da2382da7a206577d7b4db4b342d7f503cf173ecbb2dd6a8be4b999d',
   url: 'https://izyrn.github.io/V-client/VSMPClientSetup.exe',
 };
 
