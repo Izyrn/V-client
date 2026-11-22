@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * A minimal Motion-JPEG AVI muxer and reader. The replay buffer stores JPEG frames, and an AVI of JPEGs needs
  * no video encoder, so clips are saved without bundling ffmpeg. VLC, Windows players with an MJPEG codec and
- * V-Client's own player open the result.
+ * VYRN's own player open the result.
  */
 final class MjpegAvi {
     private MjpegAvi() {}

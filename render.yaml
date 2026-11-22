@@ -1,4 +1,4 @@
-# One-click Render setup for the V-Client backend (API + website).
+# One-click Render setup for the VYRN backend (API + website).
 # Render dashboard -> New -> Blueprint -> pick this repo. Then delete the old static-site service.
 #
 # The free plan has no persistent disk: accounts, news and uploaded installers are wiped whenever the

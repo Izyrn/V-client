@@ -121,7 +121,7 @@ test('releases: upload, publish, update check, download counter', async (t) => {
 
   const redirect = await call('GET', '/download/android');
   assert.equal(redirect.status, 302);
-  assert.match(redirect.headers.get('location'), /^\/downloads\/V-Client-android-1\.2\.0\.apk$/);
+  assert.match(redirect.headers.get('location'), /^\/downloads\/VYRN-android-1\.2\.0\.apk$/);
   const direct = await call('GET', older.json.latest.url);
   assert.equal(direct.status, 200);
   assert.equal((await call('GET', '/api/admin/releases', { token: admin })).json.items[0].downloads, 1);

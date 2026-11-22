@@ -9,7 +9,7 @@ import net.minecraft.util.Identifier;
 import java.util.Random;
 
 /**
- * V-Client's frozen menu backdrop: a polar sky with an aurora, falling snow and glacier ridges.
+ * VYRN's frozen menu backdrop: a polar sky with an aurora, falling snow and glacier ridges.
  *
  * <p>The static layers (sky, aurora, glow, glaciers) are painted once per window size into two half-resolution
  * textures; only the falling snow and a faint aurora shimmer are drawn per frame. Minecraft's GUI renderer compares

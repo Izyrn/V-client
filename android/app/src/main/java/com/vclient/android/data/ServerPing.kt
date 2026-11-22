@@ -12,7 +12,7 @@ import java.net.InetSocketAddress
 import java.net.Socket
 
 /**
- * Asks a Minecraft server directly whether it is up, so the Home screen works even when the V-Client
+ * Asks a Minecraft server directly whether it is up, so the Home screen works even when the VYRN
  * backend is down. Both calls never throw: a failure is simply "offline".
  */
 object ServerPing {

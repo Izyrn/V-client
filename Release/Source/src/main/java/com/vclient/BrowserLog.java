@@ -12,12 +12,11 @@ import java.util.Map;
 
 /**
  * Errors the built-in browser's pages hit (script errors, failed requests, WebSocket trouble), kept in
- * {@code %APPDATA%/V-Client/browser-debug.log} so a site that stalls can be diagnosed. The file is cut back to a fresh
+ * {@code %APPDATA%/VYRN/browser-debug.log} so a site that stalls can be diagnosed. The file is cut back to a fresh
  * start once it passes 1 MB.
  */
 final class BrowserLog {
-    private static final Path FILE = Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-            "V-Client", "browser-debug.log");
+    private static final Path FILE = AppInfo.dataDir().resolve("browser-debug.log");
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static final Map<String, String> URLS = new LinkedHashMap<>(256, 0.75f, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {

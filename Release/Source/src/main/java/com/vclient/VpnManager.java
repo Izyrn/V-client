@@ -32,14 +32,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * V-Client's built-in VPN. It runs wireproxy (a userspace WireGuard client shipped inside V-Client) as a hidden
+ * VYRN's built-in VPN. It runs wireproxy (a userspace WireGuard client shipped inside VYRN) as a hidden
  * background process, connected to a free Cloudflare WARP tunnel (or a WireGuard config the player imported). For each
- * game server it opens a local port that is forwarded through the tunnel, and V-Client points Minecraft at that local
+ * game server it opens a local port that is forwarded through the tunnel, and VYRN points Minecraft at that local
  * port. Nothing is installed and no administrator rights are needed; only the game's server connections are tunneled.
  */
 final class VpnManager {
-    private static final Path DIRECTORY = Path.of(
-            System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")), "V-Client", "vpn");
+    private static final Path DIRECTORY = AppInfo.dataDir().resolve("vpn");
     /** The WireGuard identity the tunnel uses: a generated Cloudflare WARP one or the player's imported config. */
     private static final Path CONFIG = DIRECTORY.resolve("vclient-vpn.conf");
     private static final Path RUN_CONFIG = DIRECTORY.resolve("run.conf");
@@ -123,7 +122,7 @@ final class VpnManager {
         socksPort = socks;
         Files.writeString(RUN_CONFIG, config.toString(), StandardCharsets.UTF_8);
 
-        log.accept("Starting the V-Client VPN tunnel...");
+        log.accept("Starting the VYRN VPN tunnel...");
         Files.deleteIfExists(ENGINE_LOG);
         engine = new ProcessBuilder(ENGINE.toString(), "-c", RUN_CONFIG.toString())
                 .redirectErrorStream(true).redirectOutput(ENGINE_LOG.toFile()).start();
@@ -206,7 +205,7 @@ final class VpnManager {
 
     private static void extractEngine() throws IOException {
         try (var in = VpnManager.class.getResourceAsStream(ENGINE_RESOURCE)) {
-            if (in == null) throw new IOException("This build of V-Client does not include the VPN engine.");
+            if (in == null) throw new IOException("This build of VYRN does not include the VPN engine.");
             byte[] bytes = in.readAllBytes();
             if (!Files.isRegularFile(ENGINE) || Files.size(ENGINE) != bytes.length) {
                 stopEngine();

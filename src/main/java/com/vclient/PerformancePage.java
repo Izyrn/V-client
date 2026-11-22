@@ -32,13 +32,13 @@ final class PerformancePage {
 
     private VBox fpsCard() {
         VBox card = UiKit.section("FPS history",
-                "Recorded by the V-Client mod while you play (one sample per second). Average, lowest and highest FPS "
+                "Recorded by the VYRN mod while you play (one sample per second). Average, lowest and highest FPS "
                         + "for every play session.");
         List<FpsHistory.Sample> samples = FpsHistory.read(FpsHistory.file(host.settings().minecraftDirectory()));
         List<FpsHistory.Session> sessions = FpsHistory.sessions(samples);
         if (sessions.isEmpty()) {
             card.getChildren().add(ModsUi.emptyCard("📈", "No FPS data yet",
-                    "Play with the V-Client profile (it includes the FPS recorder) and your sessions will be graphed here."));
+                    "Play with the VYRN profile (it includes the FPS recorder) and your sessions will be graphed here."));
             return card;
         }
         int lowest = samples.stream().mapToInt(FpsHistory.Sample::fps).min().orElse(0);

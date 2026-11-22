@@ -2,7 +2,7 @@
   "name": "vclient-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Shared API, admin panel and download host for V-Client (Windows + Android) and the VSMP website.",
+  "description": "Shared API, admin panel and download host for VYRN (Windows + Android) and the VSMP website.",
   "type": "commonjs",
   "main": "src/server.js",
   "engines": { "node": ">=22.13" },

@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "V-Client-Android"
+rootProject.name = "VYRN-Android"
 include(":app")

@@ -160,7 +160,7 @@ final class BenchmarkPage {
         FpsDiagnostics.Snapshot live = FpsDiagnostics.read(host.settings().minecraftDirectory());
         if (live == null) {
             card.getChildren().add(ModsUi.emptyCard("📊", "No data yet",
-                    "Play for a minute with the V-Client profile and the numbers appear here."));
+                    "Play for a minute with the VYRN profile and the numbers appear here."));
             return card;
         }
         FpsDiagnostics.Bottleneck bottleneck = FpsDiagnostics.bottleneck(live);

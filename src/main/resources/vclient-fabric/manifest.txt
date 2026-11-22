@@ -13,4 +13,4 @@ libraries/org/ow2/asm/asm-util/9.10.1/asm-util-9.10.1.jar
 libraries/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar
 libraries/org/ow2/sat4j/org.ow2.sat4j.core/2.3.6/org.ow2.sat4j.core-2.3.6.jar
 libraries/org/ow2/sat4j/org.ow2.sat4j.pb/2.3.6/org.ow2.sat4j.pb-2.3.6.jar
-versions/V-Client 1.21.11/V-Client 1.21.11.json
+versions/VYRN 1.21.11/VYRN 1.21.11.json

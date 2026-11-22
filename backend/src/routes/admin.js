@@ -179,7 +179,7 @@ function adminRoutes(ctx) {
       if (!length) return res.status(411).json({ error: 'Content-Length is required' });
       if (length > config.maxUploadBytes) return res.status(413).json({ error: 'File is larger than the upload limit' });
 
-      const fileName = `V-Client-${row.platform}-${row.version}${ext}`;
+      const fileName = `VYRN-${row.platform}-${row.version}${ext}`;
       const target = path.join(config.downloadsDir, fileName);
       const temp = `${target}.${crypto.randomBytes(4).toString('hex')}.part`;
       const hash = crypto.createHash('sha256');

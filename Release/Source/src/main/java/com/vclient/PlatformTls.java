@@ -193,7 +193,7 @@ final class PlatformTls {
     static URI requireHostName(URI uri) {
         if (isIpLiteral(uri)) {
             throw new IllegalArgumentException("Refusing to connect to an IP address (" + uri.getHost()
-                    + "): V-Client only makes HTTPS requests by host name so the certificate can be verified.");
+                    + "): VYRN only makes HTTPS requests by host name so the certificate can be verified.");
         }
         return uri;
     }
@@ -213,7 +213,7 @@ final class PlatformTls {
         if (error == null) return "";
         String all = describeFailure(error).toLowerCase(java.util.Locale.ROOT);
         if (hasHostnameMismatch(error)) {
-            return "The server certificate does not belong to the host V-Client asked for. This usually means a captive portal "
+            return "The server certificate does not belong to the host VYRN asked for. This usually means a captive portal "
                     + "(hotel / school Wi-Fi sign-in), a DNS filter, or antivirus \"web protection\" is answering instead of the real server. "
                     + "Open a browser, finish any sign-in page, or switch off HTTPS scanning in your antivirus.";
         }
@@ -222,8 +222,8 @@ final class PlatformTls {
             if (all.contains(vendor)) {
                 return "The certificate chain was issued by \"" + vendor.strip() + "\", which is a security product or proxy, not a public "
                         + "certificate authority. Its HTTPS scanning is replacing Mojang's / Microsoft's certificates. Turn off HTTPS / SSL "
-                        + "scanning for V-Client in that product (or add V-Client.exe and javaw.exe to its exclusions). "
-                        + "V-Client will not bypass certificate checks.";
+                        + "scanning for VYRN in that product (or add VYRN.exe and javaw.exe to its exclusions). "
+                        + "VYRN will not bypass certificate checks.";
             }
         }
         return "The certificate chain could not be verified against the Windows or the bundled Java trust store ("
@@ -231,7 +231,7 @@ final class PlatformTls {
                 + "Windows root certificate list (run Windows Update).";
     }
 
-    /** One line about the trust stores V-Client uses: the Windows root store and the bundled Java public roots. */
+    /** One line about the trust stores VYRN uses: the Windows root store and the bundled Java public roots. */
     static String truststoreSummary() {
         int windows = -1;
         int java = -1;
@@ -282,7 +282,7 @@ final class PlatformTls {
 
                 @Override
                 public void connectFailed(URI uri, java.net.SocketAddress socketAddress, IOException e) {
-                    System.err.println("V-Client proxy connection failed for " + uri.getHost() + ": "
+                    System.err.println("VYRN proxy connection failed for " + uri.getHost() + ": "
                             + describeFailure(e));
                 }
             };

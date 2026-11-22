@@ -9,8 +9,18 @@ using System.Windows.Forms;
 internal static class StandaloneInstaller
 {
     private const string PayloadResource = "VSMPClient.Payload.zip";
-    private const string ExecutableName = "V-Client.exe";
+    private const string ExecutableName = "VYRN.exe";
     private const string UninstallResource = "VSMPClient.Uninstall.ps1";
+    // Before the VYRN rename (1.7.x and older) the launcher was V-Client.exe in Programs\VSMP Client. An update
+    // from such a launcher must wait for it to close, then remove that old copy so only VYRN is left.
+    private const string LegacyExecutableName = "V-Client.exe";
+    private const string LegacyFolderName = "VSMP Client";
+    private const string LegacyShortcutName = "V-Client.lnk";
+
+    private static string ProgramsFolder()
+    {
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs");
+    }
 
     [STAThread]
     private static int Main(string[] args)
@@ -22,28 +32,28 @@ internal static class StandaloneInstaller
 
         try
         {
-            string installDirectory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Programs",
-                "VSMP Client");
+            string installDirectory = Path.Combine(ProgramsFolder(), "VYRN");
             string executablePath = Path.Combine(installDirectory, ExecutableName);
+            string legacyDirectory = Path.Combine(ProgramsFolder(), LegacyFolderName);
+            string legacyExecutable = Path.Combine(legacyDirectory, LegacyExecutableName);
 
             // --silent is how the launcher updates itself: it exits right after starting this installer, so
             // wait for it to finish closing instead of asking the user to, and show no setup window.
             bool silent = args.Contains("--silent");
             if (silent)
             {
-                for (int waited = 0; waited < 60 && IsInstalledLauncherRunning(executablePath); waited++)
+                for (int waited = 0; waited < 60
+                     && (IsInstalledLauncherRunning(executablePath) || IsInstalledLauncherRunning(legacyExecutable)); waited++)
                 {
                     System.Threading.Thread.Sleep(500);
                 }
             }
 
-            bool launcherRunning = IsInstalledLauncherRunning(executablePath);
+            bool launcherRunning = IsInstalledLauncherRunning(executablePath) || IsInstalledLauncherRunning(legacyExecutable);
             if (launcherRunning)
             {
                 throw new InvalidOperationException(
-                    "Close V-Client before installing or updating it, then run this setup file again.");
+                    "Close VYRN before installing or updating it, then run this setup file again.");
             }
 
             if (silent)
@@ -56,6 +66,7 @@ internal static class StandaloneInstaller
             }
             CreateShortcuts(installDirectory, executablePath);
             RegisterUninstaller(installDirectory, executablePath);
+            RemoveLegacyInstall(legacyDirectory, legacyExecutable);
             Process.Start(new ProcessStartInfo
             {
                 FileName = executablePath,
@@ -69,9 +80,11 @@ internal static class StandaloneInstaller
             if (args.Contains("--silent"))
             {
                 // A failed background update must not strand the user: start whatever version is installed.
-                string existing = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Programs", "VSMP Client", ExecutableName);
+                string existing = Path.Combine(ProgramsFolder(), "VYRN", ExecutableName);
+                if (!File.Exists(existing))
+                {
+                    existing = Path.Combine(ProgramsFolder(), LegacyFolderName, LegacyExecutableName);
+                }
                 if (File.Exists(existing) && !IsInstalledLauncherRunning(existing))
                 {
                     Process.Start(new ProcessStartInfo { FileName = existing, UseShellExecute = true });
@@ -80,8 +93,8 @@ internal static class StandaloneInstaller
             }
 
             MessageBox.Show(
-                "V-Client could not be installed or started.\r\n\r\n" + exception.Message,
-                "VSMP Client Setup",
+                "VYRN could not be installed or started.\r\n\r\n" + exception.Message,
+                "VYRN Setup",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
             return 1;
@@ -90,14 +103,15 @@ internal static class StandaloneInstaller
 
     /// <summary>
     /// True only when the launcher installed at <paramref name="executablePath"/> is running. Any other process that
-    /// happens to be called "V-Client" (a copy run from another folder, this setup file renamed, an unrelated program)
+    /// happens to have the same name (a copy run from another folder, this setup file renamed, an unrelated program)
     /// does not hold the install folder's files, so it must not block the install.
     /// </summary>
     private static bool IsInstalledLauncherRunning(string executablePath)
     {
         string installed = Path.GetFullPath(executablePath);
         int ownId = Process.GetCurrentProcess().Id;
-        foreach (Process candidate in Process.GetProcessesByName("V-Client"))
+        string processName = Path.GetFileNameWithoutExtension(installed);
+        foreach (Process candidate in Process.GetProcessesByName(processName))
         {
             try
             {
@@ -122,8 +136,8 @@ internal static class StandaloneInstaller
             {
                 string[] requiredEntries =
                 {
-                    "Release/V-Client.exe",
-                    "Release/app/V-Client.cfg",
+                    "Release/VYRN.exe",
+                    "Release/app/VYRN.cfg",
                     "Release/runtime/lib/modules",
                     "Release/runtime/bin/java.exe"
                 };
@@ -153,7 +167,7 @@ internal static class StandaloneInstaller
             }
 
             string verificationDirectory = Path.Combine(
-                Path.GetTempPath(), "VSMP-Setup-Verify-" + Guid.NewGuid().ToString("N"));
+                Path.GetTempPath(), "VYRN-Setup-Verify-" + Guid.NewGuid().ToString("N"));
             try
             {
                 ExtractPayload(verificationDirectory, null);
@@ -192,7 +206,7 @@ internal static class StandaloneInstaller
         using (Label message = new Label())
         using (ProgressBar bar = new ProgressBar())
         {
-            window.Text = "VSMP Client Setup";
+            window.Text = "VYRN Setup";
             window.FormBorderStyle = FormBorderStyle.FixedDialog;
             window.MaximizeBox = false;
             window.MinimizeBox = false;
@@ -200,7 +214,7 @@ internal static class StandaloneInstaller
             window.ClientSize = new System.Drawing.Size(420, 96);
             window.ControlBox = false;
             message.SetBounds(16, 16, 388, 22);
-            message.Text = "Installing V-Client...";
+            message.Text = "Installing VYRN...";
             bar.SetBounds(16, 48, 388, 22);
             bar.Minimum = 0;
             bar.Maximum = 100;
@@ -215,7 +229,7 @@ internal static class StandaloneInstaller
                         ExtractPayload(installDirectory, percent => window.BeginInvoke((Action)(() =>
                         {
                             bar.Value = percent;
-                            message.Text = "Installing V-Client... " + percent + "%";
+                            message.Text = "Installing VYRN... " + percent + "%";
                         })));
                     }
                     catch (Exception exception)
@@ -295,11 +309,11 @@ internal static class StandaloneInstaller
         if (!File.Exists(executablePath))
         {
             throw new FileNotFoundException(
-                "The application bundle did not contain V-Client.exe.", executablePath);
+                "The application bundle did not contain VYRN.exe.", executablePath);
         }
     }
 
-    /// <summary>Adds V-Client to the Start menu app list and the desktop. Failure here must never fail the install.</summary>
+    /// <summary>Adds VYRN to the Start menu app list and the desktop. Failure here must never fail the install.</summary>
     private static void CreateShortcuts(string installDirectory, string executablePath)
     {
         try
@@ -307,15 +321,40 @@ internal static class StandaloneInstaller
             string startMenu = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.StartMenu), "Programs");
             string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-            WriteShortcut(Path.Combine(startMenu, "V-Client.lnk"), installDirectory, executablePath);
-            WriteShortcut(Path.Combine(desktop, "V-Client.lnk"), installDirectory, executablePath);
+            WriteShortcut(Path.Combine(startMenu, "VYRN.lnk"), installDirectory, executablePath);
+            WriteShortcut(Path.Combine(desktop, "VYRN.lnk"), installDirectory, executablePath);
         }
         catch (Exception)
         {
         }
     }
 
-    /// <summary>Lists V-Client in Settings > Apps and Start with an Uninstall command. Never fails the install.</summary>
+    /// <summary>
+    /// Removes the pre-rename V-Client copy (program files and its Start menu/desktop shortcuts) once VYRN is installed.
+    /// Player data lives in %APPDATA% and is never touched here. Never fails the install: whatever cannot be removed now
+    /// is simply left behind.
+    /// </summary>
+    private static void RemoveLegacyInstall(string legacyDirectory, string legacyExecutable)
+    {
+        try
+        {
+            string startMenu = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu), "Programs");
+            string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            foreach (string shortcut in new[] { Path.Combine(startMenu, LegacyShortcutName), Path.Combine(desktop, LegacyShortcutName) })
+            {
+                try { if (File.Exists(shortcut)) File.Delete(shortcut); } catch (Exception) { }
+            }
+            if (Directory.Exists(legacyDirectory) && File.Exists(legacyExecutable) && !IsInstalledLauncherRunning(legacyExecutable))
+            {
+                Directory.Delete(legacyDirectory, true);
+            }
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    /// <summary>Lists VYRN in Settings > Apps and Start with an Uninstall command. Never fails the install.</summary>
     private static void RegisterUninstaller(string installDirectory, string executablePath)
     {
         try
@@ -335,8 +374,8 @@ internal static class StandaloneInstaller
             using (Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(
                 @"Software\Microsoft\Windows\CurrentVersion\Uninstall\VSMPClient"))
             {
-                key.SetValue("DisplayName", "V-Client");
-                key.SetValue("Publisher", "VSMP");
+                key.SetValue("DisplayName", "VYRN");
+                key.SetValue("Publisher", "VYRN");
                 key.SetValue("DisplayIcon", executablePath + ",0");
                 key.SetValue("InstallLocation", installDirectory);
                 key.SetValue("UninstallString", command);
@@ -359,7 +398,7 @@ internal static class StandaloneInstaller
         Type linkType = link.GetType();
         linkType.InvokeMember("TargetPath", BindingFlags.SetProperty, null, link, new object[] { executablePath });
         linkType.InvokeMember("WorkingDirectory", BindingFlags.SetProperty, null, link, new object[] { installDirectory });
-        linkType.InvokeMember("Description", BindingFlags.SetProperty, null, link, new object[] { "V-Client launcher for VSMP" });
+        linkType.InvokeMember("Description", BindingFlags.SetProperty, null, link, new object[] { "VYRN launcher for VSMP" });
         linkType.InvokeMember("IconLocation", BindingFlags.SetProperty, null, link, new object[] { executablePath + ",0" });
         linkType.InvokeMember("Save", BindingFlags.InvokeMethod, null, link, null);
     }

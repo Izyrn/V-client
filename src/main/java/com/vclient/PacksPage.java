@@ -31,7 +31,7 @@ final class PacksPage {
         FlowPane cards = new FlowPane(16, 16);
         for (PackCatalog.Pack pack : PackCatalog.PACKS) cards.getChildren().add(packCard(pack));
         root.getChildren().addAll(cards, result, UiKit.muted(
-                "Packs install from Modrinth into V-Client's mods folder for your Fabric profile. Mods that have no "
+                "Packs install from Modrinth into VYRN's mods folder for your Fabric profile. Mods that have no "
                         + "release for your Minecraft version are skipped, and anything already installed is left alone."));
     }
 

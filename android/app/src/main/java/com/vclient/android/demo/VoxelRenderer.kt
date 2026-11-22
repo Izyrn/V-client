@@ -134,7 +134,7 @@ class VoxelRenderer(private val world: DemoWorld) {
         return f * f
     }
 
-    /** Night-sky gradient in V-Client's navy, with a few stars and a gold crescent moon. */
+    /** Night-sky gradient in VYRN's navy, with a few stars and a gold crescent moon. */
     private fun skyColor(dx: Double, dy: Double, dz: Double): Int {
         val k = (dy * 1.3).coerceIn(0.0, 1.0)
         var color = mix(HORIZON, ZENITH, k)

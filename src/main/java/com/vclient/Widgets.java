@@ -128,7 +128,7 @@ final class Widgets {
         return pane;
     }
 
-    /** A path shortened to its last two folders, e.g. {@code ...\V-Client\minecraft}. */
+    /** A path shortened to its last two folders, e.g. {@code ...\VYRN\minecraft}. */
     static String shortPath(Path path) {
         if (path == null) return "";
         Path name = path.getFileName();

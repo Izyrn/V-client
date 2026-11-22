@@ -49,7 +49,7 @@ class DemoUiTest {
         compose.setContent {
             VClientTheme { HomeScreen(MainViewModel(app), onOpenServers = {}, onPlayDemo = { opened++ }) }
         }
-        assertEquals("This is a V-Client Demo World. Install Minecraft separately for the full game experience.", DEMO_NOTICE)
+        assertEquals("This is a VYRN Demo World. Install Minecraft separately for the full game experience.", DEMO_NOTICE)
         compose.onNodeWithText(DEMO_NOTICE).performScrollTo().assertExists()
         compose.onNodeWithText("Play Demo World").performScrollTo().performClick()
         assertEquals(1, opened)
@@ -63,7 +63,7 @@ class DemoUiTest {
 
         compose.onNodeWithText("Generating your world…").assertExists()
         waitForWorld()
-        compose.onNodeWithText("V-Client Demo World").assertExists()
+        compose.onNodeWithText("VYRN Demo World").assertExists()
         compose.onAllNodesWithText(DEMO_NOTICE, substring = true).assertCountEquals(2) // banner + welcome dialog
         compose.onNodeWithText("Start exploring").performClick()
         compose.mainClock.advanceTimeBy(200)

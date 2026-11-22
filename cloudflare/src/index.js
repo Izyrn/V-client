@@ -1,4 +1,4 @@
-// V-Client API as a Cloudflare Worker + D1. Endpoints match what the launcher and the website call.
+// VYRN API as a Cloudflare Worker + D1. Endpoints match what the launcher and the website call.
 // Privacy: no IP addresses, user agents or player names are stored. See the privacy note on the website.
 
 const EVENTS = new Set(['launch', 'play', 'install', 'update', 'join']);
@@ -9,11 +9,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // The newest published launcher (mirror of website/update.json, served to launchers that cannot read the website).
 const LATEST_RELEASE = {
-  version: '1.7.3',
-  notes: '1.7.3: anime event capes (animated and still), 8 new trails and frost cosmetics, a safer in-app Edge window, and more reliable update checks.',
+  version: '1.8.0',
+  notes: '1.8.0: V-Client is now VYRN. New name, app and installer; your accounts, worlds and settings move over automatically.',
   mandatory: false,
-  size: 95481344,
-  sha256: '89176395229d1ad80952671b1b55d95fcb0e4abaa3204a30c50c76ad74a6926f',
+  size: 95484928,
+  sha256: 'ab9e06889e6967b7a69b1c89a5d230453dc542f4034394e5e96a42cdf039dfd3',
   url: 'https://izyrn.github.io/V-client/VSMPClientSetup.exe',
 };
 
@@ -87,7 +87,7 @@ async function serverStatus(env, ctx) {
   if (hit) return hit.json();
   const started = Date.now();
   const response = await fetch(`https://api.mcstatus.io/v2/status/java/${encodeURIComponent(host)}:${port}`, {
-    headers: { 'User-Agent': 'V-Client-API' },
+    headers: { 'User-Agent': 'VYRN-API' },
     signal: AbortSignal.timeout(5000),
   });
   if (!response.ok) throw new Error(`status lookup returned ${response.status}`);

@@ -178,7 +178,7 @@ final class MinecraftLauncherTest {
                 ? "java.exe" : "java";
         Path testJava = Path.of(System.getProperty("java.home"), "bin", executable);
         MinecraftLauncher downloadEnabledLauncher = new MinecraftLauncher((javaMajor, onOutput, allowDownloads) -> {
-            assertTrue(allowDownloads, "Play must allow V-Client to download the required game runtime.");
+            assertTrue(allowDownloads, "Play must allow VYRN to download the required game runtime.");
             return testJava;
         });
         var selected = downloadEnabledLauncher.findVersions(minecraftDirectory).stream()
@@ -190,7 +190,7 @@ final class MinecraftLauncherTest {
                 PlayerAccount.offline("Player"), output::add);
 
         assertGameStarted(output);
-        assertTrue(output.stream().anyMatch(line -> line.contains("V-Client's files")));
+        assertTrue(output.stream().anyMatch(line -> line.contains("VYRN's files")));
         assertTrue(output.stream().anyMatch(line -> line.contains("Java runtime version details:")));
         assertTrue(output.contains("JVM arguments (sensitive values redacted):"));
         assertTrue(output.contains("Minecraft arguments (sensitive values redacted):"));
@@ -325,7 +325,7 @@ final class MinecraftLauncherTest {
 
         assertGameStarted(output);
         assertTrue(output.stream().anyMatch(line -> line.startsWith(
-                "Starting Minecraft using only local files; V-Client will not refresh accounts or download files.")));
+                "Starting Minecraft using only local files; VYRN will not refresh accounts or download files.")));
     }
 
     @Test
@@ -410,7 +410,7 @@ final class MinecraftLauncherTest {
 
         assertGameStarted(output);
         assertTrue(output.stream().anyMatch(line -> line.startsWith(
-                "Starting Minecraft using only local files; V-Client will not refresh accounts or download files.")));
+                "Starting Minecraft using only local files; VYRN will not refresh accounts or download files.")));
         assertTrue(output.contains("Minecraft assets ready (0 objects)."));
     }
 

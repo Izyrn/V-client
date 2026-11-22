@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * One-click cleanup of the disposable parts of V-Client's game folder: logs, caches, temporary files and the
+ * One-click cleanup of the disposable parts of VYRN's game folder: logs, caches, temporary files and the
  * versions nobody uses. It never touches worlds, mods, configs, screenshots, recordings or saved accounts.
  */
 final class CleanupService {
@@ -21,7 +21,7 @@ final class CleanupService {
         LOGS("Logs", "Game logs, crash reports and JVM crash dumps"),
         CACHE("Cache", "Skin cache and web cache"),
         TEMP("Temporary files", "Half-finished downloads and leftover .tmp / .part files"),
-        OLD_VERSIONS("Old versions", "Installed versions other than the newest one and the V-Client profile");
+        OLD_VERSIONS("Old versions", "Installed versions other than the newest one and the VYRN profile");
 
         private final String label;
         private final String detail;
@@ -82,7 +82,7 @@ final class CleanupService {
         Path launcherRoot = launcherDirectory.toAbsolutePath().normalize();
         for (Item item : items) {
             Path path = item.path().toAbsolutePath().normalize();
-            // Only ever delete inside the two folders V-Client owns.
+            // Only ever delete inside the two folders VYRN owns.
             if (!(path.startsWith(gameRoot) || path.startsWith(launcherRoot)) || path.equals(gameRoot)
                     || path.equals(launcherRoot)) {
                 failed++;
@@ -154,7 +154,8 @@ final class CleanupService {
         Set<String> protectedIds = new java.util.HashSet<>(keep);
         if (!candidates.isEmpty()) protectedIds.add(candidates.getFirst().getFileName().toString());
         for (Path directory : candidates) {
-            if (directory.getFileName().toString().toLowerCase(java.util.Locale.ROOT).contains("v-client")) {
+            String name = directory.getFileName().toString().toLowerCase(java.util.Locale.ROOT);
+            if (name.contains("vyrn") || name.contains("v-client")) {
                 protectedIds.add(directory.getFileName().toString());
             }
         }

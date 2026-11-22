@@ -1,4 +1,4 @@
-# V-Client API (Cloudflare Worker + D1)
+# VYRN API (Cloudflare Worker + D1)
 
 Replaces the Render backend. It never sleeps and stores almost nothing.
 

@@ -1,4 +1,4 @@
-# V-Client API on Cloudflare Workers + D1. Never sleeps; the free tier is plenty.
+# VYRN API on Cloudflare Workers + D1. Never sleeps; the free tier is plenty.
 # Deploy steps are in README.md (create the D1 database, paste its id below, set the secret, run `npx wrangler deploy`).
 name = "vclient-api"
 main = "src/index.js"

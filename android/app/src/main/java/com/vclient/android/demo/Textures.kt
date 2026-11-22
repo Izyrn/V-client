@@ -1,7 +1,7 @@
 package com.vclient.android.demo
 
 /**
- * Procedural 8 x 8 block textures, drawn in code. They are original V-Client artwork: flat colours with hashed
+ * Procedural 8 x 8 block textures, drawn in code. They are original VYRN artwork: flat colours with hashed
  * speckle and simple patterns, so there are no image files and nothing is copied from any game.
  */
 object Textures {
@@ -94,7 +94,7 @@ object Textures {
             Block.IRON_ORE -> ore(n, speck, rgb(214, 168, 128))
             Block.GOLD_ORE -> ore(n, speck, rgb(240, 200, 70))
             Block.GOLD -> {
-                // V-Client's own block: gold with a dark "V" on every face.
+                // VYRN's own block: gold with a dark "V" on every face.
                 val onV = (iy in 0..5 && (ix == iy / 2 || ix == 7 - iy / 2)) || (iy in 6..7 && (ix == 3 || ix == 4))
                 if (onV) rgb(16, 19, 33) else rgb(231 + speck / 2, 191 + speck / 2, 104 + speck / 2)
             }

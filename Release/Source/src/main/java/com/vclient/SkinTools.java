@@ -24,8 +24,7 @@ final class SkinTools {
     private SkinTools() {}
 
     static Path presetsFolder() {
-        return Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-                "V-Client", "skin-presets");
+        return AppInfo.dataDir().resolve("skin-presets");
     }
 
     // ---- validation ------------------------------------------------------------------------------

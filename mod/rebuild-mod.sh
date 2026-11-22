@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fast rebuild of just the V-Client mod jar. Needs mod/.work from a previous ./build-mod.sh run
+# Fast rebuild of just the VYRN mod jar. Needs mod/.work from a previous ./build-mod.sh run
 # (it holds the remapped Minecraft jar and the Fabric/Mixin libraries); nothing is downloaded.
 # Compiles mod/src, remaps it to intermediary names and copies the jar into the launcher resources.
 #

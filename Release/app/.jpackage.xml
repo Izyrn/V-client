@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <jpackage-state version="21.0.13.0.3" platform="windows">
   <app-version>1.0.0</app-version>
-  <main-launcher>V-Client</main-launcher>
+  <main-launcher>VYRN</main-launcher>
   <main-class>com.vclient.LauncherApp</main-class>
   <signed>false</signed>
   <app-store>false</app-store></jpackage-state>

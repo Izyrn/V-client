@@ -20,8 +20,7 @@ final class AccountStore {
     private static final int DPAPI_UI_FORBIDDEN = 0x1;
     private static final String FORMAT = "V-CLIENT-DPAPI-1:";
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final Path DEFAULT_DATA_DIRECTORY = Path.of(
-            System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")), "V-Client");
+    private static final Path DEFAULT_DATA_DIRECTORY = AppInfo.dataDir();
     private final Path dataDirectory;
     private final Path accountsFile;
     private final Path offlineAccountsFile;
@@ -48,18 +47,18 @@ final class AccountStore {
             throw new IOException("Saved accounts are protected with Windows DPAPI and can only be opened on this Windows account.");
         }
         String stored = Files.readString(accountsFile, StandardCharsets.US_ASCII);
-        if (!stored.startsWith(FORMAT)) throw new IOException("V-Client account data has an unsupported format.");
+        if (!stored.startsWith(FORMAT)) throw new IOException("VYRN account data has an unsupported format.");
         byte[] protectedData;
         try {
             protectedData = java.util.Base64.getDecoder().decode(stored.substring(FORMAT.length()).strip());
         } catch (IllegalArgumentException e) {
-            throw new IOException("V-Client account data is corrupted.", e);
+            throw new IOException("VYRN account data is corrupted.", e);
         }
         final byte[] clearText;
         try {
             clearText = Crypt32Util.cryptUnprotectData(protectedData, DPAPI_UI_FORBIDDEN);
         } catch (RuntimeException e) {
-            throw new IOException("V-Client could not unlock saved accounts for this Windows user.", e);
+            throw new IOException("VYRN could not unlock saved accounts for this Windows user.", e);
         }
         try {
             JsonNode root = JSON.readTree(clearText);
@@ -133,14 +132,14 @@ final class AccountStore {
         JsonNode root = JSON.readTree(offlineAccountsFile.toFile());
         JsonNode accounts = root == null ? null : root.path("accounts");
         if (accounts == null || !accounts.isArray()) {
-            throw new IOException("V-Client offline account data is invalid.");
+            throw new IOException("VYRN offline account data is invalid.");
         }
         List<PlayerAccount> result = new ArrayList<>(accounts.size());
         for (JsonNode saved : accounts) {
             try {
                 result.add(PlayerAccount.offline(saved.asText()));
             } catch (IllegalArgumentException e) {
-                throw new IOException("V-Client offline account data contains an invalid username.", e);
+                throw new IOException("VYRN offline account data contains an invalid username.", e);
             }
         }
         return result;
@@ -188,7 +187,7 @@ final class AccountStore {
                     text(node, "refreshToken"), text(node, "clientToken"), text(node, "xuid"),
                     text(node, "userProperties"), text(node, "skinUrl"), text(node, "capeUrl"));
         } catch (IllegalArgumentException e) {
-            throw new IOException("V-Client contains an invalid saved account.", e);
+            throw new IOException("VYRN contains an invalid saved account.", e);
         }
     }
 

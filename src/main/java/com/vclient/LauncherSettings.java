@@ -11,9 +11,7 @@ import java.util.Set;
 
 final class LauncherSettings {
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final Path SETTINGS_FILE = Path.of(
-            System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-            "V-Client", "settings.json");
+    private static final Path SETTINGS_FILE = AppInfo.dataDir().resolve("settings.json");
 
     private Path minecraftDirectory;
     private int memoryGb;
@@ -22,7 +20,7 @@ final class LauncherSettings {
     private String discordInvite;
     private boolean offlineMode;
     private String backendUrl = "";
-    /** V-Client account session per game account, so signing in as one player never signs in the others. */
+    /** VYRN account session per game account, so signing in as one player never signs in the others. */
     private final java.util.Map<String, String> backendTokens = new java.util.LinkedHashMap<>();
     private String installId = "";
     private boolean autoUpdate = true;
@@ -73,9 +71,9 @@ final class LauncherSettings {
     }
 
     static LauncherSettings load() throws IOException {
-        Path appData = Path.of(System.getenv().getOrDefault("APPDATA",
-                Path.of(System.getProperty("user.home"), "AppData", "Roaming").toString()));
-        Path defaultDirectory = privateMinecraftDirectory(appData);
+        Path appData = AppInfo.appData();
+        Path dataDir = AppInfo.dataDir();
+        Path defaultDirectory = privateMinecraftDirectory(dataDir);
         if (!Files.exists(SETTINGS_FILE)) {
             LauncherSettings fresh = new LauncherSettings(defaultDirectory, defaultMemory(), 0, "", "", true);
             fresh.onboardingDone = false;
@@ -87,7 +85,7 @@ final class LauncherSettings {
         int memory = saved.path("memoryGb").asInt(defaultMemory());
         Path selectedDirectory = Path.of(directory);
         Path minecraftDirectory = migrateLegacyDirectory(
-                normalizeMinecraftDirectory(selectedDirectory), appData);
+                normalizeMinecraftDirectory(selectedDirectory), appData, dataDir);
         LauncherSettings settings = new LauncherSettings(minecraftDirectory,
                 Math.clamp(memory, 1, maxMemory()), isSelectableJava(saved.path("javaMajorOverride").asInt(0)) ? saved.path("javaMajorOverride").asInt(0) : 0,
                 saved.path("lastAccountId").asText(""),
@@ -130,17 +128,27 @@ final class LauncherSettings {
         return settings;
     }
 
-    static Path privateMinecraftDirectory(Path appData) {
-        return appData.resolve("V-Client").resolve("minecraft");
+    /** The launcher's own game folder, %APPDATA%\VYRN\minecraft. */
+    static Path privateMinecraftDirectory(Path dataDir) {
+        return dataDir.resolve("minecraft");
     }
 
-    static Path migrateLegacyDirectory(Path configured, Path appData) {
-        Path oldLauncherRoot = appData.resolve("V-Client").toAbsolutePath().normalize();
+    /**
+     * Fixes a saved game folder from an older version: the data folder itself or the shared .minecraft become the private
+     * game folder, and anything that pointed inside the old %APPDATA%\VYRN folder (moved to %APPDATA%\VYRN by the
+     * rename) is pointed at the same place in the new folder. A folder the player picked elsewhere is kept as it is.
+     */
+    static Path migrateLegacyDirectory(Path configured, Path appData, Path dataDir) {
+        Path oldLauncherRoot = appData.resolve(AppInfo.LEGACY_DATA_FOLDER).toAbsolutePath().normalize();
+        Path launcherRoot = dataDir.toAbsolutePath().normalize();
         Path oldDefaultDirectory = appData.resolve(".minecraft").toAbsolutePath().normalize();
         Path normalizedConfigured = configured.toAbsolutePath().normalize();
-        if (normalizedConfigured.equals(oldLauncherRoot) || normalizedConfigured.equals(oldDefaultDirectory)) {
-            return privateMinecraftDirectory(appData);
+        if (normalizedConfigured.equals(oldLauncherRoot) || normalizedConfigured.equals(launcherRoot)
+                || normalizedConfigured.equals(oldDefaultDirectory)) {
+            return privateMinecraftDirectory(dataDir);
         }
+        // Only rebase once the old folder is really gone (moved); if the move failed, dataDir is the old folder anyway.
+        if (!Files.isDirectory(oldLauncherRoot)) return AppInfo.rebaseLegacyPath(configured, appData, dataDir);
         return configured;
     }
 
@@ -211,7 +219,7 @@ final class LauncherSettings {
         this.javaMajorOverride = javaMajorOverride;
     }
 
-    /** 0 means automatic; otherwise a Java version V-Client can install and run (see JavaRuntimeManager). */
+    /** 0 means automatic; otherwise a Java version VYRN can install and run (see JavaRuntimeManager). */
     static boolean isSelectableJava(int major) {
         return major == 0 || major == 17 || major == 21 || major == 25;
     }
@@ -353,7 +361,7 @@ final class LauncherSettings {
         this.backendUrl = backendUrl == null ? "" : backendUrl;
     }
 
-    /** Session token of the V-Client account signed in for the active game account; empty when signed out. */
+    /** Session token of the VYRN account signed in for the active game account; empty when signed out. */
     String backendToken() {
         return backendTokens.getOrDefault(lastAccountId == null ? "" : lastAccountId, "");
     }

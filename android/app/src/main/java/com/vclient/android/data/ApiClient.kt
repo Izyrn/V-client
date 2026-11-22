@@ -12,7 +12,7 @@ import java.net.URLEncoder
 /** The backend answered with a message meant for the player (for example "Incorrect username or password"). */
 class ApiException(message: String) : IOException(message)
 
-/** Talks to the shared V-Client backend, the same one the Windows launcher and the website use. */
+/** Talks to the shared VYRN backend, the same one the Windows launcher and the website use. */
 class ApiClient(baseUrl: String, private val token: String? = null) {
     val baseUrl: String = normalize(baseUrl)
 
@@ -132,14 +132,14 @@ class ApiClient(baseUrl: String, private val token: String? = null) {
 
     private suspend fun send(method: String, path: String, body: JSONObject? = null): JSONObject =
         withContext(Dispatchers.IO) {
-            if (!configured) throw ApiException("Set the V-Client backend address in Settings.")
+            if (!configured) throw ApiException("Set the VYRN backend address in Settings.")
             val connection = URL(baseUrl + path).openConnection() as HttpURLConnection
             try {
                 connection.requestMethod = method
                 connection.connectTimeout = 8_000
                 connection.readTimeout = 15_000
                 connection.setRequestProperty("Accept", "application/json")
-                connection.setRequestProperty("User-Agent", "V-Client/${BuildConfig.VERSION_NAME} (android)")
+                connection.setRequestProperty("User-Agent", "VYRN/${BuildConfig.VERSION_NAME} (android)")
                 token?.let { connection.setRequestProperty("Authorization", "Bearer $it") }
                 if (body != null) {
                     connection.doOutput = true
@@ -149,8 +149,8 @@ class ApiClient(baseUrl: String, private val token: String? = null) {
                 val status = connection.responseCode
                 val stream = if (status >= 400) connection.errorStream else connection.inputStream
                 val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
-                // A web host that isn't running the V-Client backend answers with an empty or HTML page.
-                val notBackend = "The V-Client server isn't available right now. Try again later, or check the backend address in Settings."
+                // A web host that isn't running the VYRN backend answers with an empty or HTML page.
+                val notBackend = "The VYRN server isn't available right now. Try again later, or check the backend address in Settings."
                 if (status < 400 && text.isBlank()) throw IOException(notBackend)
                 val json = try {
                     if (text.isBlank()) JSONObject() else JSONObject(text)

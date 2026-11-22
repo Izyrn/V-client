@@ -223,7 +223,7 @@ final class CosmeticNet {
             throws IOException, InterruptedException {
         long start = System.nanoTime();
         HttpRequest.Builder request = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(TIMEOUT_SECONDS))
-                .header("Accept", "application/json, image/png, */*").header("User-Agent", "V-Client-Mod");
+                .header("Accept", "application/json, image/png, */*").header("User-Agent", "VYRN-Mod");
         if (etag != null && !etag.isBlank()) request.header("If-None-Match", etag);
         switch (method) {
             case "HEAD" -> request.method("HEAD", HttpRequest.BodyPublishers.noBody());

@@ -67,8 +67,8 @@ final class ProfilePage {
             int owned = host.ownedCosmeticsCount();
             Platform.runLater(() -> cosmeticsValue.setText(owned < 0 ? "—" : String.valueOf(owned)));
         });
-        card.getChildren().add(UiKit.muted(stats.totalLaunches() + (stats.totalLaunches() == 1 ? " launch" : " launches") + " through V-Client. Playtime counts the time "
-                + "the game was open; the FPS number needs the V-Client in-game mod."));
+        card.getChildren().add(UiKit.muted(stats.totalLaunches() + (stats.totalLaunches() == 1 ? " launch" : " launches") + " through VYRN. Playtime counts the time "
+                + "the game was open; the FPS number needs the VYRN in-game mod."));
         return card;
     }
 
@@ -98,7 +98,7 @@ final class ProfilePage {
         PlayerStats stats = host.stats();
         LocalDate today = LocalDate.now();
         VBox card = UiKit.section("Daily login rewards",
-                "Open V-Client every day to keep your streak. Day 1 earns a cosmetic, day 7 an exclusive cosmetic and "
+                "Open VYRN every day to keep your streak. Day 1 earns a cosmetic, day 7 an exclusive cosmetic and "
                         + "day 30 a legend cosmetic. Miss a day and the streak starts again.");
         Label status = ModsUi.text("", 12, ModsUi.MUTED, false);
         status.setWrapText(true);

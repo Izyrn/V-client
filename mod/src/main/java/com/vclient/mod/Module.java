@@ -7,7 +7,7 @@ import java.util.List;
 
 /** Every feature shown in the Right Shift mod menu, with the options on its settings page. */
 public enum Module {
-    CLIENT("V-Client", "Menu key", true, Kind.ALWAYS_ON,
+    CLIENT("VYRN", "Menu key", true, Kind.ALWAYS_ON,
             Setting.key("menuKey", "Mod menu key", GLFW.GLFW_KEY_RIGHT_SHIFT)),
     MENU_BACKGROUND("Frost Menus", "Aurora, snowfall and glaciers behind menus", true, Kind.FEATURE,
             Setting.toggle("comet", "Aurora shimmer", true),
@@ -105,7 +105,7 @@ public enum Module {
         return kind == Kind.HUD;
     }
 
-    /** Whether the module can be switched off (V-Client's own controls cannot). */
+    /** Whether the module can be switched off (VYRN's own controls cannot). */
     public boolean toggleable() {
         return kind != Kind.ALWAYS_ON;
     }

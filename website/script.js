@@ -3,7 +3,7 @@
 // Shared by every public page. The API (news, announcements, server status) is optional: if it cannot be reached the page still works.
 const GITHUB_REPO = "Izyrn/V-client";
 const WINDOWS_RELEASE_URL = `https://github.com/${GITHUB_REPO}/releases/latest/download/VSMPClientSetup.exe`;
-// The V-Client API (Cloudflare Worker). Change this one line if the address changes.
+// The VYRN API (Cloudflare Worker). Change this one line if the address changes.
 const API_BASE = "https://vclient-api.vclient-api.workers.dev";
 const ANDROID_URL = "./V-Client.apk";
 const DEFAULT_JAVA_ADDRESS = "vsmp.meowlix.sh:19754";

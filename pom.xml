@@ -3,9 +3,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.vclient</groupId>
-    <artifactId>v-client</artifactId>
-    <version>1.0.0</version>
-    <name>V-Client</name>
+    <artifactId>vyrn</artifactId>
+    <version>1.8.0</version>
+    <name>VYRN</name>
     <description>A native JavaFX launcher for installed Minecraft versions</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -53,7 +53,7 @@
         </dependency>
     </dependencies>
     <build>
-        <finalName>V-Client</finalName>
+        <finalName>VYRN</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -74,6 +74,10 @@
                 <version>3.5.3</version>
                 <configuration>
                     <argLine>--add-modules jdk.httpserver --add-reads com.vclient=jdk.httpserver</argLine>
+                    <!-- Never let a test run move or touch the developer's real %APPDATA%\VYRN (or old VYRN) folder. -->
+                    <systemPropertyVariables>
+                        <vyrn.dataDir>${project.build.directory}/test-appdata</vyrn.dataDir>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>

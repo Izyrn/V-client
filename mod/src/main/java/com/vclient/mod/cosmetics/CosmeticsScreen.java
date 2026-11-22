@@ -63,7 +63,7 @@ public final class CosmeticsScreen extends Screen {
     private int contentHeight;
 
     public CosmeticsScreen(Screen parent) {
-        super(Text.literal("V-Client Cosmetics"));
+        super(Text.literal("VYRN Cosmetics"));
         this.parent = parent;
     }
 
@@ -148,9 +148,9 @@ public final class CosmeticsScreen extends Screen {
         context.getMatrices().pushMatrix();
         context.getMatrices().translate(panelX + 10, panelY + 9);
         context.getMatrices().scale(1.5f, 1.5f);
-        context.drawText(textRenderer, "V-CLIENT", 0, 0, ACCENT, true);
+        context.drawText(textRenderer, "VYRN", 0, 0, ACCENT, true);
         context.getMatrices().popMatrix();
-        context.drawText(textRenderer, "COSMETICS", panelX + 10 + (int) (textRenderer.getWidth("V-CLIENT") * 1.5f) + 6,
+        context.drawText(textRenderer, "COSMETICS", panelX + 10 + (int) (textRenderer.getWidth("VYRN") * 1.5f) + 6,
                 panelY + 13, 0xFFA9D2E8, false);
         boolean master = CosmeticState.enabled();
         drawPill(context, masterToggle, master ? "ON" : "OFF", master ? 0xFF244A38 : 0xFF482332,

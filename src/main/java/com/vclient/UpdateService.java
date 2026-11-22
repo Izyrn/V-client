@@ -60,7 +60,7 @@ final class UpdateService {
         Path target = directory.resolve(fileName);
         Path partial = directory.resolve(fileName + ".part");
         HttpRequest request = HttpRequest.newBuilder(uri).timeout(Duration.ofMinutes(20))
-                .header("User-Agent", "V-Client/" + AppInfo.VERSION).GET().build();
+                .header("User-Agent", "VYRN/" + AppInfo.VERSION).GET().build();
         HttpResponse<InputStream> response = HTTP.send(request, HttpResponse.BodyHandlers.ofInputStream());
         if (response.statusCode() != 200) throw new IOException("Update download failed (HTTP " + response.statusCode() + ").");
         long total = response.headers().firstValueAsLong("Content-Length").orElse(release.size());
@@ -94,7 +94,7 @@ final class UpdateService {
     }
 
     /**
-     * Starts the installer a few seconds from now. The installer refuses to run while V-Client is open,
+     * Starts the installer a few seconds from now. The installer refuses to run while VYRN is open,
      * so the caller must exit right after this returns.
      */
     static void launchInstallerAfterExit(Path installer) throws IOException {

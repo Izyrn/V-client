@@ -72,7 +72,7 @@ final class CosmeticsDiagnostics {
 
     private static Reply request(String method, String url, String jsonBody) throws IOException, InterruptedException {
         HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(TIMEOUT_SECONDS))
-                .header("Accept", "application/json, image/png, */*").header("User-Agent", "V-Client/" + AppInfo.VERSION);
+                .header("Accept", "application/json, image/png, */*").header("User-Agent", "VYRN/" + AppInfo.VERSION);
         switch (method) {
             case "HEAD" -> request.method("HEAD", HttpRequest.BodyPublishers.noBody());
             case "POST" -> request.header("Content-Type", "application/json")
@@ -172,14 +172,14 @@ final class CosmeticsDiagnostics {
                         .timeout(Duration.ofSeconds(TIMEOUT_SECONDS))
                         .header("Authorization", "Bearer " + context.backendToken()).GET().build();
                 int status = HTTP.send(me, HttpResponse.BodyHandlers.discarding()).statusCode();
-                add.accept(new Check("V-Client account token", status == 200 ? Result.OK : Result.FAIL,
+                add.accept(new Check("VYRN account token", status == 200 ? Result.OK : Result.FAIL,
                         status == 200 ? "valid" : "rejected (HTTP " + status + ") - sign in again on the News page"));
             } catch (IOException | InterruptedException e) {
                 if (e instanceof InterruptedException) Thread.currentThread().interrupt();
-                add.accept(new Check("V-Client account token", Result.FAIL, describe(e)));
+                add.accept(new Check("VYRN account token", Result.FAIL, describe(e)));
             }
         } else {
-            add.accept(new Check("V-Client account token", Result.INFO, "not signed in to the V-Client backend (not needed for cosmetics)"));
+            add.accept(new Check("VYRN account token", Result.INFO, "not signed in to the VYRN backend (not needed for cosmetics)"));
         }
     }
 

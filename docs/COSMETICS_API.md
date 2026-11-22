@@ -1,4 +1,4 @@
-# V-Client cosmetics API
+# VYRN cosmetics API
 
 Cosmetics are **visual only**. The client draws them on your own character; nothing here is sent to a game
 server, changes hitboxes, movement, or any gameplay value. New cosmetics are added on the backend (or in the

@@ -80,7 +80,7 @@ final class NetworkDiagnostics {
     }
 
     /**
-     * The four-line startup checklist: DNS, TLS, Mojang and the V-Client backend, each with a fix hint when it fails.
+     * The four-line startup checklist: DNS, TLS, Mojang and the VYRN backend, each with a fix hint when it fails.
      * Never called in Offline mode (the caller skips it, because nothing may be contacted then).
      */
     static List<Check> checklist(String backendUrl, Consumer<String> log) {
@@ -97,12 +97,12 @@ final class NetworkDiagnostics {
         return List.copyOf(result);
     }
 
-    /** Reaches the V-Client backend; a sleeping free-tier server counts as "waking up", not as a failure. */
+    /** Reaches the VYRN backend; a sleeping free-tier server counts as "waking up", not as a failure. */
     static Check testBackend(String backendUrl, Consumer<String> log) {
         BackendClient client = new BackendClient(BackendClient.resolveUrl(backendUrl));
         if (!client.configured()) {
             return new Check("Backend", false, "No backend address is set.",
-                    "Open News → Backend & updates and enter the V-Client backend address.");
+                    "Open News → Backend & updates and enter the VYRN backend address.");
         }
         try {
             client.serverStatus();

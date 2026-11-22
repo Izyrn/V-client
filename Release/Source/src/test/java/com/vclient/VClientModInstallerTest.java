@@ -30,7 +30,7 @@ class VClientModInstallerTest {
 
         List<String> output = new ArrayList<>();
         assertTrue(VClientModInstaller.ensureInstalled(minecraft, output::add));
-        Path profile = minecraft.resolve("versions/V-Client 1.21.11/V-Client 1.21.11.json");
+        Path profile = minecraft.resolve("versions/VYRN 1.21.11/VYRN 1.21.11.json");
         assertTrue(Files.isRegularFile(profile));
         assertTrue(Files.isRegularFile(minecraft.resolve(
                 "libraries/net/fabricmc/fabric-loader/0.19.5/fabric-loader-0.19.5.jar")));
@@ -47,5 +47,24 @@ class VClientModInstallerTest {
         output.clear();
         assertTrue(VClientModInstaller.ensureInstalled(minecraft, output::add));
         assertTrue(output.isEmpty(), "an up-to-date install copies nothing");
+    }
+
+    @Test
+    void replacesTheOldVClientProfileWithTheVyrnOne() throws Exception {
+        Path parent = minecraft.resolve("versions/1.21.11/1.21.11.json");
+        Files.createDirectories(parent.getParent());
+        Files.writeString(parent, "{\"id\":\"1.21.11\",\"type\":\"release\",\"mainClass\":\"net.minecraft.client.main.Main\",\"libraries\":[]}");
+        Path old = minecraft.resolve("versions/V-Client 1.21.11/V-Client 1.21.11.json");
+        Files.createDirectories(old.getParent());
+        Files.writeString(old, "{}");
+        Path world = minecraft.resolve("saves/World/level.dat");
+        Files.createDirectories(world.getParent());
+        Files.writeString(world, "keep");
+
+        assertTrue(VClientModInstaller.ensureInstalled(minecraft, line -> {}));
+
+        assertFalse(Files.exists(old.getParent()));
+        assertTrue(Files.isRegularFile(minecraft.resolve("versions/VYRN 1.21.11/VYRN 1.21.11.json")));
+        assertEquals("keep", Files.readString(world));
     }
 }

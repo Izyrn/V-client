@@ -29,7 +29,7 @@ final class LocalMinecraftImporterTest {
         Files.writeString(profile.resolve("Fabric 1.21.11.json"), "{\"id\":\"Fabric 1.21.11\"}");
         Files.writeString(library, "library");
         Files.writeString(asset, "asset");
-        Path destination = temporaryDirectory.resolve("V-Client").resolve("minecraft");
+        Path destination = temporaryDirectory.resolve("VYRN").resolve("minecraft");
         List<String> progress = new ArrayList<>();
 
         LocalMinecraftImporter.importGameFiles(source, destination, progress::add);
@@ -68,6 +68,6 @@ final class LocalMinecraftImporterTest {
         Files.writeString(profile.resolve("1.21.11.json"), "{\"id\":\"1.21.11\"}");
 
         assertThrows(IOException.class, () ->
-                LocalMinecraftImporter.importGameFiles(source, source.resolve("V-Client"), ignored -> {}));
+                LocalMinecraftImporter.importGameFiles(source, source.resolve("VYRN"), ignored -> {}));
     }
 }

@@ -6,7 +6,7 @@ import java.util.Locale;
 
 /**
  * Parses the "extra JVM arguments" setting. Only memory/GC/system-property style flags are accepted: anything that
- * could load code (-javaagent, -agentlib, -Xbootclasspath, -XX:OnError ...) or flip V-Client's own permission
+ * could load code (-javaagent, -agentlib, -Xbootclasspath, -XX:OnError ...) or flip VYRN's own permission
  * switches (-Dvclient.*) is refused, which also keeps an imported profile from smuggling those in.
  */
 final class JvmArgs {

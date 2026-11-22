@@ -4,12 +4,12 @@ $repoRoot = $PSScriptRoot
 $sourceDirectory = Join-Path $repoRoot "src"
 $iconPath = Join-Path $sourceDirectory "main\resources\vclient.ico"
 $releaseDirectory = Join-Path $repoRoot "Release"
-$zipPath = Join-Path $repoRoot "AzyrClient.zip"
+$zipPath = Join-Path $repoRoot "VYRN.zip"
 $appImageParent = Join-Path $repoRoot "target\release-app-image"
 $releaseStaging = Join-Path $repoRoot "target\release-staging"
 $jpackageInput = Join-Path $repoRoot "target\release-input"
 $javafxModules = Join-Path $repoRoot "target\javafx-modules"
-$zipStaging = Join-Path $repoRoot "target\AzyrClient.zip.tmp"
+$zipStaging = Join-Path $repoRoot "target\VYRN.zip.tmp"
 $javaHome = $env:JAVA_HOME
 # One runtime serves both the launcher and Minecraft 1.21.11, so it carries the full
 # Java SE platform plus the jdk.* modules Minecraft, Fabric, and Netty use.
@@ -24,7 +24,7 @@ if (-not $javaHome -or -not (Test-Path (Join-Path $javaHome "bin\jpackage.exe"))
 }
 $javaRelease = Join-Path $javaHome "release"
 if (-not (Test-Path $javaRelease) -or ((Get-Content -Raw $javaRelease) -notmatch 'IMPLEMENTOR="Azul Systems') -or ((Get-Content -Raw $javaRelease) -notmatch 'JAVA_VERSION="21\.')) {
-    throw "JAVA_HOME must be an Azul Zulu JDK 21: V-Client also runs Minecraft on the bundled runtime and only accepts Azul Zulu builds."
+    throw "JAVA_HOME must be an Azul Zulu JDK 21: VYRN also runs Minecraft on the bundled runtime and only accepts Azul Zulu builds."
 }
 if (-not (Get-Command mvn -ErrorAction SilentlyContinue)) {
     throw "Maven must be installed and available on PATH."
@@ -35,13 +35,23 @@ if (-not (Test-Path $iconPath)) {
 
 Push-Location $repoRoot
 try {
+    # Start the jar folders empty: jpackage bundles every jar it finds there, so a leftover launcher jar from an older
+    # build (V-Client.jar before the VYRN rename) would ship twice and bloat the installer.
+    foreach ($stale in @((Join-Path $repoRoot "target\app"), $jpackageInput)) {
+        if (Test-Path $stale) { Remove-Item -LiteralPath $stale -Recurse -Force }
+    }
+    # Old names from before the VYRN rename must not linger in Release (and so in the setup payload).
+    foreach ($old in @("V-Client.exe", "app\V-Client.cfg", "app\V-Client.jar")) {
+        $oldPath = Join-Path $releaseDirectory $old
+        if (Test-Path $oldPath) { Remove-Item -LiteralPath $oldPath -Force }
+    }
     & mvn -B -ntp package
     if ($LASTEXITCODE -ne 0) {
         throw "The Maven build failed with exit code $LASTEXITCODE."
     }
 
     $runtimeDependencies = Join-Path $repoRoot "target\app"
-    if (-not (Test-Path (Join-Path $runtimeDependencies "V-Client.jar"))) {
+    if (-not (Test-Path (Join-Path $runtimeDependencies "VYRN.jar"))) {
         throw "The Maven build did not produce the launcher JAR."
     }
 
@@ -69,11 +79,11 @@ try {
     $modulePath = "$javafxModules;$javaHome\jmods"
     & (Join-Path $javaHome "bin\jpackage.exe") `
         --type app-image `
-        --name V-Client `
+        --name VYRN `
         --app-version 1.0.0 `
         --icon $iconPath `
         --input $jpackageInput `
-        --main-jar "V-Client.jar" `
+        --main-jar "VYRN.jar" `
         --main-class "com.vclient.LauncherApp" `
         --module-path $modulePath `
         --add-modules $runtimeModules `
@@ -84,9 +94,9 @@ try {
         throw "jpackage failed with exit code $LASTEXITCODE."
     }
 
-    $packagedApplication = Join-Path $appImageParent "V-Client"
-    if (-not (Test-Path (Join-Path $packagedApplication "V-Client.exe"))) {
-        throw "jpackage did not produce a runnable V-Client.exe."
+    $packagedApplication = Join-Path $appImageParent "VYRN"
+    if (-not (Test-Path (Join-Path $packagedApplication "VYRN.exe"))) {
+        throw "jpackage did not produce a runnable VYRN.exe."
     }
 
     New-Item -ItemType Directory -Path $releaseStaging | Out-Null
@@ -103,7 +113,7 @@ try {
         (Join-Path $repoRoot ".gitignore"), (Join-Path $repoRoot "package-release.ps1") `
         -Destination $releaseSource
     Copy-Item -LiteralPath $sourceDirectory -Destination $releaseSource -Recurse
-    Copy-Item -LiteralPath (Join-Path $repoRoot "V-Client") -Destination $releaseSource
+    Copy-Item -LiteralPath (Join-Path $repoRoot "VYRN") -Destination $releaseSource
 
     Add-Type -AssemblyName System.IO.Compression
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -173,7 +183,7 @@ try {
 
     Write-Host ""
     Write-Host "Release ready:"
-    Write-Host "  Launcher: $releaseDirectory\V-Client.exe"
+    Write-Host "  Launcher: $releaseDirectory\VYRN.exe"
     Write-Host "  ZIP:      $zipPath"
     Write-Host "Existing files in Release that are not part of this build were preserved."
 }

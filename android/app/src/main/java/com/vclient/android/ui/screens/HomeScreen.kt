@@ -61,7 +61,7 @@ fun HomeScreen(viewModel: MainViewModel, onOpenServers: () -> Unit, modifier: Mo
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             VLogo(44.dp)
             Column {
-                Text("V-Client", style = MaterialTheme.typography.headlineMedium)
+                Text("VYRN", style = MaterialTheme.typography.headlineMedium)
                 Text("Minecraft launcher", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -75,7 +75,7 @@ fun HomeScreen(viewModel: MainViewModel, onOpenServers: () -> Unit, modifier: Mo
                     Icon(Icons.Filled.SystemUpdate, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Column(Modifier.weight(1f)) {
                         Text("Update ${release.version} available", style = MaterialTheme.typography.titleMedium)
-                        if (info.mandatory) Text("Required to keep using V-Client", style = MaterialTheme.typography.bodyMedium, color = Offline)
+                        if (info.mandatory) Text("Required to keep using VYRN", style = MaterialTheme.typography.bodyMedium, color = Offline)
                     }
                 }
                 if (release.notes.isNotBlank()) Text(release.notes, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -175,7 +175,7 @@ private fun PlayButton(label: String, highlighted: Boolean, enabled: Boolean = t
     }
 }
 
-/** Java Edition runs in PojavLauncher (a separate app); V-Client detects it and opens it. */
+/** Java Edition runs in PojavLauncher (a separate app); VYRN detects it and opens it. */
 @Composable
 private fun JavaCard(viewModel: MainViewModel, highlighted: Boolean) {
     val context = LocalContext.current

@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 /**
  * Opens a web address from the launcher. Normally that is the player's own browser. When this network's DNS
  * filter answers the site with a block page (Cisco Umbrella / OpenDNS style, which shows up as an invalid
- * certificate), it opens a real Edge/Chrome window routed through V-Client's secure-DNS proxy instead, so the page
+ * certificate), it opens a real Edge/Chrome window routed through VYRN's secure-DNS proxy instead, so the page
  * loads without changing anything on the PC.
  */
 final class ExternalLinks {
@@ -26,7 +26,7 @@ final class ExternalLinks {
                         && DnsBlock.inspect(uri.getHost()) != null && openProxied(address)) {
                     return;
                 }
-                if (!Desktop.isDesktopSupported()) throw new IOException("This computer does not support opening links from V-Client.");
+                if (!Desktop.isDesktopSupported()) throw new IOException("This computer does not support opening links from VYRN.");
                 Desktop.getDesktop().browse(uri);
             } catch (IOException | RuntimeException e) {
                 onProblem.accept("Could not open " + address + ": " + e.getMessage());
@@ -37,7 +37,7 @@ final class ExternalLinks {
     }
 
     /**
-     * A real, visible Edge/Chrome window with V-Client's own profile, routed through the secure-DNS proxy. False when
+     * A real, visible Edge/Chrome window with VYRN's own profile, routed through the secure-DNS proxy. False when
      * no browser exists.
      *
      * <p>Two things used to break this window with a "connection isn't private" page, so both are handled here:
@@ -50,8 +50,7 @@ final class ExternalLinks {
     static boolean openProxied(String url) throws IOException {
         Path exe = ChromiumHost.findChromium();
         if (exe == null) return false;
-        Path profile = Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-                "V-Client", "browser-real");
+        Path profile = AppInfo.dataDir().resolve("browser-real");
         Files.createDirectories(profile);
         closeBrowserUsing(profile);
         new ProcessBuilder(exe.toString(), "--user-data-dir=" + profile,
@@ -62,7 +61,7 @@ final class ExternalLinks {
         return true;
     }
 
-    /** Ends browser processes started for exactly this profile folder (only V-Client's own, never the player's browser). */
+    /** Ends browser processes started for exactly this profile folder (only VYRN's own, never the player's browser). */
     private static void closeBrowserUsing(Path profile) {
         String marker = profile.toString().toLowerCase(java.util.Locale.ROOT);
         boolean closedAny = false;

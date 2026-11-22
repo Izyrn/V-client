@@ -92,7 +92,7 @@ final class RecordingsPage {
     private VBox bufferCard() {
         LauncherSettings settings = host.settings();
         VBox card = UiKit.section("Save the last 30 seconds",
-                "While Minecraft is the window in front, V-Client keeps the last 30 seconds in memory. Press the hotkey "
+                "While Minecraft is the window in front, VYRN keeps the last 30 seconds in memory. Press the hotkey "
                         + "and they are saved as a clip - nothing is written to disk until you do.");
         ComboBox<String> hotkey = new ComboBox<>();
         hotkey.getItems().addAll(WinInput.HOTKEYS.keySet());
@@ -139,7 +139,7 @@ final class RecordingsPage {
         } else if (!host.settings().replayBufferEnabled()) {
             bufferState.setText("Replay buffer is off.");
         } else if (!GameSession.running()) {
-            bufferState.setText("Waiting for Minecraft - start the game from V-Client and the buffer starts with it.");
+            bufferState.setText("Waiting for Minecraft - start the game from VYRN and the buffer starts with it.");
         } else if (host.replayBuffer().capturing()) {
             bufferState.setText("Recording the last 30 seconds - press " + host.settings().clipHotkey() + " in game to save.");
         } else {
@@ -550,7 +550,7 @@ final class RecordingsPage {
     private Runnable playMedia(RecordingLibrary.Recording recording, StackPane screen, Button toggle, Slider position,
                                Label time, Label message) {
         MediaPlayer[] holder = new MediaPlayer[1];
-        Runnable fail = () -> message.setText("V-Client's player can't open this file (the video format is not supported "
+        Runnable fail = () -> message.setText("VYRN's player can't open this file (the video format is not supported "
                 + "here - MP4 with H.264 works best). Use the button below to open it in your default player.");
         try {
             Media media = new Media(recording.file().toUri().toString());

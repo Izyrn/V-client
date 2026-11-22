@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * V-Client's recordings folder, its favourites, and the importer that picks up videos other recorders (OBS, Xbox
+ * VYRN's recordings folder, its favourites, and the importer that picks up videos other recorders (OBS, Xbox
  * Game Bar, GeForce, the replay buffer) wrote while Minecraft was running. Imported videos are copied, so the
  * recorder's own file stays where it was.
  */
@@ -42,8 +42,7 @@ final class RecordingLibrary {
     }
 
     static Path defaultFolder() {
-        return Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-                "V-Client", "recordings");
+        return AppInfo.dataDir().resolve("recordings");
     }
 
     Path folder() {
@@ -202,7 +201,7 @@ final class RecordingLibrary {
 
     // ---- duration --------------------------------------------------------------------------------
 
-    /** Length in milliseconds for MP4/MOV (movie header) and V-Client's own AVI clips; -1 when unknown. */
+    /** Length in milliseconds for MP4/MOV (movie header) and VYRN's own AVI clips; -1 when unknown. */
     static long durationMillis(Path file) {
         String name = file.getFileName().toString().toLowerCase(Locale.ROOT);
         if (name.endsWith(".avi")) {

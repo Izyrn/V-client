@@ -11,11 +11,13 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Installs the bundled "V-Client 1.21.11" Fabric profile (Fabric Loader, its libraries,
- * and the V-Client in-game mod) from the launcher's own resources. Nothing is downloaded.
+ * Installs the bundled "VYRN 1.21.11" Fabric profile (Fabric Loader, its libraries,
+ * and the VYRN in-game mod) from the launcher's own resources. Nothing is downloaded.
  */
 final class VClientModInstaller {
-    static final String PROFILE_ID = "V-Client 1.21.11";
+    static final String PROFILE_ID = "VYRN 1.21.11";
+    /** The same profile before the VYRN rename; removed once the new one is installed so the list shows it once. */
+    static final String LEGACY_PROFILE_ID = "V-Client 1.21.11";
     static final String PARENT_VERSION = "1.21.11";
     private static final String RESOURCE_ROOT = "/vclient-fabric/";
 
@@ -33,7 +35,7 @@ final class VClientModInstaller {
         for (String entry : manifest()) {
             Path target = root.resolve(entry).normalize();
             if (!target.startsWith(root.resolve("libraries")) && !target.startsWith(root.resolve("versions"))) {
-                throw new IOException("A bundled V-Client file has an unsafe path: " + entry);
+                throw new IOException("A bundled VYRN file has an unsafe path: " + entry);
             }
             byte[] bundled = resource(entry);
             if (Files.isRegularFile(target) && Arrays.equals(Files.readAllBytes(target), bundled)) continue;
@@ -47,11 +49,27 @@ final class VClientModInstaller {
             }
             updated++;
         }
+        removeLegacyProfile(root, onOutput);
         if (updated > 0) {
-            onOutput.accept("Installed the V-Client " + PARENT_VERSION + " profile (Fabric + V-Client mod): "
+            onOutput.accept("Installed the " + AppInfo.NAME + " " + PARENT_VERSION + " profile (Fabric + " + AppInfo.NAME + " mod): "
                     + updated + " bundled files copied into " + root + ".");
         }
         return true;
+    }
+
+    /**
+     * Deletes versions/V-Client 1.21.11 left by 1.7.x. It only holds the profile JSON (libraries, mods, worlds and options
+     * live elsewhere and are shared), so nothing a player made is lost. Never fails the install.
+     */
+    static void removeLegacyProfile(Path root, Consumer<String> onOutput) {
+        Path legacy = root.resolve("versions").resolve(LEGACY_PROFILE_ID);
+        if (!Files.isDirectory(legacy)) return;
+        try (var files = Files.walk(legacy)) {
+            for (Path file : files.sorted(java.util.Comparator.reverseOrder()).toList()) Files.deleteIfExists(file);
+            onOutput.accept("Removed the old " + LEGACY_PROFILE_ID + " profile (now " + PROFILE_ID + ").");
+        } catch (IOException | RuntimeException e) {
+            onOutput.accept("Could not remove the old " + LEGACY_PROFILE_ID + " profile: " + e.getMessage());
+        }
     }
 
     private static List<String> manifest() throws IOException {

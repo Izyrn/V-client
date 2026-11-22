@@ -88,7 +88,7 @@ final class ModrinthModService {
         if (!profileFile.startsWith(versionsDirectory) || !Files.isRegularFile(profileFile)
                 || profileFile.getParent() == null
                 || !profileFile.getParent().getFileName().toString().equals(profile.id())) {
-            throw new IOException("The selected Minecraft profile is not inside V-Client's game folder.");
+            throw new IOException("The selected Minecraft profile is not inside VYRN's game folder.");
         }
         String loader = switch (profile.loader()) {
             case "Fabric" -> "fabric";
@@ -185,7 +185,7 @@ final class ModrinthModService {
         Path modsDirectory = minecraftDirectory.resolve("mods").toAbsolutePath().normalize();
         Path output = modsDirectory.resolve(project.fileName()).normalize();
         if (!output.startsWith(modsDirectory)) {
-            throw new IOException("The mod filename escapes V-Client's mods folder.");
+            throw new IOException("The mod filename escapes VYRN's mods folder.");
         }
         Files.createDirectories(modsDirectory);
         if (Files.exists(output)) {
@@ -203,7 +203,7 @@ final class ModrinthModService {
             HttpResponse<Path> response = PlatformTls.sendWithRetries(HTTP,
                     HttpRequest.newBuilder(URI.create(project.downloadUrl()))
                             .timeout(Duration.ofMinutes(3))
-                            .header("User-Agent", "V-Client/1.0.0 (https://github.com/Izyrn/V-client)")
+                            .header("User-Agent", "VYRN/1.0.0 (https://github.com/Izyrn/V-client)")
                             .GET().build(),
                     HttpResponse.BodyHandlers.ofFile(temporary), onProgress);
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
@@ -280,7 +280,7 @@ final class ModrinthModService {
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(Duration.ofSeconds(30))
                 .header("Accept", "application/json")
-                .header("User-Agent", "V-Client/1.0.0 (https://github.com/Izyrn/V-client)")
+                .header("User-Agent", "VYRN/1.0.0 (https://github.com/Izyrn/V-client)")
                 .GET().build();
         HttpResponse<String> response;
         try {

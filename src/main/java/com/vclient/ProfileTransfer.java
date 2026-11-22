@@ -39,9 +39,9 @@ final class ProfileTransfer {
 
     /** Applies the file to {@code settings} (in memory; the caller saves) and returns a one-line summary. */
     static String importInto(LauncherSettings settings, Path source) throws IOException {
-        if (Files.size(source) > 256 * 1024) throw new IOException("That file is too large to be a V-Client profile.");
+        if (Files.size(source) > 256 * 1024) throw new IOException("That file is too large to be a VYRN profile.");
         JsonNode root = JSON.readTree(source.toFile());
-        if (!KIND.equals(root.path("kind").asText())) throw new IOException("This is not a V-Client profile file.");
+        if (!KIND.equals(root.path("kind").asText())) throw new IOException("This is not a VYRN profile file.");
         int applied = 0;
         if (root.has("memoryGb")) {
             settings.setMemoryGb(Math.clamp(root.path("memoryGb").asInt(settings.memoryGb()), 1, LauncherSettings.maxMemory()));

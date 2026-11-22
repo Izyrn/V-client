@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "id": "vclient",
   "version": "1.0.0",
-  "name": "V-Client",
-  "description": "V-Client's night-sky menus and Right Shift mod menu: HUD, keystrokes, zoom, fullbright, and more.",
-  "authors": ["V-Client"],
+  "name": "VYRN",
+  "description": "VYRN's night-sky menus and Right Shift mod menu: HUD, keystrokes, zoom, fullbright, and more.",
+  "authors": ["VYRN"],
   "license": "All-Rights-Reserved",
   "environment": "client",
   "entrypoints": {

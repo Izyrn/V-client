@@ -17,7 +17,7 @@ import java.net.URL
 import java.security.MessageDigest
 import kotlin.coroutines.coroutineContext
 
-/** Downloads a launcher APK from the V-Client backend, verifies it, and opens Android's installer. */
+/** Downloads a launcher APK from the VYRN backend, verifies it, and opens Android's installer. */
 object Updater {
     /** True when [candidate] is a newer dotted-numeric version than [current]. */
     fun isNewer(candidate: String, current: String): Boolean = compare(candidate, current) > 0
@@ -40,14 +40,14 @@ object Updater {
         withContext(Dispatchers.IO) {
             val source = URL(release.url)
             val backendHost = URL(ApiClient.normalize(backendUrl)).host
-            if (source.host != backendHost) throw IOException("The update is not hosted by your V-Client backend.")
+            if (source.host != backendHost) throw IOException("The update is not hosted by your VYRN backend.")
             if (!source.path.endsWith(".apk")) throw IOException("The update file is not an Android package.")
 
             val directory = File(context.cacheDir, "updates").apply {
                 deleteRecursively()
                 mkdirs()
             }
-            val target = File(directory, "V-Client-${release.version}.apk")
+            val target = File(directory, "VYRN-${release.version}.apk")
             val partial = File(directory, target.name + ".part")
             val digest = MessageDigest.getInstance("SHA-256")
             val connection = source.openConnection() as HttpURLConnection
@@ -90,7 +90,7 @@ object Updater {
 
     /**
      * Opens the system installer for [apk]. Returns false when Android first needs the player to allow installs
-     * from V-Client; the settings screen is opened and the player taps Update again afterwards.
+     * from VYRN; the settings screen is opened and the player taps Update again afterwards.
      */
     fun install(context: Context, apk: File): Boolean {
         if (!context.packageManager.canRequestPackageInstalls()) {

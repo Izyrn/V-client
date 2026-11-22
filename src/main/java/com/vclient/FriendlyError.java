@@ -17,8 +17,8 @@ final class FriendlyError {
         String lower = technical.toLowerCase(Locale.ROOT);
         if (error == null) return new Message("Something went wrong", "An unknown problem occurred.", "");
         if (BackendClient.isWaking(error)) {
-            return new Message("Server waking up…", "The V-Client server is starting after being idle. This can take up to a minute; "
-                    + "V-Client keeps retrying and shows the last known information meanwhile.", technical);
+            return new Message("Server waking up…", "The VYRN server is starting after being idle. This can take up to a minute; "
+                    + "VYRN keeps retrying and shows the last known information meanwhile.", technical);
         }
         String interception = PlatformTls.interceptionHint(error);
         if (!interception.isEmpty()) {
@@ -39,11 +39,11 @@ final class FriendlyError {
             return new Message("Not enough memory", "Lower the game memory in Settings, or close other programs and try again.", technical);
         }
         if (lower.contains("java") && (lower.contains("no compatible runtime") || lower.contains("requires java"))) {
-            return new Message("Java problem", "The Java runtime this version needs is missing. Connect to the internet once so V-Client "
+            return new Message("Java problem", "The Java runtime this version needs is missing. Connect to the internet once so VYRN "
                     + "can download it, or pick a Java version in Settings.", technical);
         }
         if (lower.contains("accessdenied") || lower.contains("being used by another process")) {
-            return new Message("File is locked", "Another program (often antivirus or a running game) is using a file V-Client needs. "
+            return new Message("File is locked", "Another program (often antivirus or a running game) is using a file VYRN needs. "
                     + "Close it and try again.", technical);
         }
         if (lower.contains("nosuchfile") || lower.contains("filenotfound") || lower.contains("no longer installed")) {

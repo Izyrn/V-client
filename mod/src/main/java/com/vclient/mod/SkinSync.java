@@ -6,7 +6,7 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Makes players who do not use V-Client see your Ely.by skin on servers that run the SkinsRestorer plugin: shortly
+ * Makes players who do not use VYRN see your Ely.by skin on servers that run the SkinsRestorer plugin: shortly
  * after you join, it sends {@code /skin url <your Ely.by skin>} once. Only for the servers listed in
  * {@code -Dvclient.skin.syncHosts} (default {@code *}: every server), only for launches that came with an Ely.by skin, and
  * never more than once per join. Without SkinsRestorer the server simply says the command is unknown.

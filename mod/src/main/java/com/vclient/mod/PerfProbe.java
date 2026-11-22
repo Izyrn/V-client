@@ -150,7 +150,7 @@ final class PerfProbe {
             if (benchmarkWarmup > 0) {
                 benchmarkWarmup--;
                 if (benchmarkWarmup == 0) client.inGameHud.setOverlayMessage(
-                        Text.literal("V-Client benchmark: measuring " + BENCH_SECONDS + " s - keep playing normally"), false);
+                        Text.literal("VYRN benchmark: measuring " + BENCH_SECONDS + " s - keep playing normally"), false);
             } else {
                 classify(benchmark, client, fps, mainThreadLoad);
                 if (benchmark.seconds >= BENCH_SECONDS) finishBenchmark(client);
@@ -228,7 +228,7 @@ final class PerfProbe {
         } catch (RuntimeException e) {
             VClientMod.LOGGER.warn("Benchmark could not lift the FPS limit: {}", e.toString());
         }
-        client.inGameHud.setOverlayMessage(Text.literal("V-Client benchmark starting: " + WARMUP_SECONDS
+        client.inGameHud.setOverlayMessage(Text.literal("VYRN benchmark starting: " + WARMUP_SECONDS
                 + " s warm-up, then " + BENCH_SECONDS + " s measured"), false);
     }
 
@@ -258,7 +258,7 @@ final class PerfProbe {
         json.append("}");
         write("benchmark-result.json", json.toString());
         client.inGameHud.setOverlayMessage(Text.literal(String.format(Locale.ROOT,
-                "V-Client benchmark done: %.0f FPS average, %.0f FPS 1%% low. See the launcher's Performance tab.",
+                "VYRN benchmark done: %.0f FPS average, %.0f FPS 1%% low. See the launcher's Performance tab.",
                 result.averageFps(), result.low(0.01))), false);
     }
 

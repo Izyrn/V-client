@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 
 /**
  * The browser engine behind the Browser tab: the PC's own Edge (or Chrome) running hidden with a remote-debugging
- * port, driven over the DevTools protocol. V-Client shows its pages inside its own window, so sites that need a
+ * port, driven over the DevTools protocol. VYRN shows its pages inside its own window, so sites that need a
  * modern engine (Discord, for example) work. Its traffic goes through the secure-DNS proxy.
  */
 final class ChromiumHost {
@@ -50,8 +50,7 @@ final class ChromiumHost {
     private ChromiumHost(int proxyPort) throws IOException, InterruptedException {
         Path exe = findChromium();
         if (exe == null) throw new IOException("Microsoft Edge or Google Chrome was not found on this PC.");
-        Path profile = Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-                "V-Client", "browser-engine");
+        Path profile = AppInfo.dataDir().resolve("browser-engine");
         Files.createDirectories(profile);
         Files.deleteIfExists(profile.resolve("DevToolsActivePort"));
         process = new ProcessBuilder(exe.toString(), "--headless=new", "--remote-debugging-port=0",

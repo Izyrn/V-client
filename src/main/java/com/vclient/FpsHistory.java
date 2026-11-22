@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Reads the FPS samples the in-game V-Client mod writes (one {@code epochSeconds,fps} line per second to
+ * Reads the FPS samples the in-game VYRN mod writes (one {@code epochSeconds,fps} line per second to
  * {@code <game>/vclient/fps-history.csv}) and summarises them per play session.
  */
 final class FpsHistory {

@@ -10,15 +10,15 @@ import java.util.List;
 final class Badges {
     record Badge(String id, String title, String how, boolean automatic) {}
 
-    /** Players who first ran V-Client before this day are Early Users. */
+    /** Players who first ran VYRN before this day are Early Users. */
     static final LocalDate EARLY_USER_CUTOFF = LocalDate.of(2026, 11, 10);
 
     static final List<Badge> ALL = List.of(
-            new Badge("early", "Early User", "Started using V-Client before the launch on 10 Nov 2026.", true),
+            new Badge("early", "Early User", "Started using VYRN before the launch on 10 Nov 2026.", true),
             new Badge("og", "OG User", "Awarded by the VSMP team to the original community.", false),
             new Badge("beta", "Beta Tester", "Awarded by the VSMP team to testers of pre-release builds.", false),
             new Badge("bug", "Bug Hunter", "Awarded by the VSMP team for reporting bugs.", false),
-            new Badge("dev", "Developer", "The V-Client developer account.", true));
+            new Badge("dev", "Developer", "The VYRN developer account.", true));
 
     private Badges() {}
 

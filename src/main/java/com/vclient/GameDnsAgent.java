@@ -31,8 +31,7 @@ final class GameDnsAgent {
 
     /** Writes the agent jar (if it is missing or out of date) and returns its path. */
     static Path ensure() throws IOException {
-        Path jar = Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-                "V-Client", "dns-agent.jar");
+        Path jar = AppInfo.dataDir().resolve("dns-agent.jar");
         byte[] content = build();
         if (Files.isRegularFile(jar) && Arrays.equals(Files.readAllBytes(jar), content)) return jar;
         Files.createDirectories(jar.getParent());

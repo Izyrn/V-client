@@ -31,7 +31,7 @@ import com.vclient.android.ui.theme.Gold
 import com.vclient.android.ui.theme.Info
 import com.vclient.android.ui.theme.Warning
 
-/** The V-Client mark: a gold tile with a dark V, matching the logo on the website and Windows launcher. */
+/** The VYRN mark: a gold tile with a dark V, matching the logo on the website and Windows launcher. */
 @Composable
 fun VLogo(size: Dp = 40.dp, modifier: Modifier = Modifier) {
     Canvas(modifier.size(size)) {

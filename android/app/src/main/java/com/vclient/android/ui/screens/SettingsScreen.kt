@@ -43,7 +43,7 @@ fun SettingsScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
         Panel {
             SectionLabel("Backend")
             Text(
-                "The V-Client server this app gets news, server status and updates from. It's the same one the Windows launcher uses.",
+                "The VYRN server this app gets news, server status and updates from. It's the same one the Windows launcher uses.",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             OutlinedTextField(
@@ -78,9 +78,9 @@ fun SettingsScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
 
         Panel {
             SectionLabel("About")
-            Text("V-Client ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.titleMedium)
+            Text("VYRN ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.titleMedium)
             Text(
-                "Minecraft is a trademark of Mojang Studios. V-Client is an unofficial launcher for the VSMP server.",
+                "Minecraft is a trademark of Mojang Studios. VYRN is an unofficial launcher for the VSMP server.",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

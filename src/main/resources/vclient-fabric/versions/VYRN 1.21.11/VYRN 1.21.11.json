@@ -1,5 +1,5 @@
 {
-  "id": "V-Client 1.21.11",
+  "id": "VYRN 1.21.11",
   "inheritsFrom": "1.21.11",
   "type": "release",
   "mainClass": "net.fabricmc.loader.impl.launch.knot.KnotClient",

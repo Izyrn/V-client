@@ -85,9 +85,9 @@ class ThemeBackupTest {
         Files.createDirectories(game.resolve("config"));
         Files.writeString(game.resolve("config").resolve("vclient-cosmetics.json"), "{\"equipped\":{}}");
         Files.writeString(game.resolve("config").resolve("other-mod.toml"), "x");
-        Files.createDirectories(game.resolve("versions").resolve("V-Client 1.21.11"));
-        Files.writeString(game.resolve("versions").resolve("V-Client 1.21.11").resolve("V-Client 1.21.11.json"), "{}");
-        Files.writeString(game.resolve("versions").resolve("V-Client 1.21.11").resolve("big.jar"), "jar");
+        Files.createDirectories(game.resolve("versions").resolve("VYRN 1.21.11"));
+        Files.writeString(game.resolve("versions").resolve("VYRN 1.21.11").resolve("VYRN 1.21.11.json"), "{}");
+        Files.writeString(game.resolve("versions").resolve("VYRN 1.21.11").resolve("big.jar"), "jar");
         Files.writeString(launcher.resolve("settings.json"),
                 "{\"memoryGb\":6,\"themeId\":\"red\",\"minecraftDirectory\":\"D:/old\",\"backendTokens\":{\"a\":\"SECRET\"},\"installId\":\"old\"}");
 
@@ -107,8 +107,8 @@ class ThemeBackupTest {
         assertEquals("renderDistance:12", Files.readString(game2.resolve("options.txt")));
         assertTrue(Files.exists(game2.resolve("config").resolve("vclient-cosmetics.json")));
         assertFalse(Files.exists(game2.resolve("config").resolve("other-mod.toml")));
-        assertTrue(Files.exists(game2.resolve("versions").resolve("V-Client 1.21.11").resolve("V-Client 1.21.11.json")));
-        assertFalse(Files.exists(game2.resolve("versions").resolve("V-Client 1.21.11").resolve("big.jar")));
+        assertTrue(Files.exists(game2.resolve("versions").resolve("VYRN 1.21.11").resolve("VYRN 1.21.11.json")));
+        assertFalse(Files.exists(game2.resolve("versions").resolve("VYRN 1.21.11").resolve("big.jar")));
         String settings = Files.readString(launcher2.resolve("settings.json"));
         assertTrue(settings.contains("\"memoryGb\" : 6") && settings.contains("red"));
         assertTrue(settings.contains("E:/new") && settings.contains("MINE") && settings.contains("\"new\""));

@@ -44,7 +44,7 @@
       "tier": "free",
       "name": "Night Sky",
       "sort": 10,
-      "description": "The V-Client night sky, draped over your shoulders.",
+      "description": "The VYRN night sky, draped over your shoulders.",
       "definition": {
         "texture": {
           "width": 64,
@@ -1617,7 +1617,7 @@
       "tier": "event",
       "name": "Launch Day",
       "sort": 100,
-      "description": "The VSMP V-Client launch cape. Event: 10 November.",
+      "description": "The VSMP VYRN launch cape. Event: 10 November.",
       "definition": {
         "texture": {
           "width": 64,

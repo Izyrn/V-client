@@ -130,7 +130,7 @@ final class BrowserPage {
         fullscreen.setOnAction(event -> toggleFullscreen());
 
         vpn.setTooltip(new javafx.scene.control.Tooltip(
-                "Send the browser through V-Client's free VPN (Cloudflare WARP), DNS included"));
+                "Send the browser through VYRN's free VPN (Cloudflare WARP), DNS included"));
         vpn.setOnAction(event -> toggleVpn());
         refreshVpn();
 
@@ -402,7 +402,7 @@ final class BrowserPage {
         root.setMinHeight(0);
         root.setPrefHeight(-1);
         Stage stage = new Stage();
-        stage.setTitle("V-Client Browser");
+        stage.setTitle("VYRN Browser");
         VBox frame = new VBox(root);
         frame.setPadding(new Insets(8));
         frame.setStyle("-fx-background-color: #0b0c1d;");

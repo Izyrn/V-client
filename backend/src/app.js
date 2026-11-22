@@ -90,10 +90,10 @@ function ensureAdmin(ctx, log) {
     "INSERT INTO users (username, email, password_hash, role, created_at) VALUES (?, ?, ?, 'admin', ?)",
   ).run(ctx.config.admin.username, ctx.config.admin.email, hashPassword(password), ctx.now());
   if (generated) {
-    log.warn(`[V-Client] Created admin account "${ctx.config.admin.username}" with password: ${password}`);
-    log.warn('[V-Client] Change it, or set ADMIN_PASSWORD before the first start. This is shown only once.');
+    log.warn(`[VYRN] Created admin account "${ctx.config.admin.username}" with password: ${password}`);
+    log.warn('[VYRN] Change it, or set ADMIN_PASSWORD before the first start. This is shown only once.');
   } else {
-    log.info(`[V-Client] Created admin account "${ctx.config.admin.username}".`);
+    log.info(`[VYRN] Created admin account "${ctx.config.admin.username}".`);
   }
 }
 

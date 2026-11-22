@@ -21,7 +21,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Backs up the parts of a V-Client install worth keeping into one zip: mods, settings, cosmetics and profiles.
+ * Backs up the parts of a VYRN install worth keeping into one zip: mods, settings, cosmetics and profiles.
  * Sign-in tokens and saved accounts are never put in a backup, and a restore keeps this PC's game folder and
  * sign-in. Restoring adds and overwrites files; it never deletes anything.
  */
@@ -81,7 +81,7 @@ final class BackupService {
     static Path create(Path folder, Path minecraftDirectory, Path launcherDirectory, Set<Category> categories)
             throws IOException {
         Files.createDirectories(folder);
-        Path target = folder.resolve("V-Client backup " + LocalDateTime.now()
+        Path target = folder.resolve("VYRN backup " + LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH-mm-ss")) + ".zip");
         Path temporary = folder.resolve(target.getFileName() + ".part");
         int[] count = {0};

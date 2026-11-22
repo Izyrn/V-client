@@ -29,8 +29,8 @@ final class PlayerStats {
     record Achievement(String id, String title, String description) {}
 
     static final List<Achievement> ACHIEVEMENTS = List.of(
-            new Achievement(FIRST_LAUNCH, "First Launch", "Start the game from V-Client."),
-            new Achievement(HUNDRED_HOURS, "100 Hours Played", "Play for 100 hours through V-Client."),
+            new Achievement(FIRST_LAUNCH, "First Launch", "Start the game from VYRN."),
+            new Achievement(HUNDRED_HOURS, "100 Hours Played", "Play for 100 hours through VYRN."),
             new Achievement(FIRST_MOD, "Installed First Mod", "Install a mod from the Mods tab or a pack."),
             new Achievement(FPS_BOOST, "Used FPS Boost", "Turn on VSMP Boost."));
 
@@ -65,8 +65,7 @@ final class PlayerStats {
     }
 
     static Path defaultFile() {
-        return Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-                "V-Client", "stats.json");
+        return AppInfo.dataDir().resolve("stats.json");
     }
 
     static PlayerStats load(Path file) {

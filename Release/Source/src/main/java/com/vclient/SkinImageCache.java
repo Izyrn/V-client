@@ -33,8 +33,7 @@ final class SkinImageCache {
     }
 
     static Path defaultDirectory() {
-        return Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-                "V-Client", "skin-cache");
+        return AppInfo.dataDir().resolve("skin-cache");
     }
 
     /** Cached bytes for the URL, downloading (and caching) them first when missing. */

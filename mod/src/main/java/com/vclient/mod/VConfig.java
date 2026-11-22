@@ -104,7 +104,7 @@ public final class VConfig {
                 }
             }
         } catch (IOException | RuntimeException e) {
-            VClientMod.LOGGER.warn("Could not read V-Client settings; using defaults.", e);
+            VClientMod.LOGGER.warn("Could not read VYRN settings; using defaults.", e);
         }
     }
 
@@ -136,7 +136,7 @@ public final class VConfig {
             Files.createDirectories(FILE.getParent());
             Files.writeString(FILE, GSON.toJson(root), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            VClientMod.LOGGER.warn("Could not save V-Client settings.", e);
+            VClientMod.LOGGER.warn("Could not save VYRN settings.", e);
         }
     }
 }

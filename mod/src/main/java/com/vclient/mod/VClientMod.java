@@ -11,7 +11,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 public final class VClientMod implements ClientModInitializer {
-    public static final Logger LOGGER = LoggerFactory.getLogger("V-Client");
+    public static final Logger LOGGER = LoggerFactory.getLogger("VYRN");
 
     private static final Map<Module, Boolean> TOGGLE_KEYS_DOWN = new EnumMap<>(Module.class);
     private static boolean menuKeyWasDown;
@@ -29,7 +29,7 @@ public final class VClientMod implements ClientModInitializer {
     public void onInitializeClient() {
         VConfig.load();
         com.vclient.mod.cosmetics.Cosmetics.init();
-        LOGGER.info("V-Client mod loaded. Press {} in game to open the mod menu.",
+        LOGGER.info("VYRN mod loaded. Press {} in game to open the mod menu.",
                 KeyNames.name(VConfig.integer(Module.CLIENT, "menuKey")));
     }
 

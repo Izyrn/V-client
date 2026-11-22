@@ -1,4 +1,4 @@
-# V-Client backend
+# VYRN backend
 
 One small Node.js service that powers the website, the Windows launcher and the Android app. No database server to install: data lives in a SQLite file.
 
@@ -57,7 +57,7 @@ Public (no sign-in):
 | `GET /api/cosmetics/catalog` | In-game cosmetics (capes, wings, hats, emotes, trails) with `ETag`; assets at `/api/cosmetics/assets/:file` |
 | `GET /api/cosmetics/owned/:uuid` | Premium/event cosmetics a player has been granted |
 
-Friends and presence (V-Client accounts, `Authorization: Bearer <token>`): `GET /api/friends` (friends with online status and activity, incoming and outgoing requests), `POST /api/friends/request` `{ username }`, `POST /api/friends/requests/:id/accept`, `DELETE /api/friends/requests/:id` (decline or cancel), `DELETE /api/friends/:userId`, and `PUT /api/presence` `{ activity, server, platform }` (the launcher sends this every ~45 seconds; a player counts as online for 2 minutes after the last one). Friends see only username, linked Minecraft name, activity and server, never an email.
+Friends and presence (VYRN accounts, `Authorization: Bearer <token>`): `GET /api/friends` (friends with online status and activity, incoming and outgoing requests), `POST /api/friends/request` `{ username }`, `POST /api/friends/requests/:id/accept`, `DELETE /api/friends/requests/:id` (decline or cancel), `DELETE /api/friends/:userId`, and `PUT /api/presence` `{ activity, server, platform }` (the launcher sends this every ~45 seconds; a player counts as online for 2 minutes after the last one). Friends see only username, linked Minecraft name, activity and server, never an email.
 
 Accounts (`Authorization: Bearer <token>`): `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `PUT /api/auth/profile`, `PUT /api/auth/password`. Passwords are hashed with scrypt; auth endpoints are rate limited.
 

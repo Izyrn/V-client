@@ -9,7 +9,7 @@ import android.net.Uri
 import com.vclient.android.data.Endpoint
 
 /**
- * Hands the player over to Minecraft. Bedrock Edition is launched directly; Java Edition can't run inside V-Client,
+ * Hands the player over to Minecraft. Bedrock Edition is launched directly; Java Edition can't run inside VYRN,
  * so it is launched through PojavLauncher, a separate app the player installs.
  */
 object Minecraft {

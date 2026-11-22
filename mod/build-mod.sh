@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Builds the V-Client in-game mod and the Fabric loader stack it runs on, using only
+# Builds the VYRN in-game mod and the Fabric loader stack it runs on, using only
 # GitHub and Maven Central (no Mojang or fabricmc.net servers), then stages everything
 # into the launcher's resources so the launcher can install it fully offline.
 #
 # Requirements: Git Bash, git, curl, unzip, a JDK 21 at $JAVA_HOME, and a local
-# Minecraft 1.21.11 client jar (V-Client's game folder already has one).
+# Minecraft 1.21.11 client jar (VYRN's game folder already has one).
 #
 # Usage: JAVA_HOME=/path/to/jdk21 ./mod/build-mod.sh [path/to/1.21.11.jar]
 set -euo pipefail
@@ -23,7 +23,7 @@ ASM_VERSION="9.10.1"
 MAPPING_IO_VERSION="0.9.1"
 SAT4J_VERSION="2.3.6"
 MOD_VERSION="1.0.0"
-PROFILE_ID="V-Client $MC_VERSION"
+PROFILE_ID="VYRN $MC_VERSION"
 
 # Pinned source revisions.
 LOADER_REF="0.19.5"
@@ -34,7 +34,10 @@ INTERMEDIARY_COMMIT="916868752f6935dda70c4490404641a701335d81"
 
 : "${JAVA_HOME:?Set JAVA_HOME to a JDK 21}"
 J="$JAVA_HOME/bin"
-MINECRAFT_DIR="$(cygpath -u "${APPDATA:-$HOME/AppData/Roaming}")/V-Client/minecraft"
+APPDATA_DIR="$(cygpath -u "${APPDATA:-$HOME/AppData/Roaming}")"
+MINECRAFT_DIR="$APPDATA_DIR/VYRN/minecraft"
+# Before a VYRN launcher has started once, the game still lives in the old V-Client folder.
+[ -d "$MINECRAFT_DIR" ] || MINECRAFT_DIR="$APPDATA_DIR/V-Client/minecraft"
 CLIENT_JAR="${1:-$MINECRAFT_DIR/versions/$MC_VERSION/$MC_VERSION.jar}"
 [ -f "$CLIENT_JAR" ] || { echo "Minecraft $MC_VERSION client jar not found: $CLIENT_JAR" >&2; exit 1; }
 
@@ -127,7 +130,7 @@ if [ ! -f "minecraft-$MC_VERSION-named.jar" ]; then
     "mappings-$MC_VERSION.tiny" official named $(tr '\n' ' ' < mclibs.txt)
 fi
 
-echo "== Compiling the V-Client mod"
+echo "== Compiling the VYRN mod"
 find "$MOD_DIR/src/main/java" -name "*.java" | while read -r file; do win "$file"; done > sources.txt
 cpfile cp.arg "minecraft-$MC_VERSION-named.jar" "fabric-loader-$LOADER_VERSION.jar" lib/*.jar
 javac_all cp.arg out/mod sources.txt

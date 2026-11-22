@@ -130,7 +130,7 @@ final class FrostSplash {
         g.setTextAlign(TextAlignment.CENTER);
         g.setFill(Color.web("#eaf9ff", Math.min(1, freeze * 1.4)));
         g.setFont(Font.font("Segoe UI", FontWeight.BOLD, 26));
-        g.fillText("VSMP CLIENT", cx, HEIGHT - 66);
+        g.fillText("VYRN", cx, HEIGHT - 66);
         g.setFill(Color.web("#7CEBFF", Math.min(1, spread)));
         g.setFont(Font.font("Segoe UI", 13));
         g.fillText("Play Beyond The Frost.", cx, HEIGHT - 42);

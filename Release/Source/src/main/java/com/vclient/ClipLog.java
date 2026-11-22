@@ -9,13 +9,12 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * What the replay buffer did, in {@code %APPDATA%/V-Client/clip-debug.log}: which capture method it uses, whether the
+ * What the replay buffer did, in {@code %APPDATA%/VYRN/clip-debug.log}: which capture method it uses, whether the
  * game window was found and in front, hotkey presses, saves and every error (which used to be swallowed). Cut back to a
  * fresh start once it passes 1 MB.
  */
 final class ClipLog {
-    private static final Path FILE = Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-            "V-Client", "clip-debug.log");
+    private static final Path FILE = AppInfo.dataDir().resolve("clip-debug.log");
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss.SSS");
 
     private ClipLog() {}

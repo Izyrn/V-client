@@ -17,7 +17,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Client for the shared V-Client backend API (news, announcements, server status, updates, accounts). */
+/** Client for the shared VYRN backend API (news, announcements, server status, updates, accounts). */
 final class BackendClient {
     record NewsPost(int id, String title, String body, String category, boolean pinned, String createdAt) {
     }
@@ -66,7 +66,8 @@ final class BackendClient {
 
     /** Resolves the effective URL: environment override, then the player's setting, then the built-in default. */
     static String resolveUrl(String settingValue) {
-        String fromEnvironment = System.getenv("VCLIENT_BACKEND_URL");
+        String fromEnvironment = System.getenv("VYRN_BACKEND_URL");
+        if (fromEnvironment == null || fromEnvironment.isBlank()) fromEnvironment = System.getenv("VCLIENT_BACKEND_URL");
         if (fromEnvironment != null && !fromEnvironment.isBlank()) return fromEnvironment;
         if (settingValue != null && !settingValue.isBlank()) return settingValue;
         return AppInfo.DEFAULT_BACKEND_URL;
@@ -194,7 +195,7 @@ final class BackendClient {
     private UpdateInfo checkSiteForUpdate(String siteUrl, String currentVersion) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(siteUrl + "/update.json?t=" + System.currentTimeMillis()))
                 .timeout(Duration.ofSeconds(15)).header("Accept", "application/json")
-                .header("User-Agent", "V-Client/" + AppInfo.VERSION + " (" + AppInfo.PLATFORM + ")").GET().build();
+                .header("User-Agent", "VYRN/" + AppInfo.VERSION + " (" + AppInfo.PLATFORM + ")").GET().build();
         HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (response.statusCode() != 200) throw new IOException("HTTP " + response.statusCode());
         JsonNode root = JSON.readTree(response.body());
@@ -456,7 +457,7 @@ final class BackendClient {
     static volatile long retryDelayScale = 1;
 
     private JsonNode send(String method, String path, ObjectNode body, String token) throws IOException, InterruptedException {
-        if (!configured()) throw new BackendException("The V-Client backend address is not set. Add it on the News page.");
+        if (!configured()) throw new BackendException("The VYRN backend address is not set. Add it on the News page.");
         boolean idempotent = method.equals("GET");
         long delay = FIRST_RETRY_DELAY_MILLIS;
         for (int attempt = 1; ; attempt++) {
@@ -489,7 +490,7 @@ final class BackendClient {
             HttpRequest.Builder request = HttpRequest.newBuilder(uri)
                     .timeout(Duration.ofSeconds(TIMEOUT_SECONDS))
                     .header("Accept", "application/json")
-                    .header("User-Agent", "V-Client/" + AppInfo.VERSION + " (" + AppInfo.PLATFORM + ")");
+                    .header("User-Agent", "VYRN/" + AppInfo.VERSION + " (" + AppInfo.PLATFORM + ")");
             if (token != null) request.header("Authorization", "Bearer " + token);
             if (body != null) {
                 request.header("Content-Type", "application/json")
@@ -516,7 +517,7 @@ final class BackendClient {
                 }
                 throw new IOException(plainNotFound
                         ? "This address answers /api requests with a plain \"Not Found\" (HTTP 404), so it is not running the "
-                        + "V-Client backend. It is probably the website's static hosting. Point the launcher at the Node backend "
+                        + "VYRN backend. It is probably the website's static hosting. Point the launcher at the Node backend "
                         + "service instead (see backend/README.md and render.yaml)."
                         : "The backend returned something that is not JSON (HTTP " + status + ", " + type + "). "
                         + "Check the backend address; a free host may still be waking up.", e);
@@ -548,8 +549,7 @@ final class BackendClient {
     /** A value read from the on-disk cache together with when it was saved (epoch milliseconds). */
     record Cached<T>(T value, long savedAtMillis) {}
 
-    private static volatile Path cacheFile = Path.of(
-            System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")), "V-Client", "cache", "backend-cache.json");
+    private static volatile Path cacheFile = AppInfo.dataDir().resolve("cache").resolve("backend-cache.json");
 
     static void setCacheFile(Path file) {
         cacheFile = file;

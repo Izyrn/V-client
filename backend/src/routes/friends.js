@@ -10,7 +10,7 @@ const ONLINE_SECONDS = 120;
 const clean = (value, max) => (typeof value === 'string' ? value.replace(/[\u0000-\u001f]/g, '').trim().slice(0, max) : '');
 
 /**
- * Friends and presence for V-Client accounts: send a request by username, accept or decline, remove, and see
+ * Friends and presence for VYRN accounts: send a request by username, accept or decline, remove, and see
  * which friends are online and what they are doing. Only friends can see a player's presence, and only the
  * display fields (username, linked Minecraft name, activity, server) are ever shared; never an email.
  */
@@ -58,9 +58,9 @@ function friendsRoutes(ctx) {
   router.post('/request', writes, (req, res) => {
     const me = req.user.id;
     const username = clean(req.body?.username, 16);
-    if (!USERNAME.test(username)) return res.status(400).json({ error: 'Enter their V-Client username (3-16 letters, numbers or _)' });
+    if (!USERNAME.test(username)) return res.status(400).json({ error: 'Enter their VYRN username (3-16 letters, numbers or _)' });
     const target = db.prepare('SELECT id, username FROM users WHERE username = ?').get(username);
-    if (!target) return res.status(404).json({ error: `No V-Client account is called ${username}` });
+    if (!target) return res.status(404).json({ error: `No VYRN account is called ${username}` });
     if (target.id === me) return res.status(400).json({ error: 'You cannot add yourself' });
     const existing = db.prepare(
       'SELECT * FROM friendships WHERE (requester_id = ? AND addressee_id = ?) OR (requester_id = ? AND addressee_id = ?)',

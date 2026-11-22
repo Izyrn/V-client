@@ -323,13 +323,13 @@ final class MinecraftLauncher {
             throw new IOException("The installed Minecraft version metadata failed validation.");
         }
         onOutput.accept("Minecraft " + latestReleaseId
-                + " is ready to install its client, libraries, assets, and Java in V-Client's folder.");
+                + " is ready to install its client, libraries, assets, and Java in VYRN's folder.");
         return new InstalledVersion(latestReleaseId, "release", metadataFile, "Vanilla");
     }
 
     void launchSingleplayer(Path minecraftDirectory, InstalledVersion selected, int memoryGb,
                             PlayerAccount account, Consumer<String> onOutput) throws Exception {
-        onOutput.accept("Starting Minecraft using V-Client's files; missing game files will be downloaded.");
+        onOutput.accept("Starting Minecraft using VYRN's files; missing game files will be downloaded.");
         launch(minecraftDirectory, selected, memoryGb, account, onOutput, false);
     }
 
@@ -410,7 +410,7 @@ final class MinecraftLauncher {
             throws Exception {
         validateServerAddress(host, port);
         onOutput.accept("Preparing a local-only launch for multiplayer server " + host + ":" + port
-                + "; V-Client will not refresh accounts or download files. Minecraft itself must connect to the server.");
+                + "; VYRN will not refresh accounts or download files. Minecraft itself must connect to the server.");
         launch(minecraftDirectory, selected, memoryGb, account, onOutput, true, host, port);
     }
 
@@ -423,7 +423,7 @@ final class MinecraftLauncher {
 
     void launchSingleplayerLocal(Path minecraftDirectory, InstalledVersion selected, int memoryGb,
                                  PlayerAccount account, Consumer<String> onOutput) throws Exception {
-        onOutput.accept("Starting Minecraft using only local files; V-Client will not refresh accounts or download files.");
+        onOutput.accept("Starting Minecraft using only local files; VYRN will not refresh accounts or download files.");
         launch(minecraftDirectory, selected, memoryGb, account, onOutput, true);
     }
 
@@ -555,7 +555,7 @@ final class MinecraftLauncher {
         substitutions.put("natives_directory", nativesDirectory.toString());
         substitutions.put("library_directory", minecraftDirectory.resolve("libraries").toAbsolutePath().normalize().toString());
         substitutions.put("classpath_separator", System.getProperty("path.separator"));
-        substitutions.put("launcher_name", "V-Client");
+        substitutions.put("launcher_name", "VYRN");
         substitutions.put("launcher_version", "1.0.0");
         substitutions.put("classpath", classpathValue);
 
@@ -605,7 +605,7 @@ final class MinecraftLauncher {
             command.add("-Dvclient.benchmark.seconds=" + benchmark.seconds());
             command.add("-Dvclient.benchmark.label=" + benchmark.label());
             command.add("-Dvclient.benchmark.profile=" + benchmark.profile());
-            onOutput.accept("FPS benchmark (" + benchmark.label() + "): join a world and the V-Client mod measures "
+            onOutput.accept("FPS benchmark (" + benchmark.label() + "): join a world and the VYRN mod measures "
                     + benchmark.seconds() + " seconds.");
         }
         List<String> userJvm = extraJvmArguments.get();

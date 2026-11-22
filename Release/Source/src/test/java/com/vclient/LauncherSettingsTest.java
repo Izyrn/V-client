@@ -58,20 +58,42 @@ final class LauncherSettingsTest {
     }
 
     @Test
-    void privateMinecraftDirectoryLivesUnderAppDataVClient() {
-        Path appData = temporaryDirectory.resolve("AppData").resolve("Roaming");
-        assertEquals(appData.resolve("V-Client").resolve("minecraft"),
-                LauncherSettings.privateMinecraftDirectory(appData));
+    void privateMinecraftDirectoryLivesUnderTheDataFolder() {
+        Path dataDir = temporaryDirectory.resolve("AppData").resolve("Roaming").resolve("VYRN");
+        assertEquals(dataDir.resolve("minecraft"), LauncherSettings.privateMinecraftDirectory(dataDir));
     }
 
     @Test
     void migratesOldLauncherAndDefaultMinecraftDirectoriesToPrivateFolder() {
         Path appData = temporaryDirectory.resolve("AppData").resolve("Roaming");
-        Path privateDirectory = LauncherSettings.privateMinecraftDirectory(appData);
+        Path dataDir = appData.resolve("VYRN");
+        Path privateDirectory = LauncherSettings.privateMinecraftDirectory(dataDir);
 
         assertEquals(privateDirectory,
-                LauncherSettings.migrateLegacyDirectory(appData.resolve("V-Client"), appData));
-        assertEquals(privateDirectory, LauncherSettings.migrateLegacyDirectory(appData.resolve(".minecraft"), appData));
+                LauncherSettings.migrateLegacyDirectory(appData.resolve("V-Client"), appData, dataDir));
+        assertEquals(privateDirectory, LauncherSettings.migrateLegacyDirectory(dataDir, appData, dataDir));
+        assertEquals(privateDirectory, LauncherSettings.migrateLegacyDirectory(appData.resolve(".minecraft"), appData, dataDir));
+    }
+
+    @Test
+    void savedGameFolderInsideTheOldVClientFolderFollowsTheRename() {
+        Path appData = temporaryDirectory.resolve("AppData").resolve("Roaming");
+        Path dataDir = appData.resolve("VYRN");
+        assertEquals(dataDir.resolve("minecraft").toAbsolutePath().normalize(), LauncherSettings.migrateLegacyDirectory(
+                appData.resolve("V-Client").resolve("minecraft"), appData, dataDir));
+        assertEquals(dataDir.resolve("instances").resolve("pvp").toAbsolutePath().normalize(),
+                LauncherSettings.migrateLegacyDirectory(appData.resolve("V-Client").resolve("instances").resolve("pvp"),
+                        appData, dataDir));
+    }
+
+    @Test
+    void keepsTheOldFolderWhenTheMoveFailedAndItIsStillInUse() throws IOException {
+        Path appData = temporaryDirectory.resolve("AppData").resolve("Roaming");
+        Path legacy = appData.resolve("V-Client");
+        Files.createDirectories(legacy.resolve("minecraft"));
+        // The move failed, so the old folder is the data folder: the saved path must not change.
+        assertEquals(legacy.resolve("minecraft"),
+                LauncherSettings.migrateLegacyDirectory(legacy.resolve("minecraft"), appData, legacy));
     }
 
     @Test
@@ -82,19 +104,20 @@ final class LauncherSettingsTest {
         Files.createDirectories(profileDirectory);
         Files.createFile(profileDirectory.resolve("1.21.11.json"));
 
-        assertEquals(customDirectory, LauncherSettings.migrateLegacyDirectory(customDirectory, appData));
+        assertEquals(customDirectory, LauncherSettings.migrateLegacyDirectory(customDirectory, appData, appData.resolve("VYRN")));
     }
 
     @Test
     void selectingVersionSubfolderNormalizesBeforeApplyingFolderMigration() throws IOException {
         Path appData = temporaryDirectory.resolve("AppData").resolve("Roaming");
-        Path versionDirectory = appData.resolve("V-Client").resolve("versions").resolve("1.21.11");
+        Path dataDir = appData.resolve("VYRN");
+        Path versionDirectory = dataDir.resolve("versions").resolve("1.21.11");
         Files.createDirectories(versionDirectory);
         Files.createFile(versionDirectory.resolve("1.21.11.json"));
 
         Path normalized = LauncherSettings.normalizeMinecraftDirectory(versionDirectory);
-        assertEquals(LauncherSettings.privateMinecraftDirectory(appData),
-                LauncherSettings.migrateLegacyDirectory(normalized, appData));
+        assertEquals(LauncherSettings.privateMinecraftDirectory(dataDir),
+                LauncherSettings.migrateLegacyDirectory(normalized, appData, dataDir));
     }
 
     @Test

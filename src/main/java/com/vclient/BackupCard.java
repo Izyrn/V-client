@@ -161,7 +161,7 @@ final class BackupCard {
                 BackupService.Result result = BackupService.restore(backup.file(), host.settings().minecraftDirectory(),
                         launcherDirectory(), chosen);
                 host.activity().add("Restored " + result.files() + " files from " + backup.file().getFileName());
-                Platform.runLater(() -> message.setText("Restored " + result.files() + " files. Restart V-Client to "
+                Platform.runLater(() -> message.setText("Restored " + result.files() + " files. Restart VYRN to "
                         + "apply restored settings."));
             } catch (IOException e) {
                 Platform.runLater(() -> message.setText("Restore failed: " + e.getMessage()));

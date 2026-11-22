@@ -4,7 +4,7 @@ package com.vclient.android.demo
 enum class ToolClass { NONE, PICK, AXE, SHOVEL }
 
 /**
- * Block types of the V-Client Demo World. Everything here is original to V-Client: the names, the colours and
+ * Block types of the VYRN Demo World. Everything here is original to VYRN: the names, the colours and
  * the procedural textures in [Textures]. [hardness] is seconds to break by hand; blocks with a [minTier] above 0
  * cannot be broken at all without a matching tool of at least that tier (1 wooden, 2 stone, 3 iron).
  */

@@ -3,7 +3,7 @@ package com.vclient;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/** Tracks whether a game launched by V-Client is running, so recordings, playtime and the replay buffer can follow it. */
+/** Tracks whether a game launched by VYRN is running, so recordings, playtime and the replay buffer can follow it. */
 final class GameSession {
     interface Listener {
         void started(String versionId, long startedAtMillis);

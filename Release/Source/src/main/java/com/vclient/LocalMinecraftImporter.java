@@ -23,7 +23,7 @@ final class LocalMinecraftImporter {
         }
         if (sourceRoot.equals(destinationRoot)
                 || sourceRoot.startsWith(destinationRoot) || destinationRoot.startsWith(sourceRoot)) {
-            throw new IOException("The import source and V-Client game folder must be separate directories.");
+            throw new IOException("The import source and VYRN game folder must be separate directories.");
         }
         if (!hasProfiles(sourceRoot.resolve("versions"))) {
             throw new IOException("No installed Minecraft profiles were found in the selected source folder.");
@@ -62,7 +62,7 @@ final class LocalMinecraftImporter {
         }
 
         if (!hasProfiles(destinationRoot.resolve("versions"))) {
-            throw new IOException("The import did not produce a readable Minecraft profile in the V-Client folder.");
+            throw new IOException("The import did not produce a readable Minecraft profile in the VYRN folder.");
         }
         onProgress.accept("Local import complete. Copied " + copied[0]
                 + " files into " + destinationRoot + "; the original files were left untouched.");

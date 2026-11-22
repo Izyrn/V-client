@@ -56,7 +56,7 @@ private fun SignedOut(viewModel: MainViewModel) {
             Column {
                 Text(if (creating) "Create your account" else "Sign in", style = MaterialTheme.typography.titleLarge)
                 Text(
-                    "One V-Client account for Android, Windows and the website.",
+                    "One VYRN account for Android, Windows and the website.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -90,7 +90,7 @@ private fun SignedOut(viewModel: MainViewModel) {
     }
     if (!viewModel.backendConfigured) {
         Text(
-            "Set the V-Client backend address in Settings before signing in.",
+            "Set the VYRN backend address in Settings before signing in.",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

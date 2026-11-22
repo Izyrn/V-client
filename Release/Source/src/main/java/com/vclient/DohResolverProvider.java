@@ -48,7 +48,7 @@ public final class DohResolverProvider extends InetAddressResolverProvider {
 
     @Override
     public String name() {
-        return "V-Client secure DNS";
+        return "VYRN secure DNS";
     }
 
     /** Cisco Umbrella / OpenDNS block pages live in 146.112.0.0/16. */

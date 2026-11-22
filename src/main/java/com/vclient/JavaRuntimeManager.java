@@ -29,25 +29,24 @@ final class JavaRuntimeManager {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final HttpClient HTTP = PlatformTls.httpClientBuilder(Duration.ofSeconds(20))
             .followRedirects(HttpClient.Redirect.NORMAL).build();
-    private static final Path DATA_DIRECTORY = Path.of(
-            System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")), "V-Client");
+    private static final Path DATA_DIRECTORY = AppInfo.dataDir();
     private static final java.util.Set<Integer> SUPPORTED_JAVA_MAJORS = java.util.Set.of(8, 17, 21, 25);
 
     Path resolve(int requiredMajor, Consumer<String> onOutput, boolean allowDownloads) throws Exception {
         if (!SUPPORTED_JAVA_MAJORS.contains(requiredMajor)) {
             throw new IOException("Minecraft requires Java " + requiredMajor
-                    + "; V-Client supports 64-bit Azul Zulu Java 8, 17, 21, and 25.");
+                    + "; VYRN supports 64-bit Azul Zulu Java 8, 17, 21, and 25.");
         }
         onOutput.accept("Checking for installed 64-bit Java " + requiredMajor + " runtimes.");
         if (!System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT).contains("win")
                 || !System.getProperty("os.arch").contains("64")) {
-            throw new IOException("V-Client requires the 64-bit Windows Azul Zulu runtime for Minecraft.");
+            throw new IOException("VYRN requires the 64-bit Windows Azul Zulu runtime for Minecraft.");
         }
         Path cached = DATA_DIRECTORY.resolve("runtimes")
                 .resolve("zulu-" + requiredMajor + "-windows-x64");
         Path java = findJavaExecutable(cached);
         if (java != null && isSupportedRuntime(java, requiredMajor)) {
-            onOutput.accept("Using V-Client's installed Java " + requiredMajor + " runtime: " + java);
+            onOutput.accept("Using VYRN's installed Java " + requiredMajor + " runtime: " + java);
             return java;
         }
 
@@ -103,7 +102,7 @@ final class JavaRuntimeManager {
     private Path install(int requiredMajor, Path destination, Consumer<String> onOutput) throws Exception {
         if (!SUPPORTED_JAVA_MAJORS.contains(requiredMajor)) {
             throw new IOException("Minecraft requires Java " + requiredMajor
-                    + "; V-Client supports 64-bit Azul Zulu Java 8, 17, 21, and 25.");
+                    + "; VYRN supports 64-bit Azul Zulu Java 8, 17, 21, and 25.");
         }
         onOutput.accept("Preparing the 64-bit Azul Zulu Java " + requiredMajor + " runtime...");
         String query = "java_version=" + requiredMajor
@@ -373,7 +372,7 @@ final class JavaRuntimeManager {
                 return new IOException("Secure connection to " + address
                         + " failed during the TLS handshake. " + PlatformTls.describeFailure(error)
                         + ". Selected route: " + PlatformTls.proxyDescription(URI.create(address))
-                        + ". V-Client validates certificates against the Windows and Java trust stores "
+                        + ". VYRN validates certificates against the Windows and Java trust stores "
                         + "and will not disable certificate validation.", error);
             }
             cause = cause.getCause();

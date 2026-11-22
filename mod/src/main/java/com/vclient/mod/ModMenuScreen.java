@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The V-Client menu (Right Shift): a frozen-glass panel with a sidebar (Home, Cosmetics, Mods, FrostBoost,
+ * The VYRN menu (Right Shift): a frozen-glass panel with a sidebar (Home, Cosmetics, Mods, FrostBoost,
  * Recordings, Screenshots, Profile, Settings). The Mods page groups every module into categories.
  */
 public final class ModMenuScreen extends Screen {
@@ -82,7 +82,7 @@ public final class ModMenuScreen extends Screen {
     private Area doneButton;
 
     public ModMenuScreen() {
-        super(Text.literal("VSMP Client"));
+        super(Text.literal("VYRN"));
     }
 
     @Override
@@ -260,7 +260,7 @@ public final class ModMenuScreen extends Screen {
     }
 
     private void drawHome(DrawContext context) {
-        context.drawText(textRenderer, "Welcome to VSMP Client", content.x(), content.y() + 2, 0xFFEAF9FF, true);
+        context.drawText(textRenderer, "Welcome to VYRN", content.x(), content.y() + 2, 0xFFEAF9FF, true);
         context.drawText(textRenderer, "Ice. Snow. Frost. Glaciers. Blizzards. Aurora.", content.x(), content.y() + 16,
                 0xFF7CEBFF, false);
         String[] live = PerfProbe.liveLines();

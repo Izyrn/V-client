@@ -29,7 +29,7 @@ import java.util.function.Supplier;
 
 /**
  * Keeps the last 30 seconds of the Minecraft window as JPEG frames in memory and writes them to an AVI clip
- * when the hotkey is pressed. It only captures while a game started by V-Client is running <em>and</em> the
+ * when the hotkey is pressed. It only captures while a game started by VYRN is running <em>and</em> the
  * Minecraft window is the foreground window, and nothing is written to disk until the player presses the hotkey.
  */
 final class ReplayBuffer implements GameSession.Listener {
@@ -168,7 +168,7 @@ final class ReplayBuffer implements GameSession.Listener {
     }
 
     /**
-     * Tells the in-game V-Client mod whether the buffer is recording, as {@code recording|savedAtMillis|timeMillis}
+     * Tells the in-game VYRN mod whether the buffer is recording, as {@code recording|savedAtMillis|timeMillis}
      * in {@code <game>/vclient/recording.state}; the mod shows a REC marker while it is fresh.
      */
     private void writeState() {

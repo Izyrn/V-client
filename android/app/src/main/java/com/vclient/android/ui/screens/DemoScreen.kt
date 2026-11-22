@@ -74,7 +74,7 @@ import java.io.File
 import kotlin.math.floor
 import kotlin.math.hypot
 
-const val DEMO_NOTICE = "This is a V-Client Demo World. Install Minecraft separately for the full game experience."
+const val DEMO_NOTICE = "This is a VYRN Demo World. Install Minecraft separately for the full game experience."
 
 /**
  * The offline Demo World: an original voxel sandbox with no Minecraft content. A 512 x 512 block island with two
@@ -282,7 +282,7 @@ private fun DemoWorldContent(game: DemoGame, file: File, onExit: () -> Unit) {
         if (showWelcome) {
             AlertDialog(
                 onDismissRequest = {},
-                title = { Text("V-Client Demo World") },
+                title = { Text("VYRN Demo World") },
                 text = {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
                         Text(

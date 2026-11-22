@@ -29,7 +29,7 @@ public final class FrostTitleScreen extends Screen {
     private final List<Hit> icons = new ArrayList<>();
 
     private FrostTitleScreen() {
-        super(Text.literal("VSMP Client"));
+        super(Text.literal("VYRN"));
     }
 
     /** Called every tick: swaps Minecraft's title screen for this one. */
@@ -105,7 +105,7 @@ public final class FrostTitleScreen extends Screen {
         context.getMatrices().pushMatrix();
         context.getMatrices().translate(centreX, markY + 66);
         context.getMatrices().scale(1.3f, 1.3f);
-        String name = "VSMP CLIENT";
+        String name = "VYRN";
         context.drawText(textRenderer, name, -textRenderer.getWidth(name) / 2, 0, 0xFFEAF9FF, true);
         context.getMatrices().popMatrix();
         String slogan = "Play Beyond The Frost.";
@@ -139,7 +139,7 @@ public final class FrostTitleScreen extends Screen {
         if (tooltip != null) {
             context.drawText(textRenderer, tooltip, centreX - textRenderer.getWidth(tooltip) / 2, height - 48, 0xFFB8F4FF, true);
         }
-        String version = "VSMP Client";
+        String version = "VYRN";
         context.drawText(textRenderer, version, 6, height - 12, 0xFF6F9BB5, false);
     }
 

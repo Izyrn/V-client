@@ -2,7 +2,7 @@ package com.vclient.android.demo
 
 /**
  * Things the player can carry. Items that [block] is not null can be placed in the world; tools have a [tool]
- * class and a [tier] (1 wooden, 2 stone, 3 iron). All names, colours and icons are original V-Client artwork.
+ * class and a [tier] (1 wooden, 2 stone, 3 iron). All names, colours and icons are original VYRN artwork.
  */
 enum class Item(
     val id: Int,

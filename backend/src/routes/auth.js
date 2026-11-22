@@ -77,7 +77,7 @@ function authRoutes(ctx) {
 
   router.get('/me', requireUser, (req, res) => res.json({ user: userView(req.user) }));
 
-  // Links the V-Client account to the player's Minecraft / Ely.by names so both launchers share them.
+  // Links the VYRN account to the player's Minecraft / Ely.by names so both launchers share them.
   router.put('/profile', requireUser, (req, res) => {
     const { minecraftName, elybyName } = req.body || {};
     const next = {

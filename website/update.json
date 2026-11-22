@@ -1,10 +1,10 @@
 {
-    "version":  "1.7.3",
+    "version":  "1.8.0",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "89176395229d1ad80952671b1b55d95fcb0e4abaa3204a30c50c76ad74a6926f",
-    "size":  95481344,
-    "notes":  "1.7.3: anime event capes (animated and still), 8 new trails and frost cosmetics, a safer in-app Edge window, and more reliable update checks.",
+    "sha256":  "ab9e06889e6967b7a69b1c89a5d230453dc542f4034394e5e96a42cdf039dfd3",
+    "size":  95484928,
+    "notes":  "1.8.0: V-Client is now VYRN. New name, app and installer; your accounts, worlds and settings move over automatically.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-18T14:41:53.3388567Z"
+    "publishedAt":  "2026-11-22T09:26:30.7587354Z"
 }

@@ -135,7 +135,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val api = client()
             if (!api.configured) {
-                newsError = "Set the V-Client backend address in Settings."
+                newsError = "Set the VYRN backend address in Settings."
                 return@launch
             }
             newsLoading = true
@@ -237,7 +237,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val api = client()
             if (!api.configured) {
-                if (manual) updateMessage = "Set the V-Client backend address first."
+                if (manual) updateMessage = "Set the VYRN backend address first."
                 return@launch
             }
             runCatching { api.checkForUpdate(BuildConfig.VERSION_NAME.substringBefore('-')) }
@@ -262,7 +262,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val release = update?.latest ?: return
         if (updateJob?.isActive == true) return
         downloadedApk?.takeIf { it.exists() }?.let {
-            if (!Updater.install(context, it)) updateMessage = "Allow V-Client to install apps, then tap Update again."
+            if (!Updater.install(context, it)) updateMessage = "Allow VYRN to install apps, then tap Update again."
             return
         }
         updateJob = viewModelScope.launch {
@@ -271,7 +271,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             runCatching { Updater.download(context, release, backendUrl) { updateProgress = it } }
                 .onSuccess {
                     downloadedApk = it
-                    if (!Updater.install(context, it)) updateMessage = "Allow V-Client to install apps, then tap Update again."
+                    if (!Updater.install(context, it)) updateMessage = "Allow VYRN to install apps, then tap Update again."
                 }
                 .onFailure { if (it !is CancellationException) updateMessage = it.message ?: "Update failed." }
             updateProgress = null

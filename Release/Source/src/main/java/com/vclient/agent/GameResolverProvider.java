@@ -13,6 +13,6 @@ public final class GameResolverProvider extends InetAddressResolverProvider {
 
     @Override
     public String name() {
-        return "V-Client game secure DNS";
+        return "VYRN game secure DNS";
     }
 }

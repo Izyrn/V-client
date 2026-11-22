@@ -28,7 +28,7 @@ class BackendClientTest {
         respond("/api/news", 200, "{\"items\":[{\"id\":4,\"title\":\"Hi\",\"body\":\"Body\",\"category\":\"server\",\"pinned\":true,\"createdAt\":\"2026-01-02T03:04:05Z\"}]}");
         respond("/api/announcements", 200, "{\"items\":[{\"id\":1,\"message\":\"Maintenance\",\"level\":\"warning\"}]}");
         respond("/api/server/status", 200, "{\"java\":{\"online\":true,\"players\":{\"online\":3,\"max\":20},\"version\":\"1.21.11\",\"latencyMs\":42},\"bedrock\":{\"online\":false}}");
-        respond("/api/launcher/update", 200, "{\"updateAvailable\":true,\"mandatory\":false,\"latest\":{\"version\":\"1.2.0\",\"notes\":\"New\",\"mandatory\":false,\"size\":10,\"sha256\":\"ab\",\"url\":\"/downloads/V-Client-windows-1.2.0.exe\"}}");
+        respond("/api/launcher/update", 200, "{\"updateAvailable\":true,\"mandatory\":false,\"latest\":{\"version\":\"1.2.0\",\"notes\":\"New\",\"mandatory\":false,\"size\":10,\"sha256\":\"ab\",\"url\":\"/downloads/VYRN-windows-1.2.0.exe\"}}");
         respond("/api/auth/login", 401, "{\"error\":\"Incorrect username or password\"}");
         respond("/api/auth/me", 200, "{\"user\":{\"username\":\"Steve\",\"minecraftName\":\"Steve\",\"elybyName\":\"\"}}");
         respond("/api/stats/event", 202, "{\"ok\":true}");
@@ -77,7 +77,7 @@ class BackendClientTest {
         assertTrue(info.updateAvailable());
         assertNotNull(info.latest());
         assertEquals("1.2.0", info.latest().version());
-        assertEquals(client.baseUrl() + "/downloads/V-Client-windows-1.2.0.exe", info.latest().url());
+        assertEquals(client.baseUrl() + "/downloads/VYRN-windows-1.2.0.exe", info.latest().url());
     }
 
     @Test

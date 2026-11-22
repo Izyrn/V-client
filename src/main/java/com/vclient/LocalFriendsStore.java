@@ -15,8 +15,7 @@ final class LocalFriendsStore {
     private final Path file;
 
     LocalFriendsStore() {
-        this(Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-                "V-Client", "friends.json"));
+        this(AppInfo.dataDir().resolve("friends.json"));
     }
 
     LocalFriendsStore(Path file) {

@@ -199,7 +199,7 @@ public final class LauncherApp extends Application {
         localFriends.addAll(friendsStore.load());
         account = accounts.stream().filter(saved -> saved.id().equals(settings.lastAccountId()))
                 .findFirst().orElse(accounts.isEmpty() ? null : accounts.getFirst());
-        stage.setTitle("VSMP Client");
+        stage.setTitle("VYRN");
         stage.getIcons().add(createIcon());
         stage.setMinWidth(760);
         stage.setMinHeight(640);
@@ -242,8 +242,7 @@ public final class LauncherApp extends Application {
     private void attachStylesheet(Scene scene) {
         if (scene == null) return;
         try {
-            Path sheet = Path.of(System.getenv().getOrDefault("APPDATA", System.getProperty("user.home")),
-                    "V-Client", "cache", "launcher-dark.css");
+            Path sheet = AppInfo.dataDir().resolve("cache").resolve("launcher-dark.css");
             Files.createDirectories(sheet.getParent());
             Files.writeString(sheet, LAUNCHER_CSS, java.nio.charset.StandardCharsets.UTF_8);
             String uri = sheet.toUri().toString();
@@ -386,8 +385,8 @@ public final class LauncherApp extends Application {
                     settings.setOfflineMode(offline);
                     saveSettings();
                     appendLog(offline
-                            ? "Offline mode on: V-Client will not contact Mojang, Modrinth, skin servers, or download anything."
-                            : "Offline mode off: V-Client can download versions, libraries, assets, and Java again.");
+                            ? "Offline mode on: VYRN will not contact Mojang, Modrinth, skin servers, or download anything."
+                            : "Offline mode off: VYRN can download versions, libraries, assets, and Java again.");
                     updateInstallButton();
                     updateReadiness();
                     refreshVersions(selectedVersionId);
@@ -636,7 +635,7 @@ public final class LauncherApp extends Application {
             downloadSelectedVersion(selected);
             return;
         }
-        // A mod-loader profile (for example V-Client 1.21.11) is repaired by reinstalling its bundled files.
+        // A mod-loader profile (for example VYRN 1.21.11) is repaired by reinstalling its bundled files.
         Path directory = settings.minecraftDirectory();
         versionStatusLabel.setText("Repairing " + selected.id() + "…");
         executor.execute(() -> {
@@ -704,7 +703,7 @@ public final class LauncherApp extends Application {
     /** Everything useful for a bug report: versions, the launcher log, and the last error's technical details. */
     private void copyLogsToClipboard() {
         StringBuilder text = new StringBuilder();
-        text.append("V-Client ").append(AppInfo.VERSION).append(" · ").append(System.getProperty("os.name"))
+        text.append("VYRN ").append(AppInfo.VERSION).append(" · ").append(System.getProperty("os.name"))
                 .append(" · Java ").append(System.getProperty("java.version")).append(System.lineSeparator());
         text.append("TLS: ").append(PlatformTls.truststoreSummary()).append(System.lineSeparator());
         text.append("Offline mode: ").append(settings.offlineMode()).append(" · Game folder: ")
@@ -715,7 +714,7 @@ public final class LauncherApp extends Application {
         }
         text.append(String.join(System.lineSeparator(), logLines));
         Path logs = settings.minecraftDirectory().resolve("logs");
-        appendDiagnosticFile(text, logs.resolve("vclient-launch.log"), "V-Client launch log", 18_000);
+        appendDiagnosticFile(text, logs.resolve("vclient-launch.log"), "VYRN launch log", 18_000);
         appendDiagnosticFile(text, logs.resolve("latest.log"), "Minecraft latest.log", 12_000);
         CrashReports.list(settings.minecraftDirectory(), 1).stream().findFirst().ifPresent(report ->
                 appendDiagnosticFile(text, report.file(), "Newest crash report", 20_000));
@@ -733,14 +732,14 @@ public final class LauncherApp extends Application {
         if (offline) {
             connection = Connection.OFFLINE;
             connectionResultLabel.setText("Offline mode is on — nothing is contacted.");
-            Label note = label("Turn Offline mode off to check DNS, TLS, Mojang and the V-Client server.", 12, MUTED);
+            Label note = label("Turn Offline mode off to check DNS, TLS, Mojang and the VYRN server.", 12, MUTED);
             note.setWrapText(true);
             box.getChildren().add(note);
             updateReadiness();
             return;
         }
         for (NetworkDiagnostics.Check check : checks) {
-            // The V-Client server is optional: if it cannot be reached the launcher uses saved data, so this is grey, never red.
+            // The VYRN server is optional: if it cannot be reached the launcher uses saved data, so this is grey, never red.
             boolean optional = check.name().equals("Backend");
             String color = check.passed() ? Widgets.GREEN : optional ? "#8a93a8" : Widgets.RED;
             Label name = label(check.name(), 13, "#eaf9ff");
@@ -776,7 +775,7 @@ public final class LauncherApp extends Application {
         Label summary = connectionResultLabel;
         button.setDisable(true);
         button.setText("TESTING...");
-        summary.setText("Checking DNS, TLS, Mojang and the V-Client server…");
+        summary.setText("Checking DNS, TLS, Mojang and the VYRN server…");
         connection = Connection.CHECKING;
         showChecklistLoading();
         updateReadiness();
@@ -796,7 +795,7 @@ public final class LauncherApp extends Application {
                 summary.setText(switch (connection) {
                     case OK -> "All checks passed.";
                     case WAKING -> "Server is waking up — this can take a minute.";
-                    case DEGRADED -> "Game connection is fine; the V-Client server is unreachable.";
+                    case DEGRADED -> "Game connection is fine; the VYRN server is unreachable.";
                     default -> "Some checks failed — see the fixes below.";
                 });
                 renderChecklist(checks, false);
@@ -869,13 +868,13 @@ public final class LauncherApp extends Application {
         if (settings.onboardingDone()) return;
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.initOwner(stage);
-        dialog.setTitle("Welcome to V-Client");
+        dialog.setTitle("Welcome to VYRN");
         dialog.setHeaderText("Let's get you ready to play");
         ButtonType finish = new ButtonType("Get started", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
         ButtonType skip = new ButtonType("Skip", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
         dialog.getDialogPane().getButtonTypes().addAll(finish, skip);
 
-        Label intro = label("V-Client keeps its own private Minecraft folder, so it never touches your other launchers. "
+        Label intro = label("VYRN keeps its own private Minecraft folder, so it never touches your other launchers. "
                 + "Three quick choices, all changeable later in Settings.", 13, "#222");
         intro.setWrapText(true);
         intro.setStyle("-fx-font-size: 14px;");
@@ -891,7 +890,7 @@ public final class LauncherApp extends Application {
         Label memoryHint = new Label("4–6 GB suits most setups. Leave some RAM for Windows.");
         memoryHint.setStyle("-fx-font-size: 12px; -fx-text-fill: #555;");
         HBox online = Widgets.switchRow("Download Minecraft (go online)",
-                "Turns Offline mode off so V-Client can fetch game versions and Java. Recommended.",
+                "Turns Offline mode off so VYRN can fetch game versions and Java. Recommended.",
                 !settings.offlineMode(), ACCENT, goOnline -> settings.setOfflineMode(!goOnline));
         Button importProfile = button("IMPORT A PROFILE FILE", "#11263D", 11);
         importProfile.setOnAction(event -> importProfileFile());
@@ -912,9 +911,9 @@ public final class LauncherApp extends Application {
 
     private void exportProfileFile() {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Export V-Client profile");
-        chooser.setInitialFileName("v-client-profile.json");
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("V-Client profile", "*.json"));
+        chooser.setTitle("Export VYRN profile");
+        chooser.setInitialFileName("vyrn-profile.json");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("VYRN profile", "*.json"));
         var target = chooser.showSaveDialog(stage);
         if (target == null) return;
         try {
@@ -929,8 +928,8 @@ public final class LauncherApp extends Application {
 
     private void importProfileFile() {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Import V-Client profile");
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("V-Client profile", "*.json"));
+        chooser.setTitle("Import VYRN profile");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("VYRN profile", "*.json"));
         var source = chooser.showOpenDialog(stage);
         if (source == null) return;
         try {
@@ -982,7 +981,7 @@ public final class LauncherApp extends Application {
         });
         directoryRow.getChildren().addAll(directoryField, selectFolderButton);
         Label privateFolderHint = label(
-                "This is V-Client's private Minecraft folder. Import installed game files below to copy them here without deleting the original or downloading anything.",
+                "This is VYRN's private Minecraft folder. Import installed game files below to copy them here without deleting the original or downloading anything.",
                 11, MUTED);
         privateFolderHint.setWrapText(true);
         Button importButton = button("IMPORT EXISTING GAME FILES", ACCENT, 10);
@@ -1057,7 +1056,7 @@ public final class LauncherApp extends Application {
             try {
                 Path installedJava = JavaRuntimeManager.detectInstalledJava25();
                 Platform.runLater(() -> javaStatus.setText(installedJava == null
-                        ? "Java 25 not detected. V-Client will download it automatically when needed."
+                        ? "Java 25 not detected. VYRN will download it automatically when needed."
                         : "Detected Java 25: " + installedJava));
             } catch (IOException e) {
                 Platform.runLater(() -> {
@@ -1077,7 +1076,7 @@ public final class LauncherApp extends Application {
         profileCard.getChildren().addAll(label("PROFILE", 11, MUTED), new HBox(10, exportProfile, importProfile), profileHint);
 
         VBox updateCard = card();
-        HBox autoUpdateRow = Widgets.switchRow("Update V-Client automatically",
+        HBox autoUpdateRow = Widgets.switchRow("Update VYRN automatically",
                 "Checks for a new launcher at startup, verifies the download (SHA-256), then installs and reopens.",
                 settings.autoUpdate(), ACCENT, enabled -> {
                     settings.setAutoUpdate(enabled);
@@ -1085,7 +1084,7 @@ public final class LauncherApp extends Application {
                 });
         Button checkUpdates = button("CHECK FOR UPDATES NOW", "#11263D", 11);
         checkUpdates.setOnAction(event -> checkForUpdates(true));
-        updateCard.getChildren().addAll(label("LAUNCHER UPDATES  ·  V-Client " + AppInfo.VERSION, 11, MUTED), autoUpdateRow, checkUpdates);
+        updateCard.getChildren().addAll(label("LAUNCHER UPDATES  ·  VYRN " + AppInfo.VERSION, 11, MUTED), autoUpdateRow, checkUpdates);
 
         VBox accountCard = buildAccountCard();
 
@@ -1107,7 +1106,7 @@ public final class LauncherApp extends Application {
         VBox card = card();
         Label title = label("VPN", 11, MUTED);
         Label state = label("Checking VPN...", 14, "#f3f6fc");
-        Label hint = label("Built-in VPN, nothing to install and no administrator prompt. Press CONNECT and V-Client "
+        Label hint = label("Built-in VPN, nothing to install and no administrator prompt. Press CONNECT and VYRN "
                 + "tunnels your VSMP connection (" + VSMP_HOST + ", from the Servers page or JOIN OUR SMP) through a "
                 + "free Cloudflare WARP VPN. It keeps your connection private but does not change your country, and "
                 + "only that server is covered, not the rest of your PC. Have your own VPN? Use IMPORT CONFIG with a "
@@ -1180,7 +1179,7 @@ public final class LauncherApp extends Application {
         Path source = LauncherSettings.normalizeMinecraftDirectory(selected.toPath());
         Path destination = settings.minecraftDirectory();
         importButton.setDisable(true);
-        if (status != null) status.setText("Copying local Minecraft files into V-Client...");
+        if (status != null) status.setText("Copying local Minecraft files into VYRN...");
         appendLog("Importing local Minecraft files from " + source + " into " + destination + ".");
         executor.execute(() -> {
             try {
@@ -1374,7 +1373,7 @@ public final class LauncherApp extends Application {
                                     !version.id().equals(selectedVersionId)))
                             .findFirst().orElse(null);
                     if (fabric == null) {
-                        throw new IOException("No Fabric profile is installed. Install the V-Client Fabric profile on the Home page first.");
+                        throw new IOException("No Fabric profile is installed. Install the VYRN Fabric profile on the Home page first.");
                     }
                     return ModrinthModService.resolveTarget(directory, fabric);
                 }
@@ -1582,7 +1581,7 @@ public final class LauncherApp extends Application {
                     ModsUi.chip("≈ " + profile.estimatedFpsGain(), ModsUi.GOOD),
                     ModsUi.text("typical range, not a measurement - it depends on your PC, world and server", 11, "#6f9bb5", false));
             hardware.setText("This PC has about " + (ram / (1024L * 1024 * 1024)) + " GB of RAM, so " + profile.label()
-                    + " gives the game " + profile.recommendedMemoryGb(ram) + " GB. Java is chosen automatically: V-Client uses the Azul Zulu version your Minecraft version needs and downloads it when missing.");
+                    + " gives the game " + profile.recommendedMemoryGb(ram) + " GB. Java is chosen automatically: VYRN uses the Azul Zulu version your Minecraft version needs and downloads it when missing.");
             styleProfileCards();
             layoutProfiles();
             showDetails(profile, ram);
@@ -1719,7 +1718,7 @@ public final class LauncherApp extends Application {
                                     !version.id().equals(selectedVersionId)))
                             .findFirst().orElse(null);
                     if (fabric == null) {
-                        throw new IOException("No Fabric profile is installed, so the optimisation mods were skipped. Install the V-Client Fabric profile on the Home page first.");
+                        throw new IOException("No Fabric profile is installed, so the optimisation mods were skipped. Install the VYRN Fabric profile on the Home page first.");
                     }
                     ModrinthModService.Target target = ModrinthModService.resolveTarget(minecraftDirectory, fabric);
                     for (BoostProfile.BoostMod mod : profile.mods()) {
@@ -2067,7 +2066,7 @@ public final class LauncherApp extends Application {
         updateNavigationState();
         StackPane root = baseLayout();
         VBox content = pageContent("Community", "Friends",
-                "Add friends by their V-Client username, see who is online and what they are playing. Needs a free V-Client account.");
+                "Add friends by their VYRN username, see who is online and what they are playing. Needs a free VYRN account.");
         FriendsPage page = new FriendsPage();
         content.getChildren().addAll(page.notice, page.accountSection(), page.localCard());
         setPageContent(root, content);
@@ -2108,7 +2107,7 @@ public final class LauncherApp extends Application {
         executor.execute(this::sendPresenceNow);
     }
 
-    /** The Friends page: V-Client account friends with presence, plus the old on-device list of names. */
+    /** The Friends page: VYRN account friends with presence, plus the old on-device list of names. */
     private final class FriendsPage {
         private final VBox notice = new VBox(10);
         private final VBox requestsCard = ModsUi.glassCard(12, new Insets(20));
@@ -2142,10 +2141,10 @@ public final class LauncherApp extends Application {
             if (!signedIn()) {
                 VBox card = ModsUi.glassCard(14, new Insets(22));
                 boolean noBackend = !backend().configured();
-                Label title = ModsUi.text(noBackend ? "Connect to the V-Client backend first" : "Sign in to add friends", 16, ModsUi.TEXT, true);
+                Label title = ModsUi.text(noBackend ? "Connect to the VYRN backend first" : "Sign in to add friends", 16, ModsUi.TEXT, true);
                 Label body = ModsUi.text(noBackend
-                        ? "Friends are stored on the V-Client backend. Set its address on the News page (Backend & updates), then create your account there."
-                        : "Create a free V-Client account or sign in on the News page. Then you can add friends by username, see who is online and what they are playing.",
+                        ? "Friends are stored on the VYRN backend. Set its address on the News page (Backend & updates), then create your account there."
+                        : "Create a free VYRN account or sign in on the News page. Then you can add friends by username, see who is online and what they are playing.",
                         12, ModsUi.MUTED, false);
                 body.setWrapText(true);
                 Button open = new Button("OPEN THE NEWS PAGE");
@@ -2158,7 +2157,7 @@ public final class LauncherApp extends Application {
                 return section;
             }
             VBox addCard = ModsUi.glassCard(12, new Insets(20));
-            username.setPromptText("Your friend's V-Client username");
+            username.setPromptText("Your friend's VYRN username");
             username.setStyle("-fx-background-color: rgba(7, 19, 33, 0.85); -fx-text-fill: #f5f7fd; -fx-prompt-text-fill: #6f9bb5;"
                     + " -fx-font-size: 13px; -fx-border-color: rgba(255,255,255,0.14); -fx-background-radius: 12;"
                     + " -fx-border-radius: 12; -fx-padding: 0 14 0 14;");
@@ -2236,7 +2235,7 @@ public final class LauncherApp extends Application {
             friendsCount.setText(overview.friends().size() + " friends  ·  " + online + " online");
             if (overview.friends().isEmpty()) {
                 friendsBody.getChildren().setAll(ModsUi.emptyCard("♢", "No friends yet",
-                        "Type a friend's V-Client username above and send them a request."));
+                        "Type a friend's VYRN username above and send them a request."));
             } else {
                 List<javafx.scene.Node> rows = new ArrayList<>();
                 for (BackendClient.Friend friend : overview.friends()) rows.add(friendRow(friend));
@@ -2302,7 +2301,7 @@ public final class LauncherApp extends Application {
                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Remove " + friend.username() + " from your friends?",
                         ButtonType.OK, ButtonType.CANCEL);
                 confirm.initOwner(stage);
-                confirm.setTitle("V-Client");
+                confirm.setTitle("VYRN");
                 confirm.setHeaderText("Remove friend");
                 if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
                     respond(() -> backend().removeFriend(settings.backendToken(), friend.userId()));
@@ -2485,14 +2484,14 @@ public final class LauncherApp extends Application {
         }
     }
 
-    /** The admin panel on the News page: only shown (and only works) when the signed-in V-Client account is the admin. */
+    /** The admin panel on the News page: only shown (and only works) when the signed-in VYRN account is the admin. */
     private VBox adminCard() {
         VBox box = card();
         box.setManaged(false);
         box.setVisible(false);
         BackendClient client = backend();
         String token = settings.backendToken();
-        // Only the admin game account (Izyrn on Ely.by) gets the panel, whatever V-Client account is signed in.
+        // Only the admin game account (Izyrn on Ely.by) gets the panel, whatever VYRN account is signed in.
         if (account == null || !settings.isAdmin(account) || token.isBlank() || !client.configured()) return box;
 
         Label summary = label("Loading players…", 12, "#e6ebf7");
@@ -2521,10 +2520,10 @@ public final class LauncherApp extends Application {
                     BackendClient.AdminOverview overview = client.adminPlayers(token, search.getText().trim());
                     Platform.runLater(() -> {
                         summary.setText(overview.total() + " players have played  ·  " + overview.activeToday()
-                                + " in the last 24 hours  ·  " + overview.accounts() + " V-Client accounts");
+                                + " in the last 24 hours  ·  " + overview.accounts() + " VYRN accounts");
                         rows.getChildren().clear();
                         if (overview.players().isEmpty()) {
-                            rows.getChildren().add(label("No players found yet. They appear here after they start the game from V-Client 1.3.0 or newer.", 12, MUTED));
+                            rows.getChildren().add(label("No players found yet. They appear here after they start the game from VYRN 1.3.0 or newer.", 12, MUTED));
                         }
                         for (BackendClient.AdminPlayer player : overview.players()) {
                             Label name = label(player.name(), 13, "#f3f6fc");
@@ -2912,7 +2911,7 @@ public final class LauncherApp extends Application {
                 }
             });
         } else {
-            posts.getChildren().add(label("Set the V-Client backend address below to load news.", 12, MUTED));
+            posts.getChildren().add(label("Set the VYRN backend address below to load news.", 12, MUTED));
         }
 
         content.getChildren().addAll(launchEventBanner(), announcementBox(), statusCard, posts, accountCard(root), adminCard(), backendCard());
@@ -2935,7 +2934,7 @@ public final class LauncherApp extends Application {
 
     private VBox accountCard(StackPane root) {
         VBox box = card();
-        box.getChildren().add(label("V-CLIENT ACCOUNT", 11, MUTED));
+        box.getChildren().add(label("VYRN ACCOUNT", 11, MUTED));
         BackendClient client = backend();
         Label result = label("", 11, MUTED);
         result.setWrapText(true);
@@ -2977,7 +2976,7 @@ public final class LauncherApp extends Application {
             save.setOnAction(event -> executor.execute(() -> {
                 try {
                     client.linkNames(settings.backendToken(), minecraft.getText().strip(), ely.getText().strip());
-                    Platform.runLater(() -> result.setText("Linked names saved to your V-Client account."));
+                    Platform.runLater(() -> result.setText("Linked names saved to your VYRN account."));
                 } catch (IOException | InterruptedException e) {
                     if (e instanceof InterruptedException) Thread.currentThread().interrupt();
                     Platform.runLater(() -> result.setText(e.getMessage()));
@@ -3002,8 +3001,8 @@ public final class LauncherApp extends Application {
             Button signIn = button("SIGN IN", ACCENT, 10);
             Button create = button("CREATE ACCOUNT", "#11263D", 10);
             if (!client.configured()) {
-                box.getChildren().add(ModsUi.warningBox("The V-Client backend address is not set",
-                        "Accounts and friends live on the V-Client backend. Enter its address in the \"Backend & updates\" box below and press SAVE ADDRESS, then come back here.",
+                box.getChildren().add(ModsUi.warningBox("The VYRN backend address is not set",
+                        "Accounts and friends live on the VYRN backend. Enter its address in the \"Backend & updates\" box below and press SAVE ADDRESS, then come back here.",
                         null));
             }
             box.getChildren().addAll(login, email, password, new HBox(10, signIn, create), result);
@@ -3055,7 +3054,7 @@ public final class LauncherApp extends Application {
         TextField url = new TextField(settings.backendUrl());
         url.setPromptText("https://your-vclient-backend.example.com");
         url.setStyle(fieldStyle());
-        Label result = label("V-Client " + AppInfo.VERSION
+        Label result = label("VYRN " + AppInfo.VERSION
                 + (BackendClient.resolveUrl("").equals(System.getenv("VCLIENT_BACKEND_URL")) ? "  ·  backend set by VCLIENT_BACKEND_URL" : ""), 11, MUTED);
         result.setWrapText(true);
         Button save = button("SAVE ADDRESS", ACCENT, 10);
@@ -3093,14 +3092,14 @@ public final class LauncherApp extends Application {
                 BackendClient.UpdateInfo info = client.checkForUpdate(AppInfo.VERSION);
                 Platform.runLater(() -> {
                     if (info.updateAvailable() && info.latest() != null && info.latest().url().endsWith(".exe")) {
-                        // A startup check installs the update on its own and reopens V-Client; only the manual
+                        // A startup check installs the update on its own and reopens VYRN; only the manual
                         // button asks first.
                         if (manual) promptUpdate(info);
                         else downloadUpdate(info.latest());
                     } else if (manual) {
                         Alert alert = new Alert(Alert.AlertType.INFORMATION, "You are running the latest version (" + AppInfo.VERSION + ").");
                         alert.initOwner(stage);
-                        alert.setHeaderText("V-Client is up to date");
+                        alert.setHeaderText("VYRN is up to date");
                         alert.show();
                     }
                 });
@@ -3122,10 +3121,10 @@ public final class LauncherApp extends Application {
                 : new ButtonType("Later", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "", install, later);
         alert.initOwner(stage);
-        alert.setTitle("V-Client update");
-        alert.setHeaderText("V-Client " + release.version() + " is available" + (info.mandatory() ? " (required)" : ""));
+        alert.setTitle("VYRN update");
+        alert.setHeaderText("VYRN " + release.version() + " is available" + (info.mandatory() ? " (required)" : ""));
         alert.setContentText((release.notes().isBlank() ? "Bug fixes and improvements." : release.notes())
-                + "\n\nYou have " + AppInfo.VERSION + ". The installer will be downloaded, checked, and started; V-Client closes while it installs.");
+                + "\n\nYou have " + AppInfo.VERSION + ". The installer will be downloaded, checked, and started; VYRN closes while it installs.");
         alert.getDialogPane().setPrefWidth(520);
         alert.showAndWait().ifPresent(choice -> {
             if (choice == install) downloadUpdate(release);
@@ -3138,8 +3137,8 @@ public final class LauncherApp extends Application {
         bar.setPrefWidth(420);
         Dialog<Void> dialog = new Dialog<>();
         dialog.initOwner(stage);
-        dialog.setTitle("Updating V-Client");
-        dialog.setHeaderText("Downloading V-Client " + release.version() + "…");
+        dialog.setTitle("Updating VYRN");
+        dialog.setHeaderText("Downloading VYRN " + release.version() + "…");
         Label speed = new Label("Starting…");
         dialog.getDialogPane().setContent(new VBox(8, bar, speed));
         dialog.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
@@ -3320,7 +3319,7 @@ public final class LauncherApp extends Application {
         });
         inviteCard.getChildren().addAll(label("COMMUNITY INVITE URL", 11, MUTED), invite, new HBox(10, save, open), result);
         content.getChildren().addAll(inviteCard,
-                label("V-Client does not have a configured community invite yet. Add one above; no URL is invented or contacted automatically.", 12, MUTED));
+                label("VYRN does not have a configured community invite yet. Add one above; no URL is invented or contacted automatically.", 12, MUTED));
         setPageContent(root, content);
         stage.setScene(new Scene(root, stage.getWidth(), stage.getHeight()));
     }
@@ -3445,7 +3444,7 @@ public final class LauncherApp extends Application {
             openFolder.setOnAction(event -> {
                 try {
                     Files.createDirectories(modsDirectory);
-                    if (!Desktop.isDesktopSupported()) throw new IOException("This computer does not support opening folders from V-Client.");
+                    if (!Desktop.isDesktopSupported()) throw new IOException("This computer does not support opening folders from VYRN.");
                     Desktop.getDesktop().open(modsDirectory.toFile());
                 } catch (IOException | UnsupportedOperationException e) {
                     showNotice(ModsUi.warningBox("Couldn't open the mods folder", e.getMessage(), null));
@@ -3492,7 +3491,7 @@ public final class LauncherApp extends Application {
                         if (loaderProfiles.isEmpty()) {
                             profilePicker.setPromptText("No mod-loader profiles");
                             showNotice(ModsUi.warningBox("No mod-loader profile installed",
-                                    "Mods need a Fabric, Forge, NeoForge or Quilt profile. Install one in V-Client's game folder, then come back.",
+                                    "Mods need a Fabric, Forge, NeoForge or Quilt profile. Install one in VYRN's game folder, then come back.",
                                     null));
                             return;
                         }
@@ -3734,13 +3733,13 @@ public final class LauncherApp extends Application {
         private void removeMod(Path selected) {
             Path file = selected.toAbsolutePath().normalize();
             if (!modsDirectory.equals(file.getParent())) {
-                showNotice(ModsUi.warningBox("Couldn't remove the mod", "That file is not inside V-Client's mods folder.", null));
+                showNotice(ModsUi.warningBox("Couldn't remove the mod", "That file is not inside VYRN's mods folder.", null));
                 return;
             }
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                     "Remove " + file.getFileName() + " from your mods folder?", ButtonType.OK, ButtonType.CANCEL);
             confirm.initOwner(stage);
-            confirm.setTitle("V-Client");
+            confirm.setTitle("VYRN");
             confirm.setHeaderText("Remove mod");
             if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
             try {
@@ -4104,7 +4103,7 @@ public final class LauncherApp extends Application {
                     VClientModInstaller.ensureInstalled(directory,
                             line -> Platform.runLater(() -> appendLog(line)));
                 } catch (IOException e) {
-                    Platform.runLater(() -> appendLog("Could not install the V-Client mod profile: " + e.getMessage()));
+                    Platform.runLater(() -> appendLog("Could not install the VYRN mod profile: " + e.getMessage()));
                 }
                 try {
                     BundledResourcePack.ensureInstalled(directory,
@@ -4393,7 +4392,7 @@ public final class LauncherApp extends Application {
             launchingButton.setText("CONNECTING...");
         }
         appendLog((joinSmp ? "Preparing a launch for " + server.name() + " (" + server.host() + ":" + server.port() + ") with "
-                : "Starting Minecraft from V-Client's private folder ")
+                : "Starting Minecraft from VYRN's private folder ")
                 + selected.displayName()
                 + " for " + selectedAccount.name() + " (" + selectedAccount.type().label() + ")...");
         setPresence("Playing Minecraft", joinSmp ? server.name() : "");
@@ -4405,11 +4404,11 @@ public final class LauncherApp extends Application {
         executor.execute(() -> {
             try {
                 Consumer<String> output = line -> Platform.runLater(() -> appendLog(line));
-                // Make sure the game starts with the launcher's own V-Client mod, not a copy left by an older run.
+                // Make sure the game starts with the launcher's own VYRN mod, not a copy left by an older run.
                 try {
                     VClientModInstaller.ensureInstalled(settings.minecraftDirectory(), output);
                 } catch (IOException e) {
-                    output.accept("Could not refresh the V-Client mod before launching (is the game already open?): " + e.getMessage());
+                    output.accept("Could not refresh the VYRN mod before launching (is the game already open?): " + e.getMessage());
                 }
                 if (settings.replayBufferEnabled()) {
                     try {
@@ -4870,7 +4869,7 @@ public final class LauncherApp extends Application {
         else {
             TextInputDialog progress = new TextInputDialog();
             progress.initOwner(stage);
-            progress.setTitle("V-Client account sign-in");
+            progress.setTitle("VYRN account sign-in");
             progress.setHeaderText(message);
             progress.setContentText("Complete the sign-in steps; this window updates after authentication.");
             progress.show();
@@ -5028,7 +5027,7 @@ public final class LauncherApp extends Application {
         FriendlyError.Message message = FriendlyError.of(error);
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.initOwner(stage);
-        alert.setTitle("V-Client");
+        alert.setTitle("VYRN");
         alert.setHeaderText(title);
         alert.setContentText(message.title() + ". " + message.message());
         TextArea raw = new TextArea(message.details() + (settings != null && settings.debugMode()

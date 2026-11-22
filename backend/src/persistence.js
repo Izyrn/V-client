@@ -100,14 +100,14 @@ function createPersistence(config, options = {}) {
         const empty = db.prepare('SELECT COUNT(*) AS n FROM users').get().n === 0;
         const restored = empty ? importData(db, data) : 0;
         lastSaved = JSON.stringify({ ...data, savedAt: '' });
-        log.log(`[V-Client] Backup restored from GitHub (${restored} rows, saved ${data.savedAt}).`);
+        log.log(`[VYRN] Backup restored from GitHub (${restored} rows, saved ${data.savedAt}).`);
       } else {
-        log.log('[V-Client] No GitHub backup exists yet; it will be created on the first change.');
+        log.log('[VYRN] No GitHub backup exists yet; it will be created on the first change.');
       }
       canSave = true;
       return 1;
     } catch (error) {
-      log.error(`[V-Client] Could not restore the GitHub backup, so saving is switched off to protect it: ${error.message}`);
+      log.error(`[VYRN] Could not restore the GitHub backup, so saving is switched off to protect it: ${error.message}`);
       return 0;
     }
   }
@@ -141,7 +141,7 @@ function createPersistence(config, options = {}) {
         throw new Error(`GitHub answered HTTP ${response.status} while saving the backup`);
       }
     } catch (error) {
-      log.error(`[V-Client] Backup save failed (will retry): ${error.message}`);
+      log.error(`[VYRN] Backup save failed (will retry): ${error.message}`);
     } finally {
       saving = false;
     }

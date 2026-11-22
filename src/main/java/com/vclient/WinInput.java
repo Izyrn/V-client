@@ -8,7 +8,7 @@ import java.awt.Rectangle;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** The few Win32 calls V-Client needs: finding the game window, reading hotkeys and sending media keys. */
+/** The few Win32 calls VYRN needs: finding the game window, reading hotkeys and sending media keys. */
 final class WinInput {
     /** Hotkeys the player can choose for "save the last 30 seconds", with their virtual-key codes. */
     static final Map<String, Integer> HOTKEYS = new LinkedHashMap<>();
