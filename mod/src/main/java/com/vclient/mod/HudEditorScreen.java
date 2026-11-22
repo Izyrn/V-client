@@ -27,13 +27,15 @@ public final class HudEditorScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         for (Module module : Module.values()) {
-            if (!module.hudElement() || !VConfig.enabled(module)) continue;
-            int[] bounds = Hud.bounds(client, module);
-            boolean active = module == dragging
-                    || dragging == null && inside(bounds, mouseX, mouseY);
-            Hud.draw(context, client, module, bounds[0], bounds[1], true);
-            context.drawStrokedRectangle(bounds[0] - 1, bounds[1] - 1, bounds[2] + 2, bounds[3] + 2,
-                    active ? Hud.ACCENT : 0x80FFFFFF);
+            if (!module.hudElement() || !VConfig.enabled(module) || Safe.broken(module.title())) continue;
+            Safe.run(module.title(), () -> {
+                int[] bounds = Hud.bounds(client, module);
+                boolean active = module == dragging
+                        || dragging == null && inside(bounds, mouseX, mouseY);
+                Hud.draw(context, client, module, bounds[0], bounds[1], true);
+                context.drawStrokedRectangle(bounds[0] - 1, bounds[1] - 1, bounds[2] + 2, bounds[3] + 2,
+                        active ? Hud.ACCENT : 0x80FFFFFF);
+            });
         }
         String hint = "Drag elements to move them  |  Esc to save";
         context.drawText(textRenderer, hint, (width - textRenderer.getWidth(hint)) / 2, height / 2 - 4,

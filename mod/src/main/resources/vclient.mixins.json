@@ -4,6 +4,7 @@
   "package": "com.vclient.mod.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "AttackMixin",
     "GameRendererMixin",
     "InGameHudMixin",
     "LivingEntityRendererAccess",

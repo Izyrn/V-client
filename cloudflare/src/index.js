@@ -9,11 +9,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // The newest published launcher (mirror of website/update.json, served to launchers that cannot read the website).
 const LATEST_RELEASE = {
-  version: '1.8.0',
-  notes: '1.8.0: V-Client is now VYRN. New name, app and installer; your accounts, worlds and settings move over automatically.',
+  version: '1.8.1',
+  notes: '1.8.1: YouTube in the launcher (search videos, music and playlists, watch in the launcher or in a mini player, favorites) and 7 new in-game mods: Target HUD, Combo Counter, Reach Display, Attack Cooldown, Damage Feed, Session Stats and Waypoints (N to add, death points automatic).',
   mandatory: false,
-  size: 95484928,
-  sha256: 'ab9e06889e6967b7a69b1c89a5d230453dc542f4034394e5e96a42cdf039dfd3',
+  size: 95550976,
+  sha256: 'e88c7713838a16ea9531b0be735e830c7a83b1acc20eedfe23240d951e9e505d',
   url: 'https://izyrn.github.io/V-client/VSMPClientSetup.exe',
 };
 

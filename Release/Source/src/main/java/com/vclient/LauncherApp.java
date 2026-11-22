@@ -67,7 +67,7 @@ import java.util.function.Consumer;
 
 public final class LauncherApp extends Application {
     private enum Page {
-        HOME, BROWSER, SERVERS, LIBRARY, MODS, PACKS, BOOST, FPS_TEST, PERFORMANCE, WARDROBE, COSMETICS, PROFILE, RECORDINGS,
+        HOME, BROWSER, YOUTUBE, SERVERS, LIBRARY, MODS, PACKS, BOOST, FPS_TEST, PERFORMANCE, WARDROBE, COSMETICS, PROFILE, RECORDINGS,
         SCREENSHOTS, FRIENDS, NEWS, ASSISTANT, LOGS, CONSOLE, SETTINGS, DISCORD
     }
 
@@ -3934,7 +3934,8 @@ public final class LauncherApp extends Application {
         navigation.setPrefWidth(66);
         navigation.setMinWidth(66);
         navigation.setStyle("-fx-background-color: rgba(7, 19, 33, 0.72); -fx-border-color: transparent rgba(124, 235, 255, 0.14) transparent transparent;");
-        List<Page> mainPages = List.of(Page.HOME, Page.MODS, Page.COSMETICS, Page.BOOST, Page.RECORDINGS, Page.NEWS);
+        List<Page> mainPages = List.of(Page.HOME, Page.MODS, Page.COSMETICS, Page.BOOST, Page.YOUTUBE, Page.RECORDINGS,
+                Page.NEWS);
         List<Page> morePages = List.of(Page.SERVERS, Page.LIBRARY, Page.PACKS, Page.WARDROBE, Page.FRIENDS, Page.DISCORD,
                 Page.PROFILE, Page.SCREENSHOTS, Page.FPS_TEST, Page.PERFORMANCE, Page.BROWSER, Page.ASSISTANT,
                 Page.LOGS, Page.CONSOLE);
@@ -4009,6 +4010,8 @@ public final class LauncherApp extends Application {
             case BOOST -> showBoost();
             case BROWSER -> showFeaturePage(Page.BROWSER, "Web", "Browser",
                     "Browse the web with DNS lookups sent over HTTPS (Cloudflare DoH).", BrowserPage::build);
+            case YOUTUBE -> showFeaturePage(Page.YOUTUBE, "Media", "▶ YouTube",
+                    "Search videos, music and playlists, watch here or in a mini player, and save favorites.", YouTubePage::build);
             case PACKS -> showFeaturePage(Page.PACKS, "One click", "Mod Packs",
                     "PvP, FPS, SMP and Builder packs, installed in one click.", PacksPage::build);
             case FPS_TEST -> showFeaturePage(Page.FPS_TEST, "FrostBoost", "❄ FPS Comparison",
@@ -4058,6 +4061,7 @@ public final class LauncherApp extends Application {
             case MODS -> "✚\nMods";
             case BOOST -> "❄\nFrost";
             case BROWSER -> "◎\nBrowser";
+            case YOUTUBE -> "▶\nYouTube";
             case PACKS -> "▦\nPacks";
             case FPS_TEST -> "⇄\nCompare";
             case PERFORMANCE -> "◔\nFPS";

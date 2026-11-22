@@ -16,6 +16,7 @@ public abstract class GameRendererMixin {
     private void vclient$zoom(Camera camera, float tickProgress, boolean changingFov,
                               CallbackInfoReturnable<Float> info) {
         info.setReturnValue(VClientMod.modifyFov(info.getReturnValue()));
+        if (changingFov) com.vclient.mod.Waypoints.recordFov(info.getReturnValue());
     }
 
     @Inject(method = "tiltViewWhenHurt(Lnet/minecraft/client/util/math/MatrixStack;F)V", at = @At("HEAD"),

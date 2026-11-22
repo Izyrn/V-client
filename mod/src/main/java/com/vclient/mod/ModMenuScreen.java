@@ -43,11 +43,13 @@ public final class ModMenuScreen extends Screen {
     }
 
     private enum Category {
-        COMBAT("Combat", Module.CPS),
+        COMBAT("Combat", Module.TARGET_HUD, Module.COMBO, Module.REACH, Module.ATTACK_COOLDOWN, Module.DAMAGE_FEED,
+                Module.CPS),
         RENDER("Render", Module.FULLBRIGHT, Module.NO_HURT_CAM, Module.MENU_BACKGROUND),
         PLAYER("Player", Module.ARMOR_STATUS, Module.COORDINATES, Module.POTION_EFFECTS, Module.DURABILITY,
-                Module.ITEM_COUNT, Module.LAST_DEATH, Module.BIOME, Module.LIGHT_LEVEL, Module.DAY_COUNTER),
-        MOVEMENT("Movement", Module.TOGGLE_SPRINT, Module.TOGGLE_SNEAK, Module.ZOOM, Module.SPEED),
+                Module.ITEM_COUNT, Module.LAST_DEATH, Module.BIOME, Module.LIGHT_LEVEL, Module.DAY_COUNTER,
+                Module.SESSION_STATS),
+        MOVEMENT("Movement", Module.TOGGLE_SPRINT, Module.TOGGLE_SNEAK, Module.ZOOM, Module.SPEED, Module.WAYPOINTS),
         HUD("HUD", Module.FPS, Module.KEYSTROKES, Module.CPS, Module.PING, Module.CLOCK, Module.SERVER_ADDRESS),
         PERFORMANCE("Performance", Module.MEMORY, Module.FPS),
         FUN("Fun", Module.COSMETICS, Module.CLIENT);

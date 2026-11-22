@@ -1,10 +1,10 @@
 {
-    "version":  "1.8.0",
+    "version":  "1.8.1",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "ab9e06889e6967b7a69b1c89a5d230453dc542f4034394e5e96a42cdf039dfd3",
-    "size":  95484928,
-    "notes":  "1.8.0: V-Client is now VYRN. New name, app and installer; your accounts, worlds and settings move over automatically.",
+    "sha256":  "e88c7713838a16ea9531b0be735e830c7a83b1acc20eedfe23240d951e9e505d",
+    "size":  95550976,
+    "notes":  "1.8.1: YouTube in the launcher (search videos, music and playlists, watch in the launcher or in a mini player, favorites) and 7 new in-game mods: Target HUD, Combo Counter, Reach Display, Attack Cooldown, Damage Feed, Session Stats and Waypoints (N to add, death points automatic).",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-22T09:26:30.7587354Z"
+    "publishedAt":  "2026-11-22T09:53:52.9518674Z"
 }

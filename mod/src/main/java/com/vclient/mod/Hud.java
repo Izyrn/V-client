@@ -33,7 +33,8 @@ public final class Hud {
             EquipmentSlot.byName("chest"), EquipmentSlot.byName("legs"), EquipmentSlot.byName("feet")};
     private static final Module[] LEFT_COLUMN = {Module.FPS, Module.CPS, Module.PING, Module.SPEED, Module.CLOCK,
             Module.MEMORY, Module.DAY_COUNTER, Module.SERVER_ADDRESS, Module.ITEM_COUNT, Module.LAST_DEATH,
-            Module.DURABILITY, Module.LIGHT_LEVEL, Module.BIOME, Module.COORDINATES, Module.KEYSTROKES};
+            Module.DURABILITY, Module.LIGHT_LEVEL, Module.BIOME, Module.COMBO, Module.REACH, Module.COORDINATES,
+            Module.KEYSTROKES, Module.SESSION_STATS};
     private static final String[] ROMAN = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
 
     private static final ArrayDeque<Long> LEFT_CLICKS = new ArrayDeque<>();
@@ -50,10 +51,13 @@ public final class Hud {
         trackClicks(client);
         if (client.currentScreen instanceof HudEditorScreen) return;
         RecordingMarker.render(context, client);
+        Safe.run("Waypoint markers", () -> Waypoints.render(context, client));
         for (Module module : Module.values()) {
             if (!module.hudElement() || !VConfig.enabled(module) || !visible(client, module)) continue;
-            int[] bounds = bounds(client, module);
-            draw(context, client, module, bounds[0], bounds[1], false);
+            Safe.run(module.title(), () -> {
+                int[] bounds = bounds(client, module);
+                draw(context, client, module, bounds[0], bounds[1], false);
+            });
         }
     }
 
@@ -90,6 +94,9 @@ public final class Hud {
         return switch (module) {
             case TOGGLE_SPRINT -> client.options.sprintKey.isPressed();
             case POTION_EFFECTS -> client.player != null && !client.player.getStatusEffects().isEmpty();
+            case TARGET_HUD -> Combat.targetActive();
+            case DAMAGE_FEED -> Combat.feedActive();
+            case ATTACK_COOLDOWN -> Combat.cooldownCharging(client);
             default -> true;
         };
     }
@@ -114,6 +121,18 @@ public final class Hud {
                 for (String line : effectLines(client, editing)) widest = Math.max(widest, font.getWidth(line));
                 yield widest + 8;
             }
+            case TARGET_HUD -> Combat.TARGET_WIDTH;
+            case ATTACK_COOLDOWN -> Combat.COOLDOWN_WIDTH;
+            case DAMAGE_FEED -> {
+                int widest = 40;
+                for (String line : Combat.feedLines(editing)) widest = Math.max(widest, font.getWidth(line));
+                yield widest + 8;
+            }
+            case SESSION_STATS -> {
+                int widest = 0;
+                for (String[] line : Combat.sessionLines()) widest = Math.max(widest, font.getWidth(line[0] + line[1]));
+                yield widest + 8;
+            }
             default -> {
                 String[] text = text(client, module);
                 yield font.getWidth(text[0] + text[1]) + 8;
@@ -133,6 +152,10 @@ public final class Hud {
             }
             case ARMOR_STATUS -> (VConfig.bool(module, "held") ? 5 : 4) * 17;
             case POTION_EFFECTS -> Math.max(1, effectLines(client, editing).size()) * LINE + 2;
+            case TARGET_HUD -> Combat.TARGET_HEIGHT;
+            case ATTACK_COOLDOWN -> Combat.COOLDOWN_HEIGHT;
+            case DAMAGE_FEED -> Math.max(1, Combat.feedLines(editing).size()) * LINE + 2;
+            case SESSION_STATS -> Combat.sessionLines().size() * LINE + 2;
             default -> 13;
         };
     }
@@ -162,6 +185,9 @@ public final class Hud {
             case ARMOR_STATUS -> new int[]{screenWidth - width - 4, screenHeight / 2 - 42};
             case POTION_EFFECTS -> new int[]{screenWidth - width - 4, 4};
             case TOGGLE_SPRINT -> new int[]{4, screenHeight - Math.round(17 * scale(module))};
+            case TARGET_HUD -> new int[]{screenWidth / 2 + 14, screenHeight / 2 + 14};
+            case ATTACK_COOLDOWN -> new int[]{(screenWidth - width) / 2, screenHeight / 2 + 12};
+            case DAMAGE_FEED -> new int[]{screenWidth / 2 + 14, screenHeight / 2 - 60};
             default -> new int[]{4, leftColumnY(client, module, editing)};
         };
     }
@@ -217,6 +243,25 @@ public final class Hud {
                     line++;
                 }
             }
+            case TARGET_HUD -> Combat.drawTarget(context, client, background, label, editing);
+            case ATTACK_COOLDOWN -> Combat.drawCooldown(context, client, background, editing);
+            case DAMAGE_FEED -> {
+                if (background) frostPanel(context, module, width, height);
+                int line = 0;
+                for (String text : Combat.feedLines(editing)) {
+                    context.drawText(font, text, 4, 3 + line * LINE, text.endsWith("KILL") ? 0xFFFF6B6B : TEXT, true);
+                    line++;
+                }
+            }
+            case SESSION_STATS -> {
+                if (background) frostPanel(context, module, width, height);
+                int line = 0;
+                for (String[] text : Combat.sessionLines()) {
+                    context.drawText(font, text[0], 4, 3 + line * LINE, label, true);
+                    context.drawText(font, text[1], 4 + font.getWidth(text[0]), 3 + line * LINE, TEXT, true);
+                    line++;
+                }
+            }
             default -> {
                 String[] text = text(client, module);
                 if (background) frostPanel(context, module, width, height);
@@ -254,6 +299,8 @@ public final class Hud {
                     : Integer.toString(client.world.getLightLevel(client.player.getBlockPos()))};
             case BIOME -> new String[]{"Biome: ", biome(client)};
             case TOGGLE_SPRINT -> new String[]{"[Sprinting (Toggled)]", ""};
+            case COMBO -> Combat.comboText();
+            case REACH -> Combat.reachText(client.currentScreen instanceof HudEditorScreen);
             default -> new String[]{"", ""};
         };
     }

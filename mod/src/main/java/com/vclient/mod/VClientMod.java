@@ -77,6 +77,8 @@ public final class VClientMod implements ClientModInitializer {
 
         com.vclient.mod.cosmetics.Cosmetics.tick(client);
         trackDeath(client);
+        Safe.run("Combat HUD", () -> Combat.tick(client));
+        Safe.run("Waypoints", () -> Waypoints.tick(client));
         FpsRecorder.tick(client);
         PerfProbe.tick(client);
         SkinSync.tick(client);
