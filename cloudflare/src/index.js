@@ -9,11 +9,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // The newest published launcher (mirror of website/update.json, served to launchers that cannot read the website).
 const LATEST_RELEASE = {
-  version: '1.8.3',
-  notes: '1.8.3: fixes the big FPS drop from 1.8.2 (the minimap and sky are now almost free), and N now opens a Waypoints menu (Shift+N adds one where you stand).',
+  version: '1.8.4',
+  notes: '1.8.4: waypoint messages now show in chat (servers were hiding them), and Shift+N no longer stacks copies on the same spot.',
   mandatory: false,
-  size: 95669248,
-  sha256: 'a21f8294da2382da7a206577d7b4db4b342d7f503cf173ecbb2dd6a8be4b999d',
+  size: 95669760,
+  sha256: 'f5ca9517ebd2c9f5bc39a55a0d61ce34ee0fcc944498ef9a9f054bbc4d6806ec',
   url: 'https://izyrn.github.io/V-client/VSMPClientSetup.exe',
 };
 

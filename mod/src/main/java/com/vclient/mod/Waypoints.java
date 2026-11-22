@@ -103,14 +103,33 @@ public final class Waypoints {
 
     static void addHere(MinecraftClient client) {
         List<Waypoint> list = here(client);
-        int number = (int) list.stream().filter(point -> !point.death()).count() + 1;
         var pos = client.player.getBlockPos();
+        String menuKey = KeyNames.name(VConfig.integer(Module.WAYPOINTS, "addKey"));
+        for (Waypoint existing : list) {
+            if (!existing.death() && Math.abs(existing.x() - pos.getX()) <= 2 && Math.abs(existing.y() - pos.getY()) <= 2
+                    && Math.abs(existing.z() - pos.getZ()) <= 2) {
+                chat(client, "§b[VYRN] §f" + existing.name() + " is already here. Walk away to see its marker; "
+                        + menuKey + " opens the list.");
+                return;
+            }
+        }
+        int number = 1;
+        while (true) {
+            String candidate = "Waypoint " + number;
+            if (list.stream().noneMatch(point -> point.name().equals(candidate))) break;
+            number++;
+        }
         Waypoint point = new Waypoint("Waypoint " + number, pos.getX(), pos.getY(), pos.getZ(),
                 COLORS[(number - 1) % COLORS.length], false);
         list.add(point);
         save();
-        client.inGameHud.setOverlayMessage(Text.literal(point.name() + " set at " + pos.getX() + " " + pos.getY() + " "
-                + pos.getZ() + "  (" + KeyNames.name(VConfig.integer(Module.WAYPOINTS, "addKey")) + " opens the waypoint list)"), false);
+        chat(client, "§b[VYRN] §f" + point.name() + " set at " + pos.getX() + " " + pos.getY() + " " + pos.getZ()
+                + ". Walk away to see its marker; " + menuKey + " opens the list.");
+    }
+
+    /** Client-side chat line (only you see it); servers often overwrite the action bar, so this is where feedback goes. */
+    private static void chat(MinecraftClient client, String text) {
+        client.inGameHud.getChatHud().addMessage(Text.literal(text));
     }
 
     private static void addDeath(MinecraftClient client) {
@@ -140,12 +159,12 @@ public final class Waypoints {
             }
         }
         if (nearest == null) {
-            client.inGameHud.setOverlayMessage(Text.literal("No waypoints here to remove"), false);
+            chat(client, "§b[VYRN] §fNo waypoints here to remove");
             return;
         }
         list.remove(nearest);
         save();
-        client.inGameHud.setOverlayMessage(Text.literal("Removed " + nearest.name()), false);
+        chat(client, "§b[VYRN] §fRemoved " + nearest.name());
     }
 
     /** Draws a marker for every waypoint in this dimension that is in front of the camera and within range. */

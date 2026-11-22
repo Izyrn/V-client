@@ -1,10 +1,10 @@
 {
-    "version":  "1.8.3",
+    "version":  "1.8.4",
     "url":  "/VSMPClientSetup.exe",
-    "sha256":  "a21f8294da2382da7a206577d7b4db4b342d7f503cf173ecbb2dd6a8be4b999d",
-    "size":  95669248,
-    "notes":  "1.8.3: fixes the big FPS drop from 1.8.2 (the minimap and sky are now almost free), and N now opens a Waypoints menu (Shift+N adds one where you stand).",
+    "sha256":  "f5ca9517ebd2c9f5bc39a55a0d61ce34ee0fcc944498ef9a9f054bbc4d6806ec",
+    "size":  95669760,
+    "notes":  "1.8.4: waypoint messages now show in chat (servers were hiding them), and Shift+N no longer stacks copies on the same spot.",
     "mandatory":  false,
     "minSupported":  "0.0.0",
-    "publishedAt":  "2026-11-22T10:45:10.1491459Z"
+    "publishedAt":  "2026-11-22T10:53:23.3832954Z"
 }
