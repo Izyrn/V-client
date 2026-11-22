@@ -6076,6 +6076,740 @@
         }
       },
       "sort": 171
+    },
+    {
+      "id": "pet_frost_sprite",
+      "category": "pet",
+      "tier": "free",
+      "name": "Frost Sprite",
+      "sort": 100,
+      "description": "A little ice crystal that floats beside you.",
+      "definition": {
+        "texture": {
+          "width": 64,
+          "height": 64,
+          "generator": {
+            "type": "gradient",
+            "colors": [
+              "#e8fbff",
+              "#3fb8ff"
+            ]
+          }
+        },
+        "model": {
+          "parts": [
+            {
+              "bone": "body",
+              "pivot": [
+                -11,
+                -6,
+                3
+              ],
+              "anim": {
+                "axis": "y",
+                "target": "position",
+                "mode": "bob",
+                "speed": 0.6,
+                "amplitude": 2
+              },
+              "cuboids": [
+                {
+                  "origin": [
+                    -2,
+                    -5,
+                    -2
+                  ],
+                  "size": [
+                    4,
+                    4,
+                    4
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -1,
+                    -7,
+                    -1
+                  ],
+                  "size": [
+                    2,
+                    2,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -1,
+                    -1,
+                    -1
+                  ],
+                  "size": [
+                    2,
+                    2,
+                    2
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "bone": "body",
+              "pivot": [
+                -11,
+                -9,
+                3
+              ],
+              "anim": {
+                "axis": "y",
+                "target": "rotation",
+                "mode": "spin",
+                "speed": 0.5
+              },
+              "cuboids": [
+                {
+                  "origin": [
+                    -3.5,
+                    0,
+                    -0.5
+                  ],
+                  "size": [
+                    7,
+                    1,
+                    1
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -0.5,
+                    0,
+                    -3.5
+                  ],
+                  "size": [
+                    1,
+                    1,
+                    7
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pet_snow_buddy",
+      "category": "pet",
+      "tier": "free",
+      "name": "Snow Buddy",
+      "sort": 100,
+      "description": "A tiny snowman with a frosty hat.",
+      "definition": {
+        "texture": {
+          "width": 64,
+          "height": 64,
+          "generator": {
+            "type": "gradient",
+            "colors": [
+              "#ffffff",
+              "#cfe9ff"
+            ]
+          }
+        },
+        "model": {
+          "parts": [
+            {
+              "bone": "body",
+              "pivot": [
+                -11,
+                -6,
+                3
+              ],
+              "anim": {
+                "axis": "y",
+                "target": "position",
+                "mode": "bob",
+                "speed": 0.6,
+                "amplitude": 2
+              },
+              "cuboids": [
+                {
+                  "origin": [
+                    -2.5,
+                    -3,
+                    -2.5
+                  ],
+                  "size": [
+                    5,
+                    5,
+                    5
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -2,
+                    -7,
+                    -2
+                  ],
+                  "size": [
+                    4,
+                    4,
+                    4
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -2.5,
+                    -8,
+                    -2.5
+                  ],
+                  "size": [
+                    5,
+                    1,
+                    5
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -1.5,
+                    -10,
+                    -1.5
+                  ],
+                  "size": [
+                    3,
+                    2,
+                    3
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pet_slime_pal",
+      "category": "pet",
+      "tier": "free",
+      "name": "Slime Pal",
+      "sort": 100,
+      "description": "A bouncy little slime.",
+      "definition": {
+        "texture": {
+          "width": 64,
+          "height": 64,
+          "generator": {
+            "type": "gradient",
+            "colors": [
+              "#b6ff9e",
+              "#3dbb3d"
+            ]
+          }
+        },
+        "model": {
+          "parts": [
+            {
+              "bone": "body",
+              "pivot": [
+                -11,
+                -6,
+                3
+              ],
+              "anim": {
+                "axis": "y",
+                "target": "position",
+                "mode": "bob",
+                "speed": 0.6,
+                "amplitude": 2
+              },
+              "cuboids": [
+                {
+                  "origin": [
+                    -3,
+                    -6,
+                    -3
+                  ],
+                  "size": [
+                    6,
+                    6,
+                    6
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pet_ghost",
+      "category": "pet",
+      "tier": "free",
+      "name": "Little Ghost",
+      "sort": 100,
+      "description": "A friendly ghost that drifts along.",
+      "definition": {
+        "texture": {
+          "width": 64,
+          "height": 64,
+          "generator": {
+            "type": "gradient",
+            "colors": [
+              "#ffffff",
+              "#b9c8ff"
+            ]
+          }
+        },
+        "model": {
+          "parts": [
+            {
+              "bone": "body",
+              "pivot": [
+                -11,
+                -6,
+                3
+              ],
+              "anim": {
+                "axis": "y",
+                "target": "position",
+                "mode": "bob",
+                "speed": 0.6,
+                "amplitude": 2
+              },
+              "cuboids": [
+                {
+                  "origin": [
+                    -2.5,
+                    -7,
+                    -2.5
+                  ],
+                  "size": [
+                    5,
+                    6,
+                    5
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -2.5,
+                    -1,
+                    -2.5
+                  ],
+                  "size": [
+                    1,
+                    2,
+                    1
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    -0.5,
+                    -1,
+                    -2.5
+                  ],
+                  "size": [
+                    1,
+                    2,
+                    1
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "origin": [
+                    1.5,
+                    -1,
+                    -2.5
+                  ],
+                  "size": [
+                    1,
+                    2,
+                    1
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pet_aurora_orb",
+      "category": "pet",
+      "tier": "free",
+      "name": "Aurora Orb",
+      "sort": 100,
+      "description": "A glowing orb in aurora colours.",
+      "definition": {
+        "texture": {
+          "width": 64,
+          "height": 64,
+          "generator": {
+            "type": "gradient",
+            "colors": [
+              "#7cf29a",
+              "#b27cff"
+            ]
+          }
+        },
+        "model": {
+          "parts": [
+            {
+              "bone": "body",
+              "pivot": [
+                -11,
+                -6,
+                3
+              ],
+              "anim": {
+                "axis": "y",
+                "target": "position",
+                "mode": "bob",
+                "speed": 0.6,
+                "amplitude": 2
+              },
+              "cuboids": [
+                {
+                  "origin": [
+                    -2,
+                    -6,
+                    -2
+                  ],
+                  "size": [
+                    4,
+                    4,
+                    4
+                  ],
+                  "uv": [
+                    0,
+                    0
+                  ],
+                  "inflate": 0.4
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "aura_frost_ring",
+      "category": "aura",
+      "tier": "free",
+      "name": "Frost Ring",
+      "sort": 100,
+      "description": "Snowflakes circle around you.",
+      "definition": {
+        "aura": {
+          "particle": "minecraft:snowflake",
+          "count": 3,
+          "radius": 0.9,
+          "height": 1,
+          "speed": 1
+        }
+      }
+    },
+    {
+      "id": "aura_soul_halo",
+      "category": "aura",
+      "tier": "free",
+      "name": "Soul Halo",
+      "sort": 100,
+      "description": "Blue soul flames orbit above your head.",
+      "definition": {
+        "aura": {
+          "particle": "minecraft:soul_fire_flame",
+          "count": 3,
+          "radius": 0.5,
+          "height": 2.2,
+          "speed": 1.2
+        }
+      }
+    },
+    {
+      "id": "aura_starlight",
+      "category": "aura",
+      "tier": "free",
+      "name": "Starlight",
+      "sort": 100,
+      "description": "Two rings of sparkling light.",
+      "definition": {
+        "aura": {
+          "particle": "minecraft:end_rod",
+          "count": 2,
+          "radius": 1,
+          "height": 1,
+          "speed": 0.8,
+          "rings": 2
+        }
+      }
+    },
+    {
+      "id": "aura_love",
+      "category": "aura",
+      "tier": "free",
+      "name": "Love Aura",
+      "sort": 100,
+      "description": "Hearts float slowly around you.",
+      "definition": {
+        "aura": {
+          "particle": "minecraft:heart",
+          "count": 1,
+          "radius": 0.9,
+          "height": 1.2,
+          "speed": 0.4
+        }
+      }
+    },
+    {
+      "id": "aura_electric",
+      "category": "aura",
+      "tier": "free",
+      "name": "Electric",
+      "sort": 100,
+      "description": "Sparks crackle around you.",
+      "definition": {
+        "aura": {
+          "particle": "minecraft:electric_spark",
+          "count": 4,
+          "radius": 0.8,
+          "height": 1,
+          "speed": 2
+        }
+      }
+    },
+    {
+      "id": "kill_shatter",
+      "category": "kill_effect",
+      "tier": "free",
+      "name": "Shatter",
+      "sort": 100,
+      "description": "Your target bursts into snowflakes.",
+      "definition": {
+        "effect": {
+          "particle": "minecraft:snowflake",
+          "count": 45,
+          "pattern": "burst",
+          "speed": 0.18
+        }
+      }
+    },
+    {
+      "id": "kill_soul_release",
+      "category": "kill_effect",
+      "tier": "free",
+      "name": "Soul Release",
+      "sort": 100,
+      "description": "A column of souls rises.",
+      "definition": {
+        "effect": {
+          "particle": "minecraft:soul_fire_flame",
+          "count": 40,
+          "pattern": "column",
+          "speed": 0.05
+        }
+      }
+    },
+    {
+      "id": "kill_firework",
+      "category": "kill_effect",
+      "tier": "free",
+      "name": "Firework Pop",
+      "sort": 100,
+      "description": "A firework burst where they fell.",
+      "definition": {
+        "effect": {
+          "particle": "minecraft:firework",
+          "count": 50,
+          "pattern": "burst",
+          "speed": 0.22
+        }
+      }
+    },
+    {
+      "id": "kill_lightning",
+      "category": "kill_effect",
+      "tier": "free",
+      "name": "Lightning Spark",
+      "sort": 100,
+      "description": "A ring of electric sparks.",
+      "definition": {
+        "effect": {
+          "particle": "minecraft:electric_spark",
+          "count": 40,
+          "pattern": "ring",
+          "size": 1.2,
+          "speed": 0.2
+        }
+      }
+    },
+    {
+      "id": "kill_hearts",
+      "category": "kill_effect",
+      "tier": "free",
+      "name": "Hearts",
+      "sort": 100,
+      "description": "A ring of hearts. Cute but deadly.",
+      "definition": {
+        "effect": {
+          "particle": "minecraft:heart",
+          "count": 12,
+          "pattern": "ring",
+          "size": 1,
+          "speed": 0.1
+        }
+      }
+    },
+    {
+      "id": "death_frozen_soul",
+      "category": "death_effect",
+      "tier": "free",
+      "name": "Frozen Soul",
+      "sort": 100,
+      "description": "A spiral of snow rises where you fall.",
+      "definition": {
+        "effect": {
+          "particle": "minecraft:snowflake",
+          "count": 60,
+          "pattern": "spiral",
+          "size": 1,
+          "speed": 0.1
+        }
+      }
+    },
+    {
+      "id": "death_ash",
+      "category": "death_effect",
+      "tier": "free",
+      "name": "Ashes",
+      "sort": 100,
+      "description": "You turn to drifting ash.",
+      "definition": {
+        "effect": {
+          "particle": "minecraft:large_smoke",
+          "count": 30,
+          "pattern": "column",
+          "speed": 0.03
+        }
+      }
+    },
+    {
+      "id": "death_totem",
+      "category": "death_effect",
+      "tier": "free",
+      "name": "Totem Burst",
+      "sort": 100,
+      "description": "A totem-coloured burst.",
+      "definition": {
+        "effect": {
+          "particle": "minecraft:totem_of_undying",
+          "count": 60,
+          "pattern": "burst",
+          "speed": 0.4
+        }
+      }
+    },
+    {
+      "id": "win_fireworks",
+      "category": "victory_effect",
+      "tier": "free",
+      "name": "Fireworks",
+      "sort": 100,
+      "description": "Fireworks spiral around you when you win.",
+      "definition": {
+        "effect": {
+          "particle": "minecraft:firework",
+          "count": 50,
+          "pattern": "spiral",
+          "size": 1.4,
+          "speed": 0.15
+        }
+      }
+    },
+    {
+      "id": "win_aurora_rain",
+      "category": "victory_effect",
+      "tier": "free",
+      "name": "Aurora Rain",
+      "sort": 100,
+      "description": "Columns of light rise around you.",
+      "definition": {
+        "effect": {
+          "particle": "minecraft:end_rod",
+          "count": 50,
+          "pattern": "column",
+          "size": 3,
+          "speed": 0.08
+        }
+      }
+    },
+    {
+      "id": "win_totem_shower",
+      "category": "victory_effect",
+      "tier": "free",
+      "name": "Totem Shower",
+      "sort": 100,
+      "description": "A golden-green celebration.",
+      "definition": {
+        "effect": {
+          "particle": "minecraft:totem_of_undying",
+          "count": 70,
+          "pattern": "burst",
+          "speed": 0.5
+        }
+      }
     }
   ]
 }

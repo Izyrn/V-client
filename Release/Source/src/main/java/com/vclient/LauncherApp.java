@@ -67,7 +67,7 @@ import java.util.function.Consumer;
 
 public final class LauncherApp extends Application {
     private enum Page {
-        HOME, BROWSER, YOUTUBE, SERVERS, LIBRARY, MODS, PACKS, BOOST, FPS_TEST, PERFORMANCE, WARDROBE, COSMETICS, PROFILE, RECORDINGS,
+        HOME, BROWSER, YOUTUBE, MUSIC, SERVERS, LIBRARY, MODS, PACKS, BOOST, FPS_TEST, PERFORMANCE, WARDROBE, COSMETICS, PROFILE, RECORDINGS,
         SCREENSHOTS, FRIENDS, NEWS, ASSISTANT, LOGS, CONSOLE, SETTINGS, DISCORD
     }
 
@@ -174,6 +174,7 @@ public final class LauncherApp extends Application {
     public void start(Stage stage) throws Exception {
         this.stage = stage;
         settings = LauncherSettings.load();
+        ReplayBuffer.seconds = settings.replaySeconds();
         gameLauncher = new MinecraftLauncher((requiredMajor, onOutput, allowDownloads) -> {
             int selectedMajor = settings.javaMajorOverride() != 0
                     ? settings.javaMajorOverride() : requiredMajor;
@@ -282,6 +283,7 @@ public final class LauncherApp extends Application {
                 settings::replayBufferEnabled, settings::clipMicrophone, message -> replayStatus = message,
                 file -> activityLog.add("Saved clip " + file.getFileName()),
                 () -> settings.minecraftDirectory().resolve("vclient").resolve("recording.state"));
+        DiscordPresence.start(settings::minecraftDirectory);
         GameSession.addListener(replayBuffer);
         GameSession.addListener(new RecordingWatcher(recordingLibrary, settings::minecraftDirectory,
                 file -> {
@@ -291,6 +293,7 @@ public final class LauncherApp extends Application {
         GameSession.addListener(new GameSession.Listener() {
             @Override
             public void started(String versionId, long startedAtMillis) {
+                DiscordPresence.gameStarted(versionId, startedAtMillis);
                 stats.recordLaunch(versionId);
                 activityLog.add("Launched Minecraft " + versionId);
                 stats.save();
@@ -299,6 +302,7 @@ public final class LauncherApp extends Application {
 
             @Override
             public void ended(String versionId, long startedAtMillis, long endedAtMillis) {
+                DiscordPresence.gameEnded();
                 stats.addPlaytime((endedAtMillis - startedAtMillis) / 1000);
                 activityLog.add("Played " + UiKit.playtime((endedAtMillis - startedAtMillis) / 1000) + " of " + versionId);
                 Platform.runLater(() -> {
@@ -3350,7 +3354,8 @@ public final class LauncherApp extends Application {
         VBox content = pageContent("Modrinth", "Mods",
                 "Browse Modrinth and install mods straight into your mods folder. The folder is created automatically on your first install.");
         ModsPage page = new ModsPage(content);
-        content.getChildren().addAll(page.controlsCard(), page.notice, page.resultsCard(), page.installedCard());
+        content.getChildren().addAll(page.controlsCard(), ModHealth.card(featureHost()), page.notice, page.resultsCard(),
+                page.installedCard());
         setPageContent(root, content);
         stage.setScene(new Scene(root, stage.getWidth(), stage.getHeight()));
         page.start();
@@ -3934,7 +3939,7 @@ public final class LauncherApp extends Application {
         navigation.setPrefWidth(66);
         navigation.setMinWidth(66);
         navigation.setStyle("-fx-background-color: rgba(7, 19, 33, 0.72); -fx-border-color: transparent rgba(124, 235, 255, 0.14) transparent transparent;");
-        List<Page> mainPages = List.of(Page.HOME, Page.MODS, Page.COSMETICS, Page.BOOST, Page.YOUTUBE, Page.RECORDINGS,
+        List<Page> mainPages = List.of(Page.HOME, Page.MODS, Page.COSMETICS, Page.BOOST, Page.YOUTUBE, Page.MUSIC, Page.RECORDINGS,
                 Page.NEWS);
         List<Page> morePages = List.of(Page.SERVERS, Page.LIBRARY, Page.PACKS, Page.WARDROBE, Page.FRIENDS, Page.DISCORD,
                 Page.PROFILE, Page.SCREENSHOTS, Page.FPS_TEST, Page.PERFORMANCE, Page.BROWSER, Page.ASSISTANT,
@@ -4010,6 +4015,8 @@ public final class LauncherApp extends Application {
             case BOOST -> showBoost();
             case BROWSER -> showFeaturePage(Page.BROWSER, "Web", "Browser",
                     "Browse the web with DNS lookups sent over HTTPS (Cloudflare DoH).", BrowserPage::build);
+            case MUSIC -> showFeaturePage(Page.MUSIC, "Media", "♫ Music",
+                    "Radio by genre and your Spotify, with album art, volume and playlists.", MusicPage::build);
             case YOUTUBE -> showFeaturePage(Page.YOUTUBE, "Media", "▶ YouTube",
                     "Search videos, music and playlists, watch here or in a mini player, and save favorites.", YouTubePage::build);
             case PACKS -> showFeaturePage(Page.PACKS, "One click", "Mod Packs",
@@ -4062,6 +4069,7 @@ public final class LauncherApp extends Application {
             case BOOST -> "❄\nFrost";
             case BROWSER -> "◎\nBrowser";
             case YOUTUBE -> "▶\nYouTube";
+            case MUSIC -> "♫\nMusic";
             case PACKS -> "▦\nPacks";
             case FPS_TEST -> "⇄\nCompare";
             case PERFORMANCE -> "◔\nFPS";

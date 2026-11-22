@@ -40,7 +40,12 @@ final class PackCatalog {
                     new PackMod("fabric-api", "Fabric API"), new PackMod("sodium", "Sodium"),
                     new PackMod("lithium", "Lithium"), new PackMod("malilib", "MaLiLib"),
                     new PackMod("litematica", "Litematica"), new PackMod("tweakeroo", "Tweakeroo"),
-                    new PackMod("mouse-tweaks", "Mouse Tweaks"))));
+                    new PackMod("mouse-tweaks", "Mouse Tweaks"))),
+            new Pack("shaders", "Shaders Pack", "Iris shaders on Sodium. Then pick a shader in Options > Video Settings > Shader Packs.", List.of(
+                    new PackMod("sodium", "Sodium"), new PackMod("iris", "Iris Shaders"))),
+            new Pack("visuals", "Visuals Pack", "Dynamic lights (torches light up in your hand), connected textures and smoother visuals.", List.of(
+                    new PackMod("sodium", "Sodium"), new PackMod("lambdynamiclights", "LambDynamicLights"),
+                    new PackMod("continuity", "Continuity"), new PackMod("entityculling", "EntityCulling"))));
 
     private PackCatalog() {}
 
@@ -68,6 +73,28 @@ final class PackCatalog {
             } catch (IOException e) {
                 failed.add(mod.name() + " (" + e.getMessage() + ")");
             }
+        }
+        // Auto dependency installation: whatever the new mods need and is still missing comes from Modrinth too.
+        try {
+            List<ModHealth.Issue> missing = ModHealth.check(ModHealth.scan(mods), target.gameVersion()).stream()
+                    .filter(issue -> issue.kind() == ModHealth.Kind.MISSING_DEPENDENCY).toList();
+            for (ModHealth.Issue issue : missing) {
+                String slug = ModHealth.slugFor(issue.install());
+                progress.accept(pack.title() + ": dependency " + slug + "...");
+                try {
+                    ModrinthModService.ModProject project = service.findBySlug(slug, issue.install(), target, progress);
+                    if (project == null) {
+                        unavailable.add(slug + " (dependency)");
+                    } else {
+                        service.install(project, minecraftDirectory, progress);
+                        installed.add(slug + " (dependency)");
+                    }
+                } catch (IOException e) {
+                    failed.add(slug + " (" + e.getMessage() + ")");
+                }
+            }
+        } catch (RuntimeException e) {
+            failed.add("dependency check (" + e.getMessage() + ")");
         }
         return new Outcome(installed, already, unavailable, failed);
     }

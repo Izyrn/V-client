@@ -33,7 +33,10 @@ import java.util.function.Supplier;
  * Minecraft window is the foreground window, and nothing is written to disk until the player presses the hotkey.
  */
 final class ReplayBuffer implements GameSession.Listener {
-    static final int SECONDS = 30;
+    /** Longest clip the buffer can keep (the player picks 30 or 60 seconds). */
+    static final int SECONDS = 60;
+    /** Current clip length in seconds: 30 or 60. */
+    static volatile int seconds = 30;
     /** Target rate; the display's refresh rate is the ceiling for screen capture. */
     private static final int FRAMES_PER_SECOND = 45;
     /** Frames are grabbed by several threads in turn, since one thread can only copy the screen about 30 times a second. */
@@ -385,8 +388,8 @@ final class ReplayBuffer implements GameSession.Listener {
             }
             frames.addLast(new Frame(taken, jpeg));
             bufferedBytes += jpeg.length;
-            while (!frames.isEmpty() && (taken - frames.peekFirst().timeMillis() > SECONDS * 1000L
-                    || bufferedBytes > MAX_BYTES)) {
+            while (!frames.isEmpty() && (taken - frames.peekFirst().timeMillis() > seconds * 1000L
+                    || bufferedBytes > MAX_BYTES / 30 * seconds)) {
                 bufferedBytes -= frames.removeFirst().jpeg().length;
             }
         }

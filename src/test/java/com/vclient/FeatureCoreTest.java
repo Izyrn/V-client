@@ -303,7 +303,7 @@ class FeatureCoreTest {
         assertTrue(PackCatalog.alreadyInstalled(mods, "sodium"));
         assertTrue(PackCatalog.alreadyInstalled(mods, "ferrite-core"));
         assertFalse(PackCatalog.alreadyInstalled(mods, "lithium"));
-        assertEquals(4, PackCatalog.PACKS.size());
+        assertEquals(6, PackCatalog.PACKS.size());
     }
 
     // ---- helpers -------------------------------------------------------------------------------------

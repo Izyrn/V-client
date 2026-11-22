@@ -29,6 +29,7 @@ public final class CosmeticsFeatureRenderer extends FeatureRenderer<PlayerEntity
         if (client.player == null || state.id != client.player.getId()) return;
         draw(CosmeticSlot.HAT, matrices, queue, light);
         draw(CosmeticSlot.WINGS, matrices, queue, light);
+        draw(CosmeticSlot.PET, matrices, queue, light);
     }
 
     private void draw(CosmeticSlot slot, MatrixStack matrices, OrderedRenderCommandQueue queue, int light) {

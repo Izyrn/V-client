@@ -6,6 +6,7 @@
   "client": [
     "AttackMixin",
     "GameRendererMixin",
+    "HandMixin",
     "InGameHudMixin",
     "LivingEntityRendererAccess",
     "LightmapTextureManagerMixin",
@@ -14,7 +15,9 @@
     "PlayerEntityModelMixin",
     "PlayerEntityRendererMixin",
     "PlayerListEntryMixin",
-    "ScreenMixin"
+    "ScoreboardMixin",
+    "ScreenMixin",
+    "TabPingMixin"
   ],
   "injectors": {
     "defaultRequire": 1

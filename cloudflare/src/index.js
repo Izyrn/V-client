@@ -9,11 +9,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // The newest published launcher (mirror of website/update.json, served to launchers that cannot read the website).
 const LATEST_RELEASE = {
-  version: '1.8.1',
-  notes: '1.8.1: YouTube in the launcher (search videos, music and playlists, watch in the launcher or in a mini player, favorites) and 7 new in-game mods: Target HUD, Combo Counter, Reach Display, Attack Cooldown, Damage Feed, Session Stats and Waypoints (N to add, death points automatic).',
+  version: '1.8.2',
+  notes: '1.8.2: Minimap, Heal Helper, Custom Sky (aurora and starlight), snow, fireflies, ground fog, better hit particles, Better Hand, custom scoreboard and tab list, ice hotbar/hearts/boss bars (VYRN UI pack), pets, auras, kill/death/victory effects, a Music page with radio and Spotify extras, mod health checks with one-click repair and auto dependencies, Shaders (Iris) and Visuals packs, 60-second instant replay.',
   mandatory: false,
-  size: 95550976,
-  sha256: 'e88c7713838a16ea9531b0be735e830c7a83b1acc20eedfe23240d951e9e505d',
+  size: 95662080,
+  sha256: 'a24b4cf928f4210287bda6cdb6e80696aedcb40618e1ecf0e49e083ca2e6af19',
   url: 'https://izyrn.github.io/V-client/VSMPClientSetup.exe',
 };
 

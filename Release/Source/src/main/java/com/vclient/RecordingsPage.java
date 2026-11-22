@@ -116,13 +116,24 @@ final class RecordingsPage {
             settings.setClipMicrophone(microphone.isSelected());
             host.saveSettings();
         });
-        Button saveNow = UiKit.button("SAVE LAST 30 SECONDS NOW", true, () -> {
+        javafx.scene.control.ChoiceBox<String> length = new javafx.scene.control.ChoiceBox<>();
+        length.getItems().addAll("Last 30 seconds", "Last 60 seconds");
+        length.setValue(settings.replaySeconds() == 60 ? "Last 60 seconds" : "Last 30 seconds");
+        Button saveNow = UiKit.button("SAVE LAST " + settings.replaySeconds() + " SECONDS NOW", true, () -> {
             host.replayBuffer().saveClip();
             notice.setText("Saving...");
         });
         Button open = UiKit.button("OPEN RECORDINGS FOLDER", false, this::openFolder);
         Button scan = UiKit.button("IMPORT RECORDINGS NOW", false, this::scanNow);
-        HBox controls = UiKit.row(10, ModsUi.text("Hotkey", 12, ModsUi.MUTED, false), hotkey, enabled);
+        length.setOnAction(event -> {
+            int chosen = length.getValue().contains("60") ? 60 : 30;
+            settings.setReplaySeconds(chosen);
+            ReplayBuffer.seconds = chosen;
+            saveNow.setText("SAVE LAST " + chosen + " SECONDS NOW");
+            host.saveSettings();
+        });
+        HBox controls = UiKit.row(10, ModsUi.text("Hotkey", 12, ModsUi.MUTED, false), hotkey,
+                ModsUi.text("Clip", 12, ModsUi.MUTED, false), length, enabled);
         HBox actions = UiKit.row(10, saveNow, scan, open);
         card.getChildren().addAll(controls, microphone, actions, bufferState, notice,
                 UiKit.muted("Clips are Motion-JPEG .avi files at up to 1280 px wide. Captured pixels are whatever is on "

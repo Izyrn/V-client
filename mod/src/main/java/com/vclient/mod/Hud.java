@@ -34,7 +34,7 @@ public final class Hud {
     private static final Module[] LEFT_COLUMN = {Module.FPS, Module.CPS, Module.PING, Module.SPEED, Module.CLOCK,
             Module.MEMORY, Module.DAY_COUNTER, Module.SERVER_ADDRESS, Module.ITEM_COUNT, Module.LAST_DEATH,
             Module.DURABILITY, Module.LIGHT_LEVEL, Module.BIOME, Module.COMBO, Module.REACH, Module.COORDINATES,
-            Module.KEYSTROKES, Module.SESSION_STATS};
+            Module.KEYSTROKES, Module.SESSION_STATS, Module.HEAL_HELPER};
     private static final String[] ROMAN = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
 
     private static final ArrayDeque<Long> LEFT_CLICKS = new ArrayDeque<>();
@@ -51,7 +51,9 @@ public final class Hud {
         trackClicks(client);
         if (client.currentScreen instanceof HudEditorScreen) return;
         RecordingMarker.render(context, client);
+        Safe.run("Custom Sky", () -> Visuals.renderSky(context, client));
         Safe.run("Waypoint markers", () -> Waypoints.render(context, client));
+        Safe.run("Heal Helper", () -> Interface.renderHealWarning(context, client));
         for (Module module : Module.values()) {
             if (!module.hudElement() || !VConfig.enabled(module) || !visible(client, module)) continue;
             Safe.run(module.title(), () -> {
@@ -67,6 +69,10 @@ public final class Hud {
      * glow, everything else a thin frost edge.
      */
     static void frostPanel(DrawContext context, Module module, int width, int height) {
+        if (VConfig.integer(Module.CLIENT, "hudStyle") == 1) {
+            roundedPanel(context, width, height);
+            return;
+        }
         if (module == Module.CPS) {
             context.fill(-2, -2, width + 2, height + 2, 0x2600CFFF);
             context.fill(-1, -1, width + 1, height + 1, 0x3A00CFFF);
@@ -88,6 +94,20 @@ public final class Hud {
             context.fill(width - corner, height - 1, width, height, bright);
             context.fill(width - 1, height - corner, width, height, bright);
         }
+    }
+
+    /** Glassmorphism panel: translucent body, rounded corners, light top edge. */
+    static void roundedPanel(DrawContext context, int width, int height) {
+        int body = 0x8C0C1F33;
+        context.fill(2, 0, width - 2, height, body);
+        context.fill(0, 2, 2, height - 2, body);
+        context.fill(width - 2, 2, width, height - 2, body);
+        context.fill(1, 1, 2, 2, body);
+        context.fill(width - 2, 1, width - 1, 2, body);
+        context.fill(1, height - 2, 2, height - 1, body);
+        context.fill(width - 2, height - 2, width - 1, height - 1, body);
+        context.fill(2, 0, width - 2, 1, 0x80DFF8FF);
+        context.fill(2, 1, width - 2, 2, 0x22FFFFFF);
     }
 
     private static boolean visible(MinecraftClient client, Module module) {
@@ -122,6 +142,7 @@ public final class Hud {
                 yield widest + 8;
             }
             case TARGET_HUD -> Combat.TARGET_WIDTH;
+            case MINIMAP -> Minimap.size();
             case ATTACK_COOLDOWN -> Combat.COOLDOWN_WIDTH;
             case DAMAGE_FEED -> {
                 int widest = 40;
@@ -153,6 +174,7 @@ public final class Hud {
             case ARMOR_STATUS -> (VConfig.bool(module, "held") ? 5 : 4) * 17;
             case POTION_EFFECTS -> Math.max(1, effectLines(client, editing).size()) * LINE + 2;
             case TARGET_HUD -> Combat.TARGET_HEIGHT;
+            case MINIMAP -> Minimap.size() + 12;
             case ATTACK_COOLDOWN -> Combat.COOLDOWN_HEIGHT;
             case DAMAGE_FEED -> Math.max(1, Combat.feedLines(editing).size()) * LINE + 2;
             case SESSION_STATS -> Combat.sessionLines().size() * LINE + 2;
@@ -186,6 +208,7 @@ public final class Hud {
             case POTION_EFFECTS -> new int[]{screenWidth - width - 4, 4};
             case TOGGLE_SPRINT -> new int[]{4, screenHeight - Math.round(17 * scale(module))};
             case TARGET_HUD -> new int[]{screenWidth / 2 + 14, screenHeight / 2 + 14};
+            case MINIMAP -> new int[]{screenWidth - width - 4, VConfig.enabled(Module.POTION_EFFECTS) ? 40 : 4};
             case ATTACK_COOLDOWN -> new int[]{(screenWidth - width) / 2, screenHeight / 2 + 12};
             case DAMAGE_FEED -> new int[]{screenWidth / 2 + 14, screenHeight / 2 - 60};
             default -> new int[]{4, leftColumnY(client, module, editing)};
@@ -244,6 +267,7 @@ public final class Hud {
                 }
             }
             case TARGET_HUD -> Combat.drawTarget(context, client, background, label, editing);
+            case MINIMAP -> Minimap.draw(context, client, background, editing);
             case ATTACK_COOLDOWN -> Combat.drawCooldown(context, client, background, editing);
             case DAMAGE_FEED -> {
                 if (background) frostPanel(context, module, width, height);
@@ -300,6 +324,7 @@ public final class Hud {
             case BIOME -> new String[]{"Biome: ", biome(client)};
             case TOGGLE_SPRINT -> new String[]{"[Sprinting (Toggled)]", ""};
             case COMBO -> Combat.comboText();
+            case HEAL_HELPER -> Interface.healText(client);
             case REACH -> Combat.reachText(client.currentScreen instanceof HudEditorScreen);
             default -> new String[]{"", ""};
         };

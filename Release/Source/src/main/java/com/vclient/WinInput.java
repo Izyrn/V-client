@@ -99,6 +99,14 @@ final class WinInput {
         press(VK_MEDIA_PLAY_PAUSE);
     }
 
+    static void volumeUp() {
+        press(0xAF);
+    }
+
+    static void volumeDown() {
+        press(0xAE);
+    }
+
     static void nextTrack() {
         press(VK_MEDIA_NEXT_TRACK);
     }

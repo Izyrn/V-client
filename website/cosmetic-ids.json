@@ -580,5 +580,131 @@
     "name": "Frostbite",
     "category": "animated",
     "tier": "premium"
+  },
+  {
+    "id": "pet_frost_sprite",
+    "name": "Frost Sprite",
+    "category": "pet",
+    "tier": "free"
+  },
+  {
+    "id": "pet_snow_buddy",
+    "name": "Snow Buddy",
+    "category": "pet",
+    "tier": "free"
+  },
+  {
+    "id": "pet_slime_pal",
+    "name": "Slime Pal",
+    "category": "pet",
+    "tier": "free"
+  },
+  {
+    "id": "pet_ghost",
+    "name": "Little Ghost",
+    "category": "pet",
+    "tier": "free"
+  },
+  {
+    "id": "pet_aurora_orb",
+    "name": "Aurora Orb",
+    "category": "pet",
+    "tier": "free"
+  },
+  {
+    "id": "aura_frost_ring",
+    "name": "Frost Ring",
+    "category": "aura",
+    "tier": "free"
+  },
+  {
+    "id": "aura_soul_halo",
+    "name": "Soul Halo",
+    "category": "aura",
+    "tier": "free"
+  },
+  {
+    "id": "aura_starlight",
+    "name": "Starlight",
+    "category": "aura",
+    "tier": "free"
+  },
+  {
+    "id": "aura_love",
+    "name": "Love Aura",
+    "category": "aura",
+    "tier": "free"
+  },
+  {
+    "id": "aura_electric",
+    "name": "Electric",
+    "category": "aura",
+    "tier": "free"
+  },
+  {
+    "id": "kill_shatter",
+    "name": "Shatter",
+    "category": "kill_effect",
+    "tier": "free"
+  },
+  {
+    "id": "kill_soul_release",
+    "name": "Soul Release",
+    "category": "kill_effect",
+    "tier": "free"
+  },
+  {
+    "id": "kill_firework",
+    "name": "Firework Pop",
+    "category": "kill_effect",
+    "tier": "free"
+  },
+  {
+    "id": "kill_lightning",
+    "name": "Lightning Spark",
+    "category": "kill_effect",
+    "tier": "free"
+  },
+  {
+    "id": "kill_hearts",
+    "name": "Hearts",
+    "category": "kill_effect",
+    "tier": "free"
+  },
+  {
+    "id": "death_frozen_soul",
+    "name": "Frozen Soul",
+    "category": "death_effect",
+    "tier": "free"
+  },
+  {
+    "id": "death_ash",
+    "name": "Ashes",
+    "category": "death_effect",
+    "tier": "free"
+  },
+  {
+    "id": "death_totem",
+    "name": "Totem Burst",
+    "category": "death_effect",
+    "tier": "free"
+  },
+  {
+    "id": "win_fireworks",
+    "name": "Fireworks",
+    "category": "victory_effect",
+    "tier": "free"
+  },
+  {
+    "id": "win_aurora_rain",
+    "name": "Aurora Rain",
+    "category": "victory_effect",
+    "tier": "free"
+  },
+  {
+    "id": "win_totem_shower",
+    "name": "Totem Shower",
+    "category": "victory_effect",
+    "tier": "free"
   }
 ]

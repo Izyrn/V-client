@@ -1,4 +1,4 @@
-package com.vclient;
+﻿package com.vclient;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,7 +10,7 @@ final class AppInfo {
     static final String NAME = "VYRN";
 
     /** Launcher version reported to the update service. Bump together with the pom version and the published release. */
-    static final String VERSION = "1.8.1";
+    static final String VERSION = "1.8.2";
 
     /**
      * The one place the API address lives (a Cloudflare Worker, see {@code cloudflare/}). Players can override it
@@ -25,6 +25,12 @@ final class AppInfo {
             "https://vsmp-client.onrender.com", "https://vsmp-client-backend.onrender.com");
 
     static final String PLATFORM = "windows";
+
+    /**
+     * Discord application id for Rich Presence (create one at discord.com/developers/applications, name it VYRN and
+     * upload an art asset called "vyrn"). Empty = Rich Presence off.
+     */
+    static final String DISCORD_APP_ID = "";
 
     /** Folder name under %APPDATA% for accounts, settings and game files. */
     static final String DATA_FOLDER = "VYRN";

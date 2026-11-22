@@ -89,6 +89,14 @@ public final class Waypoints {
         return place + "|" + client.world.getRegistryKey().getValue();
     }
 
+    /** Waypoints in the current world and dimension (for the minimap); empty when none. */
+    static List<Waypoint> current(MinecraftClient client) {
+        if (!loaded) load();
+        if (client.world == null) return List.of();
+        List<Waypoint> list = ALL.get(key(client));
+        return list == null ? List.of() : List.copyOf(list);
+    }
+
     private static List<Waypoint> here(MinecraftClient client) {
         return ALL.computeIfAbsent(key(client), ignored -> new ArrayList<>());
     }

@@ -58,6 +58,7 @@ public final class Cosmetics {
 
         Emotes.tick(client);
         Trails.tick(client);
+        com.vclient.mod.Safe.run("Auras and effects", () -> Effects.tick(client));
     }
 
     public static void openMenu(MinecraftClient client, Screen parent) {

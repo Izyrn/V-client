@@ -6,7 +6,9 @@ package com.vclient.mod.cosmetics;
  */
 public enum CosmeticCategory {
     CAPE("Capes", CosmeticSlot.CAPE), WINGS("Wings", CosmeticSlot.WINGS), HAT("Hats", CosmeticSlot.HAT),
-    EMOTE("Emotes", CosmeticSlot.EMOTE), ANIMATED("Animated", null), TRAIL("Trails", CosmeticSlot.TRAIL);
+    EMOTE("Emotes", CosmeticSlot.EMOTE), ANIMATED("Animated", null), TRAIL("Trails", CosmeticSlot.TRAIL),
+    PET("Pets", CosmeticSlot.PET), AURA("Auras", CosmeticSlot.AURA), KILL_EFFECT("Kill FX", CosmeticSlot.KILL_EFFECT),
+    DEATH_EFFECT("Death FX", CosmeticSlot.DEATH_EFFECT), VICTORY_EFFECT("Win FX", CosmeticSlot.VICTORY_EFFECT);
 
     private final String label;
     private final CosmeticSlot slot;

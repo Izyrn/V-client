@@ -42,6 +42,7 @@ final class LauncherSettings {
     private boolean autoBenchmarkDone;
     /** Keeps the last 30 seconds of the game window in memory so the clip hotkey can save them. */
     private boolean replayBufferEnabled = true;
+    private int replaySeconds = 30;
     /** Also record the microphone into clips (game/system sound is always recorded). Off by default for privacy. */
     private boolean clipMicrophone;
     /** A {@link Theme} preset id, or "custom" to use {@link #customAccent}. */
@@ -115,6 +116,7 @@ final class LauncherSettings {
         settings.autoBenchmark = saved.path("autoBenchmark").asBoolean(true);
         settings.autoBenchmarkDone = saved.path("autoBenchmarkDone").asBoolean(false);
         settings.replayBufferEnabled = saved.path("replayBufferEnabled").asBoolean(true);
+        settings.replaySeconds = saved.path("replaySeconds").asInt(30) == 60 ? 60 : 30;
         settings.clipMicrophone = saved.path("clipMicrophone").asBoolean(false);
         settings.themeId = saved.path("themeId").asText("frost");
         String accent = saved.path("customAccent").asText("#e6bd59");
@@ -188,6 +190,7 @@ final class LauncherSettings {
         saved.put("autoBenchmark", autoBenchmark);
         saved.put("autoBenchmarkDone", autoBenchmarkDone);
         saved.put("replayBufferEnabled", replayBufferEnabled);
+        saved.put("replaySeconds", replaySeconds);
         saved.put("clipMicrophone", clipMicrophone);
         saved.put("themeId", themeId);
         saved.put("customAccent", customAccent);
@@ -319,6 +322,15 @@ final class LauncherSettings {
     void setTheme(String themeId, String customAccent) {
         this.themeId = themeId == null || themeId.isBlank() ? "frost" : themeId;
         if (Theme.validHex(customAccent)) this.customAccent = customAccent;
+    }
+
+    /** Instant replay clip length: 30 or 60 seconds. */
+    int replaySeconds() {
+        return replaySeconds;
+    }
+
+    void setReplaySeconds(int seconds) {
+        replaySeconds = seconds == 60 ? 60 : 30;
     }
 
     boolean replayBufferEnabled() {

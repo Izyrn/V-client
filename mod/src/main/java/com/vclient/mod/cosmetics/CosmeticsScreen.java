@@ -119,7 +119,9 @@ public final class CosmeticsScreen extends Screen {
     }
 
     private Rect tabRect(int index) {
-        return new Rect(panelX + 10, panelY + 56 + index * 22, tabsW, 19);
+        int count = CosmeticCategory.values().length;
+        int step = Math.max(12, Math.min(22, (panelH - 56 - 30) / count));
+        return new Rect(panelX + 10, panelY + 56 + index * step, tabsW, step - 2);
     }
 
     private Rect chipRect(int index, int count) {
@@ -188,7 +190,7 @@ public final class CosmeticsScreen extends Screen {
             context.fill(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + rect.h(),
                     active ? CARD_HOVER : rect.contains(mouseX, mouseY) ? 0xFF211F3A : CARD);
             context.drawStrokedRectangle(rect.x(), rect.y(), rect.w(), rect.h(), active ? 0xAA00CFFF : 0x447CEBFF);
-            context.drawText(textRenderer, categories[i].label(), rect.x() + 6, rect.y() + 6,
+            context.drawText(textRenderer, categories[i].label(), rect.x() + 6, rect.y() + (rect.h() - 8) / 2,
                     active ? ACCENT : TEXT, false);
         }
     }

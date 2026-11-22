@@ -12,14 +12,28 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Installs the bundled "Ultra Smooth PvP" resource pack into the game's resourcepacks folder and switches it on
- * the first time only, so a player who turns it off in Options stays off. Nothing is downloaded. The pack only
- * changes how things look (textures, a first-person shield position), never anything that affects gameplay.
+ * Installs the bundled resource packs into the game's resourcepacks folder and switches each one on the first time
+ * only, so a player who turns one off in Options stays off. Nothing is downloaded. The packs only change how things
+ * look, never anything that affects gameplay:
+ * <ul>
+ *   <li>"Ultra Smooth PvP": low fire, clear glass, clean crosshair, soft clouds, lowered shield.</li>
+ *   <li>"VYRN UI": the ice-style hotbar, hearts and boss bars (Custom Hotbar / Hearts / Boss Bars).</li>
+ * </ul>
  */
 final class BundledResourcePack {
     static final String FILE_NAME = "Ultra Smooth PvP.zip";
-    private static final String RESOURCE = "/vclient-pack/" + FILE_NAME;
-    private static final String ENTRY = "file/" + FILE_NAME;
+    static final String UI_FILE_NAME = "VYRN UI.zip";
+
+    /** A bundled pack and the marker file that records it was switched on once. */
+    private record Pack(String fileName, String label, String marker) {
+        String entry() {
+            return "file/" + fileName;
+        }
+    }
+
+    private static final List<Pack> PACKS = List.of(
+            new Pack(FILE_NAME, "Ultra Smooth PvP", "pack-enabled"),
+            new Pack(UI_FILE_NAME, "VYRN UI (ice hotbar, hearts and boss bars)", "ui-pack-enabled"));
 
     private BundledResourcePack() {}
 
@@ -27,7 +41,7 @@ final class BundledResourcePack {
         return minecraftDirectory.resolve("vclient").resolve("pack-enabled");
     }
 
-    /** True for the Minecraft releases the pack was built for (resource pack formats 46..75 = 1.21.4 to 1.21.11). */
+    /** True for the Minecraft releases the packs were built for (resource pack formats 46..75 = 1.21.4 to 1.21.11). */
     static boolean supports(String clientVersionId) {
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("1\\.21\\.(\\d+)").matcher(clientVersionId == null ? "" : clientVersionId);
         if (!m.matches()) return false;
@@ -36,19 +50,20 @@ final class BundledResourcePack {
     }
 
     /**
-     * Copies the pack into resourcepacks if it is missing or outdated, so it always shows up in the in-game
-     * Resource Packs list. Does not switch it on. Returns true if the file was written.
+     * Copies the packs into resourcepacks if they are missing or outdated, so they always show up in the in-game
+     * Resource Packs list. Does not switch them on. Returns true if a file was written.
      */
     static boolean ensureInstalled(Path minecraftDirectory, Consumer<String> onOutput) throws IOException {
         Path root = minecraftDirectory.toAbsolutePath().normalize();
-        byte[] bundled;
-        try (InputStream input = BundledResourcePack.class.getResourceAsStream(RESOURCE)) {
-            if (input == null) throw new IOException("The launcher is missing its bundled resource pack.");
-            bundled = input.readAllBytes();
-        }
         boolean changed = false;
-        Path target = root.resolve("resourcepacks").resolve(FILE_NAME);
-        if (!Files.isRegularFile(target) || !Arrays.equals(Files.readAllBytes(target), bundled)) {
+        for (Pack pack : PACKS) {
+            byte[] bundled;
+            try (InputStream input = BundledResourcePack.class.getResourceAsStream("/vclient-pack/" + pack.fileName())) {
+                if (input == null) throw new IOException("The launcher is missing its bundled resource pack " + pack.fileName());
+                bundled = input.readAllBytes();
+            }
+            Path target = root.resolve("resourcepacks").resolve(pack.fileName());
+            if (Files.isRegularFile(target) && Arrays.equals(Files.readAllBytes(target), bundled)) continue;
             Files.createDirectories(target.getParent());
             Path temporary = Files.createTempFile(target.getParent(), ".vclient-", ".tmp");
             try {
@@ -57,20 +72,21 @@ final class BundledResourcePack {
             } finally {
                 Files.deleteIfExists(temporary);
             }
-            onOutput.accept("Installed the Ultra Smooth PvP resource pack into " + target.getParent() + ".");
+            onOutput.accept("Installed the " + pack.label() + " resource pack into " + target.getParent() + ".");
             changed = true;
         }
         return changed;
     }
 
-    /** Installs the pack and, the first time only, switches it on in options.txt. Returns true if anything changed. */
+    /** Installs the packs and, the first time only for each, switches it on in options.txt. True if anything changed. */
     static boolean ensureInstalledAndEnabled(Path minecraftDirectory, Consumer<String> onOutput) throws IOException {
         boolean changed = ensureInstalled(minecraftDirectory, onOutput);
         Path root = minecraftDirectory.toAbsolutePath().normalize();
-        Path marker = markerFile(root);
-        if (!Files.exists(marker)) {
-            if (enable(root.resolve("options.txt"))) {
-                onOutput.accept("Turned on the Ultra Smooth PvP resource pack (you can switch it off in Options > Resource Packs).");
+        for (Pack pack : PACKS) {
+            Path marker = root.resolve("vclient").resolve(pack.marker());
+            if (Files.exists(marker)) continue;
+            if (enable(root.resolve("options.txt"), pack.entry())) {
+                onOutput.accept("Turned on the " + pack.label() + " resource pack (you can switch it off in Options > Resource Packs).");
             }
             Files.createDirectories(marker.getParent());
             Files.writeString(marker, "enabled once; delete this file to have the launcher enable the pack again\n");
@@ -79,23 +95,28 @@ final class BundledResourcePack {
         return changed;
     }
 
-    /** Adds the pack to the resourcePacks line of options.txt (last = highest priority). False if already listed. */
+    /** Adds the Ultra Smooth PvP pack to options.txt (kept for callers that only know that pack). */
     static boolean enable(Path optionsFile) throws IOException {
+        return enable(optionsFile, PACKS.getFirst().entry());
+    }
+
+    /** Adds a pack to the resourcePacks line of options.txt (last = highest priority). False if already listed. */
+    static boolean enable(Path optionsFile, String entry) throws IOException {
         List<String> lines = Files.isRegularFile(optionsFile)
                 ? new ArrayList<>(Files.readAllLines(optionsFile, StandardCharsets.UTF_8)) : new ArrayList<>();
         boolean written = false;
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
             if (!line.startsWith("resourcePacks:")) continue;
-            if (line.contains("\"" + ENTRY + "\"")) return false;
+            if (line.contains("\"" + entry + "\"")) return false;
             int close = line.lastIndexOf(']');
             if (close < 0) return false; // unrecognised format: leave the player's file alone
             String head = line.substring(0, close);
-            lines.set(i, head + (head.endsWith("[") ? "" : ",") + "\"" + ENTRY + "\"]");
+            lines.set(i, head + (head.endsWith("[") ? "" : ",") + "\"" + entry + "\"]");
             written = true;
             break;
         }
-        if (!written) lines.add("resourcePacks:[\"vanilla\",\"" + ENTRY + "\"]");
+        if (!written) lines.add("resourcePacks:[\"vanilla\",\"" + entry + "\"]");
         Path temporary = Files.createTempFile(optionsFile.toAbsolutePath().getParent(), ".vclient-", ".tmp");
         try {
             Files.write(temporary, lines, StandardCharsets.UTF_8);

@@ -106,6 +106,7 @@ public final class Combat {
         boolean dead = client.player.isDead();
         if (dead && !playerDead) {
             deaths++;
+            com.vclient.mod.cosmetics.Effects.onDeath(client);
             combo = 0;
         }
         playerDead = dead;
@@ -129,6 +130,7 @@ public final class Combat {
             combo++;
             bestCombo = Math.max(bestCombo, combo);
             lastHitAt = now;
+            Visuals.onHit(MinecraftClient.getInstance(), target);
         } else if (pendingHit && now - lastAttackAt > HIT_WINDOW_MS) {
             pendingHit = false;
         }
@@ -139,7 +141,10 @@ public final class Combat {
             float dealt = targetHealth - health;
             damageDealt += dealt;
             boolean kill = health <= 0 && KILLED.add(target.getId());
-            if (kill) kills++;
+            if (kill) {
+                kills++;
+                com.vclient.mod.cosmetics.Effects.onKill(MinecraftClient.getInstance(), target.getX(), target.getY() + 1, target.getZ());
+            }
             FEED.addLast(new Damage(String.format(Locale.ROOT, "-%.1f ❤ %s", dealt / 2f, name(target)), now, kill));
             while (FEED.size() > FEED_MAX) FEED.removeFirst();
         }
